@@ -21,7 +21,7 @@ import torch
 import json
 
 # paths
-ROOT_DIR = "/mnt/users_scratch/astitva/DATA/AD_SegMaps"
+ROOT_DIR = "/mnt/users_scratch/astitva/DATA/AD_SegMaps/"
 drawings_dir = os.path.join(ROOT_DIR, "drawings_resized")
 labels_dir = os.path.join(ROOT_DIR, "labels_2k")
 prompt_file_path = "prompts.txt"
