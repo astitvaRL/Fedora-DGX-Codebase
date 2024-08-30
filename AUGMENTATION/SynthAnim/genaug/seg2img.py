@@ -1,4 +1,13 @@
 import os
+# setup cache path for huggingface
+os.environ['HF_HOME'] = os.environ['CACHE_DIR']
+os.environ['HF_DATASETS_CACHE'] = os.environ['CACHE_DIR']
+os.environ['TRANSFORMERS_CACHE']= os.environ['CACHE_DIR']
+
+print('HF_HOME',os.environ['HF_HOME'])
+print('HF_DATASETS_CACHE',os.environ['HF_DATASETS_CACHE'])
+print('TRANSFORMERS_CACHE',os.environ['TRANSFORMERS_CACHE'])
+
 import cv2
 import numpy as np
 from tqdm import tqdm
@@ -9,15 +18,6 @@ from controlnet_aux.canny import CannyDetector
 from huggingface_hub import hf_hub_download
 import torch
 import json
-
-# setup cache path for huggingface
-os.environ['HF_HOME'] = os.environ['CACHE_DIR']
-os.environ['HF_DATASETS_CACHE'] = os.environ['CACHE_DIR']
-os.environ['TRANSFORMERS_CACHE']= os.environ['CACHE_DIR']
-
-print('HF_HOME',os.environ['HF_HOME'])
-print('HF_DATASETS_CACHE',os.environ['HF_DATASETS_CACHE'])
-print('TRANSFORMERS_CACHE',os.environ['TRANSFORMERS_CACHE'])
 
 # paths
 ROOT_DIR = "/mnt/users_scratch/astitva/DATA/"
