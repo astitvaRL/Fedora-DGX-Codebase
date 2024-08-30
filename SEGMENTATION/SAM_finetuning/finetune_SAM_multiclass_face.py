@@ -26,7 +26,8 @@ if __name__ == '__main__':
     np.random.seed(999)
 
     # set paths
-    data_root = 'D:\\DATA\\Amateur Drawing Semantic Segmentations\\20240716-1034 (1)\\'
+    data_root = '/home/astitva/DATA/Amateur Drawing Semantic Segmentations/20240716-1034 (1)/'
+    
     labels_definition_file_path = join(data_root, 'label_definition.json')
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
@@ -41,7 +42,7 @@ if __name__ == '__main__':
     
     # training choice
     precompute_embeddings = False # False if already precomputed and saved
-    resume_training = True
+    resume_training = False
     resume_ckpt = join(model_save_path, 'model_best.pth')
 
     # prepare SAM model

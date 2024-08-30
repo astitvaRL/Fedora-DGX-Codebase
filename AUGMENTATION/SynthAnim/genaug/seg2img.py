@@ -21,13 +21,13 @@ import torch
 import json
 
 # paths
-ROOT_DIR = "/mnt/users_scratch/astitva/DATA/"
+ROOT_DIR = "/mnt/users_scratch/astitva/DATA/AD_SegMaps"
 drawings_dir = os.path.join(ROOT_DIR, "drawings_resized")
-labels_dir = os.path.join(ROOT_DIR, "labels_resized")
+labels_dir = os.path.join(ROOT_DIR, "labels_2k")
 prompt_file_path = "prompts.txt"
 
 # output directory
-output_dir = os.path.join(ROOT_DIR, "drawings_resized_synth_dgx")
+output_dir = os.path.join(ROOT_DIR, "drawings_synth_20k")
 os.makedirs(output_dir, exist_ok=True)
 
 # taken from https://huggingface.co/tianweiy/DMD2
@@ -63,7 +63,7 @@ for p in prompts:
         processed_prompts.append(p)
 
 # load the labels
-NUM_IMAGES = 10
+NUM_IMAGES = 12
 labels = sorted(os.listdir(labels_dir))
 prompts_dict = {}
 for label_name in tqdm(labels):
