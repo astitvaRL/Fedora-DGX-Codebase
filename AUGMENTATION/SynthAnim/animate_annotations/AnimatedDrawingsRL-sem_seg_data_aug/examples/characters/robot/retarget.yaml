@@ -1,0 +1,115 @@
+retargeting_method: twisted_perspective_2D_viewdependent
+char_starting_location: [0.0, 0.38, -0.5]
+bvh_projection_bodypart_groups:
+- bvh_joint_names:
+  - LeftShoulder
+  - LeftElbow
+  - LeftWrist
+  - LFingers
+  - RightShoulder
+  - RightElbow
+  - RightWrist
+  - RFingers
+  method: saggital
+  name: Upper Limbs
+- bvh_joint_names:
+  - LeftHip
+  - LeftKnee
+  - LeftAnkle
+  - LeftToe
+  - RightHip
+  - RightKnee
+  - RightAnkle
+  - RightToe
+  method: saggital
+  name: Lower Limbs
+- bvh_joint_names:
+  - Hips
+  - Chest
+  - Chest2
+  - Head
+  method: frontal
+  name: Trunk
+char_bodypart_groups:
+- bvh_depth_drivers:
+  - left_hip
+  char_joints:
+  - right_shoulder
+  - left_shoulder
+  - right_hip
+  - left_hip
+  - hip
+  - torso
+  - neck
+- bvh_depth_drivers:
+  - left_wrist
+  char_joints:
+  - left_elbow
+  - left_hand
+- bvh_depth_drivers:
+  - right_wrist
+  char_joints:
+  - right_elbow
+  - right_hand
+- bvh_depth_drivers:
+  - left_ankle
+  char_joints:
+  - left_knee
+  - left_foot
+- bvh_depth_drivers:
+  - right_ankle
+  char_joints:
+  - right_knee
+  - right_foot
+char_bvh_root_offset:
+  bvh_projection_bodypart_group_for_offset: Lower Limbs
+  bvh_joints:
+  - - left_ankle
+    - left_knee
+    - left_hip
+  - - right_ankle
+    - right_knee
+    - right_hip
+  char_joints:
+  - - left_foot
+    - left_knee
+    - left_hip
+  - - right_foot
+    - right_knee
+    - right_hip
+char_joint_bvh_joints_mapping:
+  left_elbow: !!python/tuple
+  - left_shoulder
+  - left_elbow
+  left_foot: !!python/tuple
+  - left_knee
+  - left_ankle
+  left_hand: !!python/tuple
+  - left_elbow
+  - left_wrist
+  left_knee: !!python/tuple
+  - left_hip
+  - left_knee
+  torso: !!python/tuple
+  - left_hip
+  - nose
+  neck: !!python/tuple
+  - left_hip
+  - nose
+  right_elbow: !!python/tuple
+  - right_shoulder
+  - right_elbow
+  right_foot: !!python/tuple
+  - right_knee
+  - right_ankle
+  right_hand: !!python/tuple
+  - right_elbow
+  - right_wrist
+  right_knee: !!python/tuple
+  - right_hip
+  - right_knee
+char_runtime_checks:
+  - - above
+    - neck
+    - right_shoulder
+    - left_shoulder

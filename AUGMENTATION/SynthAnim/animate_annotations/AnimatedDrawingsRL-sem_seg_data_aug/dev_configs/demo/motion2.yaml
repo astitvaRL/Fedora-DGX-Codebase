@@ -1,0 +1,15 @@
+# filepath: /Users/hjessmith/Projects/AnimatedDrawingsRL/examples/bvh/cmu_3dsmax/38_03.bvh
+# filepath: /Users/hjessmith/Projects/AnimatedDrawingsRL/examples/bvh/cmu_3dsmax/02_01.bvh
+filepath: /Users/hjessmith/Projects/AnimatedDrawingsRL/examples/bvh/cmu_3dsmax/02_03.bvh
+# filepath: /Users/hjessmith/Projects/AnimatedDrawingsRL/examples/bvh/cmu_3dsmax/01_01.bvh
+# filepath: /Users/hjessmith/Projects/AnimatedDrawingsRL/examples/bvh/cmu_3dsmax/05_07.bvh
+#start_frame_idx: 50
+#end_frame_idx: 51
+groundplane_joint: LeftToe
+forward_perp_joint_vectors:
+  - - LeftShoulder
+    - RightShoulder
+  - - LeftHip
+    - RightHip
+scale: 0.03
+up: +y

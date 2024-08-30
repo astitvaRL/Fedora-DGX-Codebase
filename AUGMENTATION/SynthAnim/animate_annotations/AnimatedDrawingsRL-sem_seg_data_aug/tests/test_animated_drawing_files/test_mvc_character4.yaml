@@ -1,0 +1,5 @@
+scene:
+  ANIMATED_CHARACTERS:
+    - character_cfg: characters/char4/char_cfg.yaml
+      motion_cfg: tests/test_animated_drawing_files/zombie.yaml
+      retarget_cfg: tests/test_animated_drawing_files/human_zombie.yaml

@@ -1,0 +1,146 @@
+- bottom_split: null
+  forward_orientation: None
+  name: Full Character
+  parent_name: null
+  top_split: null
+  type: external
+- bounding_box:
+  - 128
+  - 172
+  - 227
+  - 289
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_outside_part: false
+  name: Face
+  parent_name: Full Character
+  point_approximation:
+  - 178
+  - 230
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 141
+  - 172
+  - 213
+  - 206
+  does_rdtwp: true
+  forward_orientation: ''
+  hide_on_backside: true
+  hide_outside_part: false
+  name: Sunglasses
+  parent_name: Face
+  point_approximation:
+  - 177
+  - 189
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - -42.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 36.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 174
+  - 207
+  - 189
+  - 224
+  does_rdtwp: true
+  forward_orientation: ''
+  hide_on_backside: true
+  hide_outside_part: false
+  name: Nose
+  parent_name: Face
+  point_approximation:
+  - 182
+  - 216
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - -54.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 44.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 151
+  - 219
+  - 208
+  - 242
+  does_rdtwp: true
+  forward_orientation: ''
+  hide_on_backside: true
+  hide_outside_part: true
+  name: mouth
+  parent_name: Face
+  point_approximation:
+  - 180
+  - 230
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - -51.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 43.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0

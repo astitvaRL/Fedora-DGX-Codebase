@@ -1,0 +1,16 @@
+scene:
+  ANIMATED_CHARACTERS:
+    - character_cfg: characters/char3/char_cfg.yaml
+      motion_cfg: dev_configs/demo/motion2.yaml
+      retarget_cfg: dev_configs/demo/retarget.yaml
+  ADD_FLOOR: False
+  ADD_AD_RETARGET_BVH: True
+view:
+  CLEAR_COLOR: [0.1, 0.1, 0.1, 0.0]
+  # CAMERA_POS: [3.0, 1.5, 3.0]
+  # CAMERA_FWD: [3.0, 1.5, 3.0]
+  CAMERA_POS: [1.1, 0.005, 3.48]
+  CAMERA_FWD: [1.1, 0.005, 3.48]
+  DRAW_AD_TXTR: True
+  WINDOW_DIMENSIONS: [1000, 500]
+  BACKGROUND_IMAGE_PATH: /Users/hjessmith/Projects/AnimatedDrawingsRL/examples/characters/char4/background.png

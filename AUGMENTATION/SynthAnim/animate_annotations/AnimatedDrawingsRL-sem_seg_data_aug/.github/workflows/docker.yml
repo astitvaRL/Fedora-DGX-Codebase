@@ -1,0 +1,14 @@
+name: Docker Build
+
+on: push
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build Docker image
+        run: |
+          docker build --network host -t harbor.thefacebook.com/frl_gemini/ad3d_demo_v1.0 -f docker/Dockerfile .

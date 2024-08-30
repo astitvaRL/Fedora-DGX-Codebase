@@ -1,0 +1,378 @@
+- bottom_split: null
+  forward_orientation: None
+  name: Full Character
+  parent_name: null
+  top_split: null
+  type: external
+- bounding_box:
+  - 341
+  - 202
+  - 518
+  - 342
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_outside_part: false
+  name: Face
+  parent_name: Full Character
+  point_approximation:
+  - 430
+  - 272
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 350
+  - 211
+  - 501
+  - 330
+  does_rdtwp: true
+  forward_orientation: ''
+  hide_on_backside: true
+  hide_outside_part: true
+  name: Facial Features
+  parent_name: Full Character
+  point_approximation:
+  - 426
+  - 270
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - -64.0
+    # - -84.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 71.0
+    # - 91.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 437
+  - 228
+  - 494
+  - 286
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_outside_part: false
+  hide_between_view_angles: 
+  - - 225
+    - 270
+  name: REye
+  parent_name: Facial Features
+  point_approximation:
+  - 466
+  - 257
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 456
+  - 249
+  - 475
+  - 267
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_outside_part: false
+  name: RPupil
+  parent_name: REye
+  point_approximation:
+  - 466
+  - 258
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 350
+  - 228
+  - 407
+  - 286
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_between_view_angles: 
+  - - 90
+    - 135
+  hide_outside_part: false
+  name: LEye
+  parent_name: Facial Features
+  point_approximation:
+  - 378
+  - 257
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 370
+  - 250
+  - 387
+  - 267
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_outside_part: false
+  name: LPupil
+  parent_name: LEye
+  point_approximation:
+  - 378
+  - 258
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 375
+  - 211
+  - 395
+  - 223
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_outside_part: false
+  hide_between_view_angles: 
+  - - 90
+    - 135
+  name: LEyebrow
+  parent_name: Facial Features
+  point_approximation:
+  - 385
+  - 217
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 451
+  - 211
+  - 471
+  - 223
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_outside_part: false
+  hide_between_view_angles: 
+  - - 195
+    - 270
+  name: REyebrow
+  parent_name: Facial Features
+  point_approximation:
+  - 461
+  - 217
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 478
+  - 290
+  - 501
+  - 314
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_outside_part: false
+  hide_between_view_angles: 
+    - - 195
+      - 270
+  name: Cheek
+  parent_name: Facial Features
+  point_approximation:
+  - 490
+  - 302
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 396
+  - 302
+  - 453
+  - 330
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_outside_part: false
+  hide_between_view_angles: 
+  - - 90
+    - 100
+  - - 260
+    - 270
+  name: Mouth
+  parent_name: Facial Features
+  point_approximation:
+  - 424
+  - 316
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0

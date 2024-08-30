@@ -1,0 +1,3 @@
+[submodule "libs/pygltfgen"]
+	path = libs/pygltfgen
+	url = git@github.com:nickyhe-gemini/pygltfgen.git

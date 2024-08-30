@@ -1,0 +1,265 @@
+- bottom_split:
+  - 414.0
+  - 704.0
+  - 715.0
+  - 704.0
+  forward_orientation: DRight
+  name: Head
+  parent_name: Body
+  top_split: null
+  type: external
+- bottom_split: null
+  forward_orientation: None
+  name: Body
+  parent_name: null
+  top_split:
+  - 413.0
+  - 704.0
+  - 714.0
+  - 704.0
+  type: external
+- bounding_box:
+  - 436
+  - 138
+  - 747
+  - 572
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_outside_part: false
+  name: Face
+  parent_name: Head
+  point_approximation:
+  - 592
+  - 355
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 483
+  - 214
+  - 700
+  - 394
+  does_rdtwp: true
+  forward_orientation: ''
+  hide_on_backside: true
+  hide_outside_part: true
+  name: Eyes
+  parent_name: Face
+  point_approximation:
+  - 592
+  - 304
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - -155.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 125.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 483
+  - 325
+  - 577
+  - 394
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_outside_part: false
+  name: REye
+  parent_name: Eyes
+  point_approximation:
+  - 530
+  - 360
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 620
+  - 237
+  - 700
+  - 309
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_outside_part: false
+  name: LEye
+  parent_name: Eyes
+  point_approximation:
+  - 660
+  - 273
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 489
+  - 487
+  - 560
+  - 505
+  does_rdtwp: true
+  forward_orientation: ''
+  hide_on_backside: true
+  hide_outside_part: true
+  name: Mouth
+  parent_name: Face
+  point_approximation:
+  - 524
+  - 496
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - -48.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 140.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 627
+  - 214
+  - 682
+  - 229
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_outside_part: false
+  name: LEyebrow
+  parent_name: Eyes
+  point_approximation:
+  - 654
+  - 222
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+- bounding_box:
+  - 510
+  - 289
+  - 579
+  - 304
+  does_rdtwp: false
+  forward_orientation: ''
+  hide_on_backside: false
+  hide_outside_part: false
+  name: REyebrow
+  parent_name: Eyes
+  point_approximation:
+  - 544
+  - 296
+  type: internal
+  view_left_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0
+  view_right_transform:
+  - - 1.0
+    - 0.0
+    - 0.0
+  - - 0.0
+    - 1.0
+    - 0.0
+  - - 0.0
+    - 0.0
+    - 1.0

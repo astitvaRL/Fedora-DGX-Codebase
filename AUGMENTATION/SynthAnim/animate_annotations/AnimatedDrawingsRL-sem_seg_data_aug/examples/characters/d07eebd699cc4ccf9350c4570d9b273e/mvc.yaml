@@ -1,0 +1,14 @@
+scene:
+  ANIMATED_CHARACTERS:
+    - character_cfg: examples/characters/d07eebd699cc4ccf9350c4570d9b273e
+      motion_cfg: dev_configs/demo/motion2.yaml
+      retarget_cfg: dev_configs/demo/retarget.yaml
+  ADD_AD_RETARGET_BVH: False
+view:
+  CLEAR_COLOR: [0.1, 0.1, 0.1, 0.0]
+  CAMERA_POS: [0.14, 0.7, -3.9]
+  CAMERA_FWD: [0.14, 0.005, -3.9]
+  DRAW_FLOOR: True
+  DRAW_AD_TXTR: True
+  DRAW_CHARACTER_REFLECTION: False
+  WINDOW_DIMENSIONS: [500, 500]

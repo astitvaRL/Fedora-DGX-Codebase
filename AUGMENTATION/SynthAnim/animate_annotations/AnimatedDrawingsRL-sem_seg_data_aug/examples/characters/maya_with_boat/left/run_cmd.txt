@@ -1,0 +1,1 @@
+python render.py /Users/hjessmith/Desktop/paper writing/maya_with_boat/view_out/mayawithboath_clear/left/mvc.yaml

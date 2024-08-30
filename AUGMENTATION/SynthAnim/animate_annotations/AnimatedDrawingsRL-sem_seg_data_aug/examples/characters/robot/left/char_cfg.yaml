@@ -1,0 +1,88 @@
+deformer_type: arap_igarashi
+footorientation_left: null
+footorientation_right: null
+height: 1020
+mesh_type: cardboard
+rig_type: 2D
+skeleton:
+- loc:
+  - 425
+  - 582
+  name: root
+  parent: null
+- loc:
+  - 425
+  - 583
+  name: hip
+  parent: root
+- loc:
+  - 427
+  - 383
+  name: torso
+  parent: hip
+- loc:
+  - 428
+  - 266
+  name: neck
+  parent: torso
+- loc:
+  - 334
+  - 381
+  name: right_shoulder
+  parent: torso
+- loc:
+  - 243
+  - 385
+  name: right_elbow
+  parent: right_shoulder
+- loc:
+  - 171
+  - 384
+  name: right_hand
+  parent: right_elbow
+- loc:
+  - 521
+  - 382
+  name: left_shoulder
+  parent: torso
+- loc:
+  - 609
+  - 384
+  name: left_elbow
+  parent: left_shoulder
+- loc:
+  - 687
+  - 391
+  name: left_hand
+  parent: left_elbow
+- loc:
+  - 385
+  - 584
+  name: right_hip
+  parent: root
+- loc:
+  - 374
+  - 754
+  name: right_knee
+  parent: right_hip
+- loc:
+  - 362
+  - 924
+  name: right_foot
+  parent: right_knee
+- loc:
+  - 476
+  - 584
+  name: left_hip
+  parent: root
+- loc:
+  - 476
+  - 754
+  name: left_knee
+  parent: left_hip
+- loc:
+  - 487
+  - 924
+  name: left_foot
+  parent: left_knee
+width: 872
