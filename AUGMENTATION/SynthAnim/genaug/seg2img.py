@@ -11,18 +11,18 @@ import torch
 import json
 
 # setup cache path for huggingface
-os.environ['HF_HOME'] = "D:\\CACHE"
-os.environ['HF_DATASETS_CACHE']="D:\\CACHE"
-os.environ['TRANSFORMERS_CACHE']="D:\\CACHE"
+os.environ['HF_HOME'] = os.environ['CACHE_DIR']
+os.environ['HF_DATASETS_CACHE'] = os.environ['CACHE_DIR']
+os.environ['TRANSFORMERS_CACHE']= os.environ['CACHE_DIR']
 
 # paths
-ROOT_DIR = "D:\\DATA\\Amateur Drawing Semantic Segmentations\\20240716-1034 (1)"
+ROOT_DIR = "/mnt/users_scratch/astitva/DATA/"
 drawings_dir = os.path.join(ROOT_DIR, "drawings_resized")
 labels_dir = os.path.join(ROOT_DIR, "labels_resized")
 prompt_file_path = "prompts.txt"
 
 # output directory
-output_dir = os.path.join(ROOT_DIR, "drawings_resized_synth")
+output_dir = os.path.join(ROOT_DIR, "drawings_resized_synth_dgx")
 os.makedirs(output_dir, exist_ok=True)
 
 # taken from https://huggingface.co/tianweiy/DMD2
