@@ -10,8 +10,6 @@ from huggingface_hub import hf_hub_download
 import torch
 import json
 
-print(os.environ['HF_HOME'])
-
 # setup cache path for huggingface
 os.environ['HF_HOME'] = os.environ['CACHE_DIR']
 os.environ['HF_DATASETS_CACHE'] = os.environ['CACHE_DIR']
