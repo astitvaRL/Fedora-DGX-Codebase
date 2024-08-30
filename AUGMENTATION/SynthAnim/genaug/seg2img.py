@@ -69,6 +69,7 @@ prompts_dict = {}
 for label_name in tqdm(labels):
     # preprocess the label image to get conditioning
     label_img = Image.open(os.path.join(labels_dir, label_name)).convert("RGB")
+    label_img = label_img.resize((1024, 1024))
     label_img_np = np.array(label_img)
     mask = label_img_np.sum(2)
     binmask = mask == 0
@@ -81,7 +82,7 @@ for label_name in tqdm(labels):
         if np.random.rand() < 0.5:
             text_prompt += f", smudgy, colors leaking from the edges, hand drawn on a white paper."
         else:
-            text_prompt = f"a line-art sketch" + text_prompt
+            text_prompt = f"a creative line-art sketch" + text_prompt
             text_prompt += ", solid white background"
         # generate image
         gen_img = pipe(prompt=text_prompt, image=cond_img, num_inference_steps=4, guidance_scale=0, adapter_conditioning_scale=1.0, adapter_conditioning_factor=1.0, timesteps=[999, 749, 499, 249]).images[0]
