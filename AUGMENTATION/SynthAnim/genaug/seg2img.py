@@ -33,9 +33,6 @@ os.makedirs(output_dir, exist_ok=True)
 
 # taken from https://huggingface.co/tianweiy/DMD2
 
-#proxies
-proxies = 
-
 # configuration
 device = "cuda"
 weight_type = "fp16"
