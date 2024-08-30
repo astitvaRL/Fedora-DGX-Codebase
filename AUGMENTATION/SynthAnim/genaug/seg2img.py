@@ -10,10 +10,16 @@ from huggingface_hub import hf_hub_download
 import torch
 import json
 
+print(os.environ['HF_HOME'])
+
 # setup cache path for huggingface
 os.environ['HF_HOME'] = os.environ['CACHE_DIR']
 os.environ['HF_DATASETS_CACHE'] = os.environ['CACHE_DIR']
 os.environ['TRANSFORMERS_CACHE']= os.environ['CACHE_DIR']
+
+print('HF_HOME',os.environ['HF_HOME'])
+print('HF_DATASETS_CACHE',os.environ['HF_DATASETS_CACHE'])
+print('TRANSFORMERS_CACHE',os.environ['TRANSFORMERS_CACHE'])
 
 # paths
 ROOT_DIR = "/mnt/users_scratch/astitva/DATA/"
@@ -26,6 +32,9 @@ output_dir = os.path.join(ROOT_DIR, "drawings_resized_synth_dgx")
 os.makedirs(output_dir, exist_ok=True)
 
 # taken from https://huggingface.co/tianweiy/DMD2
+
+#proxies
+proxies = 
 
 # configuration
 device = "cuda"
