@@ -1,3 +1,14 @@
+import os
+# setup cache path for huggingface
+os.environ['HF_HUB_OFFLINE'] = '1'
+os.environ['HF_HOME'] = os.environ['CACHE_DIR']
+os.environ['HF_DATASETS_CACHE'] = os.environ['CACHE_DIR']
+os.environ['TRANSFORMERS_CACHE']= os.environ['CACHE_DIR']
+
+print('HF_HOME',os.environ['HF_HOME'])
+print('HF_DATASETS_CACHE',os.environ['HF_DATASETS_CACHE'])
+print('TRANSFORMERS_CACHE',os.environ['TRANSFORMERS_CACHE'])
+
 import spaces
 import random
 import torch
