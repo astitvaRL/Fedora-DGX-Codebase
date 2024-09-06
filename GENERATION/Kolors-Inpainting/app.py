@@ -1,6 +1,6 @@
 import os
 # setup cache path for huggingface
-os.environ['HF_HUB_OFFLINE'] = '0'
+os.environ['HF_HUB_OFFLINE'] = '1'
 os.environ['HF_HOME'] = os.environ['CACHE_DIR']
 os.environ['HF_DATASETS_CACHE'] = os.environ['CACHE_DIR']
 os.environ['TRANSFORMERS_CACHE']= os.environ['CACHE_DIR']

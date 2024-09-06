@@ -57,7 +57,7 @@ if __name__ == '__main__':
     epoch_start = 0 # dont change this, change below one
     if resume_training:
         epoch_start = 1 # change this
-        resume_ckpt = join(ckpt_dir, 'animseg_synth_20k_body_only_finetune_decoder\\model_best.pth')
+        resume_ckpt = join(ckpt_dir, 'animseg_synth_20k_body_only_finetune_decoder/model_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
