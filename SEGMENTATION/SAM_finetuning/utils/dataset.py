@@ -17,7 +17,7 @@ from .SemanticSegmentation import SemanticSegmentation
 
 # dataset definition for only body (no facial details)
 class Dataset_body(Dataset): 
-    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, img_embed_dir_name, label_id_dir_name, mode='train', device='cuda', return_embeddings=True):
+    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, img_embed_dir_name, label_id_dir_name, mode='train', device='cuda', return_embeddings=False):
         self.sam_model = sam_model
         self.num_classes = 18
         self.semantics = SemanticSegmentation(labels_definition_path=labels_definition_file_path, num_classes=self.num_classes)
@@ -44,8 +44,11 @@ class Dataset_body(Dataset):
         input_image_tensor = self.sam_model.preprocess(resize_img_tensor[None,:,:,:]) # (1, 3, 1024, 1024)
         input_image_tensor = input_image_tensor.squeeze(0)
 
-
-        img_embed = np.load(join(self.data_root, self.img_embed_dir_name, self.files[index][:-4]+'.npy')) #validate this logic in case filename convention changes
+        img_embed = None
+        if self.mode == 'test':
+            img_embed = np.load(join(self.data_root, self.img_embed_dir_name, self.files[index][:-4]+'.npy')) #validate this logic in case filename convention changes
+        
+        # load GT semantic segmentation map
         gt2D = io.imread(join(self.data_root, self.label_id_dir_name, self.files[index][:-6]+'_1024.png'))
 
         # binary mask from GT, at inference can be replaced by an off-the-shelf model prediction (e.g. SAM)
@@ -54,9 +57,8 @@ class Dataset_body(Dataset):
         binmask = np.uint8(binmask)
 
         # colors to labels
-        gt2D = self.semantics.remove_interpolation_artifacts(gt2D)
-        gtID = self.semantics.colors_to_labels(gt2D)
-        gtID_vis = self.semantics.labels_to_colors(gtID)
+        gt2D_labels = self.semantics.colors_to_labels(gt2D)
+        # gt2D_labels_vis = self.semantics.labels_to_colors(gt2D_labels)
 
         # for bounding box
         Xs = np.where(binmask>0)[0]
@@ -64,6 +66,6 @@ class Dataset_body(Dataset):
         
         # convert img embedding, gt, mask, bounding box to torch tensor
         if self.return_embeddings:
-            return input_image_tensor, torch.tensor(img_embed).float(), torch.tensor(gtID[None, :,:]).long(), torch.tensor(binmask[None, :,:]).float(), torch.from_numpy(np.array([min(Ys),min(Xs),max(Ys),max(Xs)])).float()
+            return input_image_tensor, torch.tensor(img_embed).float(), torch.tensor(gt2D_labels[None, :,:]).long(), torch.tensor(binmask[None, :,:]).float(), torch.from_numpy(np.array([min(Ys),min(Xs),max(Ys),max(Xs)])).float()
         else:
-            return input_image_tensor, None, torch.tensor(gtID[None, :,:]).long(), torch.tensor(binmask[None, :,:]).float(), torch.from_numpy(np.array([min(Ys),min(Xs),max(Ys),max(Xs)])).float()
+            return input_image_tensor, torch.tensor(gt2D_labels[None, :,:]).long(), torch.tensor(binmask[None, :,:]).float(), torch.from_numpy(np.array([min(Ys),min(Xs),max(Ys),max(Xs)])).float()
