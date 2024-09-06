@@ -72,7 +72,6 @@ if __name__ == '__main__':
             label = cv2.resize(label, (1024,1024), interpolation=cv2.INTER_NEAREST)
             cv2.imwrite(join(data_root, label_id_dir_name, label_name.split('.png')[0]+'_1024.png'), label)
 
-
     # precompute image embeddings using original SAM model
     if precompute_embeddings:
         os.makedirs(embedding_dir_path, exist_ok=True)
