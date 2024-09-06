@@ -27,22 +27,22 @@ if __name__ == '__main__':
     # np.random.seed(999)
 
     # set paths
-    data_root = '/home/astitva/DATA/AD_SegMaps/'
+    data_root = '/mnt/users_scratch/astitva/DATA/AD_SegMaps/'
     labels_definition_file_path = 'label_definition.json'
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
-    image_dir_name = 'drawings_resized_synth'
-    label_id_dir_name = 'labels_resized' 
+    image_dir_name = 'drawings_synth_20k'
+    label_id_dir_name = 'labels_2k' 
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
-    task_name = 'animseg_synth_20k_body' # finetuned checkpoint will be saved here
+    task_name = 'animseg_synth_20k_body_only_finetune_decoder' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
     os.makedirs(join(model_save_path, 'eval'), exist_ok=True)
     
     # training choice
-    precompute_embeddings = False # False if already precomputed and saved
+    precompute_embeddings = True # False if already precomputed and saved
     resume_training = False
     visualization_debug = False
     ignore_background = False
@@ -90,8 +90,8 @@ if __name__ == '__main__':
     test_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
 
     # create dataloader
-    train_dataloader = DataLoader(train_dataset, batch_size=2, shuffle=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=2, shuffle=False)
+    train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
     # training config
     num_epochs = 1000
