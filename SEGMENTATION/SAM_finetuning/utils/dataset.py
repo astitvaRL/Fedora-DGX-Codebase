@@ -28,9 +28,9 @@ class Dataset_body(Dataset):
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
         self.img_embed_dir_name = img_embed_dir_name
-        self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[:-2000][:20]
+        self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[:-1000]
         if self.mode == 'test':
-            self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[-2000:][:20]
+            self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[-1000:]
         print(f"{mode} dataset : {len(self.files)} --> {self.files[0]} -- {self.files[-1]}") 
 
     def __len__(self):
@@ -46,7 +46,7 @@ class Dataset_body(Dataset):
 
 
         img_embed = np.load(join(self.data_root, self.img_embed_dir_name, self.files[index][:-4]+'.npy')) #validate this logic in case filename convention changes
-        gt2D = io.imread(join(self.data_root, self.label_id_dir_name, self.files[index][:-6]+'.png'))
+        gt2D = io.imread(join(self.data_root, self.label_id_dir_name, self.files[index][:-6]+'_1024.png'))
 
         # binary mask from GT, at inference can be replaced by an off-the-shelf model prediction (e.g. SAM)
         r,g,b = cv2.split(gt2D)

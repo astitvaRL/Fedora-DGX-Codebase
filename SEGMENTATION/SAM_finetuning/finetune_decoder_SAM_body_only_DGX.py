@@ -23,8 +23,8 @@ join = os.path.join
 
 
 if __name__ == '__main__':
-    # torch.manual_seed(999)
-    # np.random.seed(999)
+    torch.manual_seed(999)
+    np.random.seed(999)
 
     # set paths
     data_root = '/mnt/users_scratch/astitva/DATA/AD_SegMaps/'
@@ -42,7 +42,8 @@ if __name__ == '__main__':
     os.makedirs(join(model_save_path, 'eval'), exist_ok=True)
     
     # training choice
-    precompute_embeddings = True # False if already precomputed and saved
+    precompute_embeddings = False # False if already precomputed and saved
+    resize_labels = False # False if already resized
     resume_training = False
     visualization_debug = False
     ignore_background = False
@@ -62,6 +63,15 @@ if __name__ == '__main__':
     device = 'cuda:0'
     num_classes = 18 
     sam_model = sam_model_registry[model_type](num_classes = num_classes, checkpoint=init_checkpoint).to(device)
+
+    if resize_labels:
+        labels = sorted(os.listdir(join(data_root, label_id_dir_name)))
+        print('Resizing Labels...')
+        for label_name in tqdm(labels):
+            label = cv2.imread(join(data_root, label_id_dir_name, label_name))
+            label = cv2.resize(label, (1024,1024), interpolation=cv2.INTER_NEAREST)
+            cv2.imwrite(join(data_root, label_id_dir_name, label_name.split('.png')[0]+'_1024.png'), label)
+
 
     # precompute image embeddings using original SAM model
     if precompute_embeddings:
@@ -91,7 +101,7 @@ if __name__ == '__main__':
 
     # create dataloader
     train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
+    test_dataloader = DataLoader(test_dataset, batch_size=4, shuffle=False)
 
     # training config
     num_epochs = 1000
@@ -146,8 +156,8 @@ if __name__ == '__main__':
                     bbox[:,3] = 256
                 
                 if random_flip:
-                    fliph = torchvision.transforms.RandomHorizontalFlip(p=0.5)                
-                    flipv = torchvision.transforms.RandomVerticalFlip(p=0.5)                
+                    fliph = torchvision.transforms.RandomHorizontalFlip(p=0.4)                
+                    flipv = torchvision.transforms.RandomVerticalFlip(p=0.4)                
                     input_all = torch.cat([image_data, gt, bg_mask], axis=1)
                     input_all = fliph(input_all)
                     input_all = flipv(input_all)
