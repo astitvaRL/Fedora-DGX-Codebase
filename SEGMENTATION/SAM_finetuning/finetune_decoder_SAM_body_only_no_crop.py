@@ -16,7 +16,7 @@ from monai.networks import one_hot
 from segment_anything import SamPredictor, sam_model_registry
 from segment_anything.utils.transforms import ResizeLongestSide
 
-from utils.dataset import Dataset_body
+from utils.dataset import Dataset_body, Dataset_precomputed_body
 from utils.SurfaceDice import compute_dice_coefficient
 from utils.SemanticSegmentation import SemanticSegmentation
 join = os.path.join
@@ -94,8 +94,8 @@ if __name__ == '__main__':
         print('Image embeddings saved at -->', embedding_dir_path)
 
     # create dataset
-    train_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train', return_embeddings=True)
-    test_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test', return_embeddings=True)
+    train_dataset = Dataset_precomputed_body(labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
+    test_dataset = Dataset_precomputed_body(labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
 
     # create dataloader
     train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True)
@@ -124,8 +124,6 @@ if __name__ == '__main__':
     # for name, param in sam_model.image_encoder.named_parameters():
     #     print(name, param.requires_grad)
 
-    # augmentations
-    crop_size = (512, 512)
     input_size = (1024, 1024)
 
     # start training
@@ -133,7 +131,7 @@ if __name__ == '__main__':
     for epoch in range(epoch_start, num_epochs):
         epoch_loss = 0
         # TRAINING
-        for step, (image_data, image_embedding, gt, bg_mask, bbox) in enumerate(tqdm(train_dataloader)):
+        for step, (image_embedding, gt, bg_mask, bbox) in enumerate(tqdm(train_dataloader)):
             # loading precomputed embeddings during training
             image_embedding = image_embedding.to(device)
             gt = gt.to(device)
@@ -210,7 +208,7 @@ if __name__ == '__main__':
         if epoch%eval_frequency==0:    
             # reset metrics for latest epoch
             eval_loss = 0
-            for step, (image_data, image_embedding, gt, bg_mask, bbox) in enumerate(test_dataloader):
+            for step, (image_embedding, gt, bg_mask, bbox) in enumerate(test_dataloader):
             # loading precomputed embeddings during training
                 eval_epoch_dir = join(model_save_path, f"eval/{epoch}")
                 os.makedirs(eval_epoch_dir, exist_ok=True)
