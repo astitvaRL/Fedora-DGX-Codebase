@@ -55,9 +55,11 @@ if __name__ == '__main__':
     init_checkpoint = join(sam_original_ckpt_path)
     epoch_start = 0 # dont change this, change below one
     if resume_training:
-        epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, 'animseg_synth_20k_body_only_finetune_decoder/model_best.pth')
+        epoch_start = 9 # change this
+        resume_ckpt = join(ckpt_dir, 'no_crop_animseg_synth_20k_body_only_finetune_decoder_OLD/model_best.pth')
         init_checkpoint = resume_ckpt
+        print(f'Resuming training from checkpoint -->', resume_ckpt)
+        print(f'Starting from epoch -->', epoch_start)
 
     device = 'cuda:0'
     num_classes = 18 
