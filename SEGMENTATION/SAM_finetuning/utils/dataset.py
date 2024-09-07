@@ -45,7 +45,7 @@ class Dataset_body(Dataset):
         input_image_tensor = input_image_tensor.squeeze(0)
 
         img_embed = None
-        if self.mode == 'test':
+        if self.return_embeddings:
             img_embed = np.load(join(self.data_root, self.img_embed_dir_name, self.files[index][:-4]+'.npy')) #validate this logic in case filename convention changes
         
         # load GT semantic segmentation map

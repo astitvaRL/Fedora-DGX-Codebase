@@ -35,7 +35,7 @@ if __name__ == '__main__':
     label_id_dir_name = 'labels_2k' 
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
-    task_name = 'animseg_synth_20k_body_only_finetune_decoder' # finetuned checkpoint will be saved here
+    task_name = 'no_crop_animseg_synth_20k_body_only_finetune_decoder' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -48,7 +48,6 @@ if __name__ == '__main__':
     visualization_debug = False
     ignore_background = False
     bg_mask_given = True
-    random_flip = True
     # prepare SAM model
     model_type = 'vit_b'
 
@@ -56,7 +55,7 @@ if __name__ == '__main__':
     init_checkpoint = join(sam_original_ckpt_path)
     epoch_start = 0 # dont change this, change below one
     if resume_training:
-        epoch_start = 1 # change this
+        epoch_start = 0 # change this
         resume_ckpt = join(ckpt_dir, 'animseg_synth_20k_body_only_finetune_decoder/model_best.pth')
         init_checkpoint = resume_ckpt
 
@@ -95,7 +94,7 @@ if __name__ == '__main__':
         print('Image embeddings saved at -->', embedding_dir_path)
 
     # create dataset
-    train_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
+    train_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train', return_embeddings=True)
     test_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test', return_embeddings=True)
 
     # create dataloader
@@ -134,52 +133,12 @@ if __name__ == '__main__':
     for epoch in range(epoch_start, num_epochs):
         epoch_loss = 0
         # TRAINING
-        for step, (image_data, gt, bg_mask, bbox) in enumerate(tqdm(train_dataloader)):
-            # not loading precomputed embeddings during training
-            image_data = image_data.to(device)
+        for step, (image_data, image_embedding, gt, bg_mask, bbox) in enumerate(tqdm(train_dataloader)):
+            # loading precomputed embeddings during training
+            image_embedding = image_embedding.to(device)
             gt = gt.to(device)
             bg_mask = bg_mask.to(device)
             with torch.no_grad():
-                crop_probability = np.random.uniform(0,1)
-                if crop_probability<0.3:
-                    # random crop
-                    crop = torchvision.transforms.RandomCrop(crop_size)
-                    input_all = torch.cat([image_data, gt, bg_mask], axis=1)
-                    input_all = crop(input_all)
-                    image_data = input_all[:,:3,:,:] # encoder takes image size 1024x1024
-                    gt = input_all[:,3:4,:,:]
-                    bg_mask = input_all[:,4:,:,:]
-                    # for bounding box
-                    bbox[:,0] = 0
-                    bbox[:,1] = 0
-                    bbox[:,2] = 256
-                    bbox[:,3] = 256
-                
-                if random_flip:
-                    fliph = torchvision.transforms.RandomHorizontalFlip(p=0.4)                
-                    flipv = torchvision.transforms.RandomVerticalFlip(p=0.4)                
-                    input_all = torch.cat([image_data, gt, bg_mask], axis=1)
-                    input_all = fliph(input_all)
-                    input_all = flipv(input_all)
-                    image_data = input_all[:,:3,:,:] # encoder takes image size 1024x1024
-                    gt = input_all[:,3:4,:,:]
-                    bg_mask = input_all[:,4:,:,:]
-                    # for bounding box
-                    bbox[:,0] = 0
-                    bbox[:,1] = 0
-                    bbox[:,2] = 256
-                    bbox[:,3] = 256
-                
-                if np.random.uniform(0,1)<0.5: # add noise to bounding box
-                    # resizing bbox by a factor of 4 (1024-->256)
-                    bbox = bbox//4 
-                    # add random noise to bounding box within 256x256 range
-                    bbox[:,0] = torch.clamp(bbox[:,0] + torch.randint(-20,20,(bbox.shape[0],)), 0, 256)
-                    bbox[:,1] = torch.clamp(bbox[:,1] + torch.randint(-20,20,(bbox.shape[0],)), 0, 256)
-                    bbox[:,2] = torch.clamp(bbox[:,2] + torch.randint(-20,20,(bbox.shape[0],)), 0, 256)
-                    bbox[:,3] = torch.clamp(bbox[:,3] + torch.randint(-20,20,(bbox.shape[0],)), 0, 256)
-
-
                 gt = F.resize(gt, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes image size 256x256
                 bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes mask size 256x256
 
@@ -211,13 +170,9 @@ if __name__ == '__main__':
                 )
 
 
-                # predict image embedding
-                image_data = F.resize(image_data, 1024, torchvision.transforms.InterpolationMode.BILINEAR) # encoder takes image size 1024x1024
-                embedding = sam_model.image_encoder(image_data)
-
             # computing gradients for mask decoder only
             mask_predictions, _ = sam_model.mask_decoder(
-                image_embeddings=embedding, # (B, 256, 64, 64)
+                image_embeddings=image_embedding, # (B, 256, 64, 64)
                 image_pe=sam_model.prompt_encoder.get_dense_pe(), # (1, 256, 64, 64)
                 sparse_prompt_embeddings=sparse_embeddings, # (B, 2, 256)
                 dense_prompt_embeddings=dense_embeddings, # (B, 256, 64, 64)

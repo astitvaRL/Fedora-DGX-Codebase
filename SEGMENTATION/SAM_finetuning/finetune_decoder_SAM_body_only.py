@@ -23,19 +23,19 @@ join = os.path.join
 
 
 if __name__ == '__main__':
-    # torch.manual_seed(999)
-    # np.random.seed(999)
+    torch.manual_seed(999)
+    np.random.seed(999)
 
     # set paths
-    data_root = '/home/astitva/DATA/AD_SegMaps/'
+    data_root = '/mnt/users_scratch/astitva/DATA/AD_SegMaps/'
     labels_definition_file_path = 'label_definition.json'
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
-    image_dir_name = 'drawings_resized_synth'
-    label_id_dir_name = 'labels_resized' 
+    image_dir_name = 'drawings_synth_20k'
+    label_id_dir_name = 'labels_2k' 
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
-    task_name = 'animseg_synth_20k_body' # finetuned checkpoint will be saved here
+    task_name = 'animseg_synth_20k_body_only_finetune_decoder' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -43,7 +43,8 @@ if __name__ == '__main__':
     
     # training choice
     precompute_embeddings = False # False if already precomputed and saved
-    resume_training = False
+    resize_labels = False # False if already resized
+    resume_training = True
     visualization_debug = False
     ignore_background = False
     bg_mask_given = True
@@ -53,15 +54,23 @@ if __name__ == '__main__':
 
      # load original SAM cackpoint for finetuning, or load an existing checkpoint for further training
     init_checkpoint = join(sam_original_ckpt_path)
-    epoch_start = 0
+    epoch_start = 0 # dont change this, change below one
     if resume_training:
-        epoch_start = 48
-        resume_ckpt = join(ckpt_dir, 'animseg_synth_3k_decoder_only\\model_best.pth')
+        epoch_start = 1 # change this
+        resume_ckpt = join(ckpt_dir, 'animseg_synth_20k_body_only_finetune_decoder/model_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
     num_classes = 18 
     sam_model = sam_model_registry[model_type](num_classes = num_classes, checkpoint=init_checkpoint).to(device)
+
+    if resize_labels:
+        labels = sorted(os.listdir(join(data_root, label_id_dir_name)))
+        print('Resizing Labels...')
+        for label_name in tqdm(labels):
+            label = cv2.imread(join(data_root, label_id_dir_name, label_name))
+            label = cv2.resize(label, (1024,1024), interpolation=cv2.INTER_NEAREST)
+            cv2.imwrite(join(data_root, label_id_dir_name, label_name.split('.png')[0]+'_1024.png'), label)
 
     # precompute image embeddings using original SAM model
     if precompute_embeddings:
@@ -87,11 +96,11 @@ if __name__ == '__main__':
 
     # create dataset
     train_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
-    test_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
+    test_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test', return_embeddings=True)
 
     # create dataloader
-    train_dataloader = DataLoader(train_dataset, batch_size=2, shuffle=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=2, shuffle=False)
+    train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=4, shuffle=False)
 
     # training config
     num_epochs = 1000
@@ -101,7 +110,7 @@ if __name__ == '__main__':
     eval_loss_log = []
     best_loss = 1e10
     best_eval_loss = 1e10
-    visualize = SemanticSegmentation(labels_definition_file_path, num_classes=num_classes)
+    semantics = SemanticSegmentation(labels_definition_file_path, num_classes=num_classes)
 
     # Set up the optimizer, losses, hyperparameters
     optimizer = torch.optim.Adam(sam_model.mask_decoder.parameters(), lr=1e-5, weight_decay=0)
@@ -125,7 +134,8 @@ if __name__ == '__main__':
     for epoch in range(epoch_start, num_epochs):
         epoch_loss = 0
         # TRAINING
-        for step, (image_data, image_embedding, gt, bg_mask, bbox) in enumerate(tqdm(train_dataloader)):
+        for step, (image_data, gt, bg_mask, bbox) in enumerate(tqdm(train_dataloader)):
+            # not loading precomputed embeddings during training
             image_data = image_data.to(device)
             gt = gt.to(device)
             bg_mask = bg_mask.to(device)
@@ -146,8 +156,8 @@ if __name__ == '__main__':
                     bbox[:,3] = 256
                 
                 if random_flip:
-                    fliph = torchvision.transforms.RandomHorizontalFlip(p=0.5)                
-                    flipv = torchvision.transforms.RandomVerticalFlip(p=0.5)                
+                    fliph = torchvision.transforms.RandomHorizontalFlip(p=0.4)                
+                    flipv = torchvision.transforms.RandomVerticalFlip(p=0.4)                
                     input_all = torch.cat([image_data, gt, bg_mask], axis=1)
                     input_all = fliph(input_all)
                     input_all = flipv(input_all)
@@ -234,7 +244,7 @@ if __name__ == '__main__':
             # save the latest model checkpoint
             torch.save(sam_model.state_dict(), join(model_save_path, 'model_latest.pth'))
             labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0) # last sample from randomized current batch
-            plt.imshow(visualize.labels_to_colors(labels_out.cpu().numpy().astype('uint8')))
+            plt.imshow(semantics.labels_to_colors(labels_out.cpu().numpy().astype('uint8')))
             plt.savefig(join(model_save_path, f"train_seg_vis/{epoch}.png"))
             # save the best model checkpoint
             if epoch_loss < best_loss:
@@ -246,6 +256,7 @@ if __name__ == '__main__':
             # reset metrics for latest epoch
             eval_loss = 0
             for step, (image_data, image_embedding, gt, bg_mask, bbox) in enumerate(test_dataloader):
+            # loading precomputed embeddings during training
                 eval_epoch_dir = join(model_save_path, f"eval/{epoch}")
                 os.makedirs(eval_epoch_dir, exist_ok=True)
                 # not computing gradients for image encoder, prompt encoder and mask decoder during evaluation
@@ -280,7 +291,7 @@ if __name__ == '__main__':
                         multimask_output=True,
                     )
                     labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0) # last sample from fixed current batch
-                    plt.imshow(visualize.labels_to_colors(labels_out.cpu().numpy().astype('uint8')))
+                    plt.imshow(semantics.labels_to_colors(labels_out.cpu().numpy().astype('uint8')))
                     plt.savefig(f"{eval_epoch_dir}/{step}.png")
 
                     # compute eval loss
