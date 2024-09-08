@@ -12,7 +12,7 @@ from scipy.spatial import cKDTree
 join = os.path.join
 
 from segment_anything.utils.transforms import ResizeLongestSide
-from .SemanticSegmentation import SemanticSegmentation
+from .SemanticSegmentation import SemanticSegmentation, SemanticSegmentationFace
 
 
 # dataset definition for only body (no facial details) synthetic data
@@ -169,8 +169,8 @@ class Dataset_precomputed_body_real(Dataset):
 # dataset definition for only face, synthetic data
 class Dataset_precomputed_face(Dataset): 
     def __init__(self, data_root, labels_definition_file_path, img_dir_name, img_embed_dir_name, label_id_dir_name, mode='train', device='cuda'):
-        self.num_classes = 18
-        self.semantics = SemanticSegmentation(labels_definition_path=labels_definition_file_path, num_classes=self.num_classes)
+        self.num_classes = 11
+        self.semantics = SemanticSegmentationFace(labels_definition_path=labels_definition_file_path, num_classes=self.num_classes)
         self.mode = mode
         self.device = device
         self.data_root = data_root
@@ -192,18 +192,18 @@ class Dataset_precomputed_face(Dataset):
         # load GT semantic segmentation map
         gt2D = io.imread(join(self.data_root, self.label_id_dir_name, self.files[index][:-6]+'_1024.png'))
 
-        # binary mask from GT, at inference can be replaced by an off-the-shelf model prediction (e.g. SAM)
-        r,g,b = cv2.split(gt2D)
-        binmask = ~((r==0) & (g==0) & (b==0))
-        binmask = np.uint8(binmask)
-
         # colors to labels
         gt2D_labels = self.semantics.colors_to_labels(gt2D)
         # gt2D_labels_vis = self.semantics.labels_to_colors(gt2D_labels)
 
-        # for bounding box
+        # binary mask from GT, at inference can be replaced by an off-the-shelf model prediction (e.g. SAM)
+        binmask = gt2D_labels>0
+
+        # for bbox face crop
         Xs = np.where(binmask>0)[0]
         Ys = np.where(binmask>0)[1]
+        # crop GT to face
+        gt2D_labels = gt2D_labels[Xs.min():Xs.max(),Ys.min():Ys.max()]
         
         # convert img embedding, gt, mask, bounding box to torch tensor
-        return torch.tensor(img_embed).float(), torch.tensor(gt2D_labels[None, :,:]).long(), torch.tensor(binmask[None, :,:]).float(), torch.from_numpy(np.array([min(Ys),min(Xs),max(Ys),max(Xs)])).float()
+        return torch.tensor(img_embed).float(), torch.tensor(gt2D_labels[None, :,:]).long(), torch.tensor(binmask[None, :,:]).float(), torch.from_numpy(np.array([0,0,1023,1023])).float()

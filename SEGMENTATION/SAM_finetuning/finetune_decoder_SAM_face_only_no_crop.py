@@ -16,7 +16,7 @@ from monai.networks import one_hot
 from segment_anything import SamPredictor, sam_model_registry
 from segment_anything.utils.transforms import ResizeLongestSide
 
-from utils.dataset import Dataset_body, Dataset_precomputed_body
+from utils.dataset import Dataset_precomputed_face
 from utils.SurfaceDice import compute_dice_coefficient
 from utils.SemanticSegmentation import SemanticSegmentation, SemanticSegmentationFace
 join = os.path.join
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     precompute_embeddings = True # False if already precomputed and saved
     resize_labels = False # False if already resized
     resume_training = False
-    visualization_debug = False
+    visualization_debug = True
     ignore_background = False
     bg_mask_given = True
     # prepare SAM model
@@ -114,8 +114,8 @@ if __name__ == '__main__':
         print('Image embeddings saved at -->', embedding_dir_path)
 
     # create dataset
-    train_dataset = Dataset_precomputed_body(labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
-    test_dataset = Dataset_precomputed_body(labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
+    train_dataset = Dataset_precomputed_face(labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
+    test_dataset = Dataset_precomputed_face(labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
 
     # create dataloader
     train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True)
@@ -161,15 +161,13 @@ if __name__ == '__main__':
 
                 ######### ------- plt visualizations after resizing -------- #########
                 if visualization_debug:
-                    image_data_vis = image_data.cpu().numpy()[0]
-                    image_data_vis = (image_data_vis*2.0 + 1.0)/2.0
                     gt_vis = gt.cpu().numpy()[0]
                     bg_mask_vis = bg_mask.cpu().numpy()[0]
                     fig, ax = plt.subplots(1,3,figsize=(30,10))
                     ax[0].imshow(np.transpose(image_data_vis,(1,2,0)))
                     ax[1].imshow(gt_vis[0])
                     ax[2].imshow(bg_mask_vis[0])
-                    plt.show()
+                    breakpoint()
                 ######### -------------------------------------------------- #########
 
                 # convert gt to one hot encoding
