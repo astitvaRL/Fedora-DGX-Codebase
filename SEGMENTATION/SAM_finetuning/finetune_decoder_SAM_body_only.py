@@ -35,7 +35,7 @@ if __name__ == '__main__':
     label_id_dir_name = 'labels_2k' 
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
-    task_name = 'animseg_synth_20k_body_only_finetune_decoder' # finetuned checkpoint will be saved here
+    task_name = 'vanilla_randomaug_syn_17k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -56,8 +56,8 @@ if __name__ == '__main__':
     init_checkpoint = join(sam_original_ckpt_path)
     epoch_start = 0 # dont change this, change below one
     if resume_training:
-        epoch_start = 1 # change this
-        resume_ckpt = join(ckpt_dir, 'animseg_synth_20k_body_only_finetune_decoder/model_best.pth')
+        epoch_start = 0 # change this
+        resume_ckpt = join(ckpt_dir, 'no_crop_animseg_synth_20k_body_only_finetune_decoder/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
