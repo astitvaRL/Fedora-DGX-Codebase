@@ -81,13 +81,16 @@ if __name__ == '__main__':
         os.makedirs(embedding_dir_path, exist_ok=True)
         print('Precomputing image embeddings...')
         names = sorted(os.listdir(join(data_root, image_dir_name)))
+        embedding_save_path = join(embedding_dir_path, name.split('.png')[0]+'.npy')
+        if os.path.exists(embedding_save_path):
+            continue
         for name in tqdm(names):
             # filter face class using GT labels
             label_name = name[:-6]+'_1024.png'
             label_path = join(data_root, label_id_dir_name, label_name)
             gt2D = io.imread(label_path)
             gt2D_labels = semantics.colors_to_labels(gt2D)
-            face_binmask = gt2D_labels>0 # remapped face label is 1
+            face_binmask = gt2D_labels>0 
             # for bbox crop
             Xs = np.where(face_binmask>0)[0]
             Ys = np.where(face_binmask>0)[1]
@@ -99,7 +102,6 @@ if __name__ == '__main__':
             # crop image to face
             image_data = image_data[Xs.min():Xs.max(),Ys.min():Ys.max(),:]
             image_data = cv2.resize(image_data, (1024,1024), interpolation=cv2.INTER_LINEAR)
-            breakpoint()
             sam_transform = ResizeLongestSide(sam_model.image_encoder.img_size)
             resize_img = sam_transform.apply_image(image_data)
             resize_img_tensor = torch.as_tensor(resize_img.transpose(2, 0, 1)).to(device)
@@ -108,7 +110,7 @@ if __name__ == '__main__':
             # precompute and save the image embedding
             with torch.no_grad():
                 embedding = sam_model.image_encoder(input_image)
-                np.save(join(embedding_dir_path, name.split('.png')[0]+'.npy'), embedding.cpu().numpy()[0])
+                np.save(embedding_save_path, embedding.cpu().numpy()[0])
         print('Image embeddings saved at -->', embedding_dir_path)
 
     # create dataset
