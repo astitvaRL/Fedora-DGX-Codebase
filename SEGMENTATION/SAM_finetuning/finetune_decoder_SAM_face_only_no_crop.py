@@ -81,10 +81,10 @@ if __name__ == '__main__':
         os.makedirs(embedding_dir_path, exist_ok=True)
         print('Precomputing image embeddings...')
         names = sorted(os.listdir(join(data_root, image_dir_name)))
-        embedding_save_path = join(embedding_dir_path, name.split('.png')[0]+'.npy')
-        if os.path.exists(embedding_save_path):
-            continue
         for name in tqdm(names):
+            embedding_save_path = join(embedding_dir_path, name.split('.png')[0]+'.npy')
+            if os.path.exists(embedding_save_path):
+                continue
             # filter face class using GT labels
             label_name = name[:-6]+'_1024.png'
             label_path = join(data_root, label_id_dir_name, label_name)
