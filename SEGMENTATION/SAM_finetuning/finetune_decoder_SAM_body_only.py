@@ -126,7 +126,7 @@ if __name__ == '__main__':
     #     print(name, param.requires_grad)
 
     # augmentations
-    crop_size = (512, 512)
+    crop_size = (800, 800)
     input_size = (1024, 1024)
 
     # start training
