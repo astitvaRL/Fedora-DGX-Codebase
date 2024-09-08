@@ -45,7 +45,7 @@ if __name__ == '__main__':
     precompute_embeddings = True # False if already precomputed and saved
     resize_labels = False # False if already resized
     resume_training = False
-    visualization_debug = True
+    visualization_debug = False
     ignore_background = False
     bg_mask_given = True
     # prepare SAM model
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     if precompute_embeddings:
         os.makedirs(embedding_dir_path, exist_ok=True)
         print('Precomputing image embeddings...')
-        names = sorted(os.listdir(join(data_root, image_dir_name)))
+        names = sorted(os.listdir(join(data_root, image_dir_name)))[:20]
         for name in tqdm(names):
             embedding_save_path = join(embedding_dir_path, name.split('.png')[0]+'.npy')
             if os.path.exists(embedding_save_path):
@@ -161,12 +161,14 @@ if __name__ == '__main__':
 
                 ######### ------- plt visualizations after resizing -------- #########
                 if visualization_debug:
+                    # image_data_vis = image_data.cpu().numpy()[0]
+                    # image_data_vis = (image_data_vis*2.0 + 1.0)/2.0
                     gt_vis = gt.cpu().numpy()[0]
                     bg_mask_vis = bg_mask.cpu().numpy()[0]
-                    fig, ax = plt.subplots(1,3,figsize=(30,10))
-                    ax[0].imshow(np.transpose(image_data_vis,(1,2,0)))
-                    ax[1].imshow(gt_vis[0])
-                    ax[2].imshow(bg_mask_vis[0])
+                    fig, ax = plt.subplots(1,2,figsize=(20,10))
+                    # ax[0].imshow(np.transpose(image_data_vis,(1,2,0)))
+                    ax[0].imshow(gt_vis[0])
+                    ax[1].imshow(bg_mask_vis[0])
                     breakpoint()
                 ######### -------------------------------------------------- #########
 

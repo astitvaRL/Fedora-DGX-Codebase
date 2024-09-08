@@ -177,9 +177,9 @@ class Dataset_precomputed_face(Dataset):
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
         self.img_embed_dir_name = img_embed_dir_name
-        self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[:-1000]
+        self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[:20]
         if self.mode == 'test':
-            self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[-1000:]
+            self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[:20]
         print(f"{mode} dataset : {len(self.files)} --> {self.files[0]} -- {self.files[-1]}") 
 
     def __len__(self):
@@ -202,8 +202,11 @@ class Dataset_precomputed_face(Dataset):
         # for bbox face crop
         Xs = np.where(binmask>0)[0]
         Ys = np.where(binmask>0)[1]
+
         # crop GT to face
         gt2D_labels = gt2D_labels[Xs.min():Xs.max(),Ys.min():Ys.max()]
-        
+        gt2D_labels = cv2.resize(gt2D_labels, (1024,1024), interpolation=cv2.INTER_NEAREST)
+        binmask_face = gt2D_labels>0
+
         # convert img embedding, gt, mask, bounding box to torch tensor
-        return torch.tensor(img_embed).float(), torch.tensor(gt2D_labels[None, :,:]).long(), torch.tensor(binmask[None, :,:]).float(), torch.from_numpy(np.array([0,0,1023,1023])).float()
+        return torch.tensor(img_embed).float(), torch.tensor(gt2D_labels[None, :,:]).long(), torch.tensor(binmask_face[None, :,:]).float(), torch.from_numpy(np.array([0,0,1023,1023])).float()
