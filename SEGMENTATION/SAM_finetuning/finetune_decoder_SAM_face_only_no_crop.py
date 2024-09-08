@@ -18,7 +18,7 @@ from segment_anything.utils.transforms import ResizeLongestSide
 
 from utils.dataset import Dataset_body, Dataset_precomputed_body
 from utils.SurfaceDice import compute_dice_coefficient
-from utils.SemanticSegmentation import SemanticSegmentation
+from utils.SemanticSegmentation import SemanticSegmentation, SemanticSegmentationFace
 join = os.path.join
 
 
@@ -42,9 +42,9 @@ if __name__ == '__main__':
     os.makedirs(join(model_save_path, 'eval'), exist_ok=True)
     
     # training choice
-    precompute_embeddings = False # False if already precomputed and saved
+    precompute_embeddings = True # False if already precomputed and saved
     resize_labels = False # False if already resized
-    resume_training = True
+    resume_training = False
     visualization_debug = False
     ignore_background = False
     bg_mask_given = True
@@ -55,15 +55,18 @@ if __name__ == '__main__':
     init_checkpoint = join(sam_original_ckpt_path)
     epoch_start = 0 # dont change this, change below one
     if resume_training:
-        epoch_start = 9 # change this
-        resume_ckpt = join(ckpt_dir, 'no_crop_animseg_synth_20k_body_only_finetune_decoder_OLD/model_best.pth')
+        epoch_start = 0 # change this
+        resume_ckpt = join(ckpt_dir, 'vanilla_NOrandomaug_syn_face_17k/model_best.pth')
         init_checkpoint = resume_ckpt
         print(f'Resuming training from checkpoint -->', resume_ckpt)
         print(f'Starting from epoch -->', epoch_start)
 
     device = 'cuda:0'
-    num_classes = 18 
+    num_classes = 11
+    # semantic segmentation definitions
+    semantics = SemanticSegmentationFace(labels_definition_file_path, num_classes=num_classes)
     sam_model = sam_model_registry[model_type](num_classes = num_classes, checkpoint=init_checkpoint).to(device)
+
 
     if resize_labels:
         labels = sorted(os.listdir(join(data_root, label_id_dir_name)))
@@ -73,19 +76,31 @@ if __name__ == '__main__':
             label = cv2.resize(label, (1024,1024), interpolation=cv2.INTER_NEAREST)
             cv2.imwrite(join(data_root, label_id_dir_name, label_name.split('.png')[0]+'_1024.png'), label)
 
-    # precompute image embeddings using original SAM model
+    # precompute face image embeddings using original SAM model
     if precompute_embeddings:
         os.makedirs(embedding_dir_path, exist_ok=True)
         print('Precomputing image embeddings...')
         names = sorted(os.listdir(join(data_root, image_dir_name)))
         for name in tqdm(names):
-            label_name = name.split('.png')[0]+'_1024.png'
-            breakpoint()
+            # filter face class using GT labels
+            label_name = name[:-6]+'_1024.png'
+            label_path = join(data_root, label_id_dir_name, label_name)
+            gt2D = io.imread(label_path)
+            gt2D_labels = semantics.colors_to_labels(gt2D)
+            face_binmask = gt2D_labels>0 # remapped face label is 1
+            # for bbox crop
+            Xs = np.where(face_binmask>0)[0]
+            Ys = np.where(face_binmask>0)[1]
             image_data = io.imread(join(data_root, image_dir_name, name))
             if image_data.shape[-1]>3 and len(image_data.shape)==3:
                 image_data = image_data[:,:,:3]
             if len(image_data.shape)==2:
                 image_data = np.repeat(image_data[:,:,None], 3, axis=-1)
+            # crop image to face
+            image_data[~face_binmask] = np.array([0,255,0])
+            image_data = image_data[Xs.min():Xs.max(),Ys.min():Ys.max(),:]
+            image_data = cv2.resize(image_data, (1024,1024), interpolation=cv2.INTER_LINEAR)
+            breakpoint()
             sam_transform = ResizeLongestSide(sam_model.image_encoder.img_size)
             resize_img = sam_transform.apply_image(image_data)
             resize_img_tensor = torch.as_tensor(resize_img.transpose(2, 0, 1)).to(device)
@@ -113,7 +128,6 @@ if __name__ == '__main__':
     eval_loss_log = []
     best_loss = 1e10
     best_eval_loss = 1e10
-    semantics = SemanticSegmentation(labels_definition_file_path, num_classes=num_classes)
 
     # Set up the optimizer, losses, hyperparameters
     optimizer = torch.optim.Adam(sam_model.mask_decoder.parameters(), lr=1e-5, weight_decay=0)
