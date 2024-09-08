@@ -97,7 +97,6 @@ if __name__ == '__main__':
             if len(image_data.shape)==2:
                 image_data = np.repeat(image_data[:,:,None], 3, axis=-1)
             # crop image to face
-            image_data[~face_binmask] = np.array([0,255,0])
             image_data = image_data[Xs.min():Xs.max(),Ys.min():Ys.max(),:]
             image_data = cv2.resize(image_data, (1024,1024), interpolation=cv2.INTER_LINEAR)
             breakpoint()
