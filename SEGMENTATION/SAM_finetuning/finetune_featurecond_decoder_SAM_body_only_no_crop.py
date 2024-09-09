@@ -104,7 +104,7 @@ if __name__ == '__main__':
                     # np.save(join(decfeat_dir_path, name.split('.png')[0]+'.npy'), embedding.cpu().numpy()[0])
             breakpoint()
         print('Image embeddings saved at -->', embedding_dir_path)
-        print('Frozen Decider Features saved at -->', decfeat_dir_path)
+        print('Frozen Decoder Features saved at -->', decfeat_dir_path)
 
     # create dataset
     train_dataset = Dataset_precomputed_body(labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
