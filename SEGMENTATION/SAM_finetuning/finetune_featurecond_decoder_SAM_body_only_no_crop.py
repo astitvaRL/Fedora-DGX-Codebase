@@ -15,6 +15,7 @@ from monai.networks import one_hot
 
 from segment_anything import SamPredictor, sam_model_registry
 from segment_anything.utils.transforms import ResizeLongestSide
+from segment_anything.automatic_mask_generator import SamAutomaticMaskGenerator
 
 from utils.dataset import Dataset_body, Dataset_precomputed_body
 from utils.SurfaceDice import compute_dice_coefficient
@@ -67,7 +68,7 @@ if __name__ == '__main__':
     device = 'cuda:0'
     num_classes = 18 
     sam_model = sam_model_registry[model_type](num_classes = num_classes, checkpoint=init_checkpoint).to(device)
-    sam_autoseg_model = sam_model_registry[model_type](num_classes = num_classes, checkpoint=init_checkpoint).to(device)
+    sam_automask_generator = SamAutomaticMaskGenerator(sam_model)
 
     if resize_labels:
         labels = sorted(os.listdir(join(data_root, label_id_dir_name)))
@@ -95,12 +96,13 @@ if __name__ == '__main__':
             assert input_image.shape == (1, 3, sam_model.image_encoder.img_size, sam_model.image_encoder.img_size), 'input image should be resized to 1024*1024'
             # precompute and save the image embedding
             with torch.no_grad():
-                embedding = sam_model.image_encoder(input_image)
-
                 if precompute_embeddings:
+                    embedding = sam_model.image_encoder(input_image)
                     np.save(join(embedding_dir_path, name.split('.png')[0]+'.npy'), embedding.cpu().numpy()[0])
-                if precompute_frozen_mask_embeddings:
-                    np.save(join(decfeat_dir_path, name.split('.png')[0]+'.npy'), embedding.cpu().numpy()[0])
+                if precompute_decoder_features:
+                    data = sam_automask_generator.generate(image_data)
+                    # np.save(join(decfeat_dir_path, name.split('.png')[0]+'.npy'), embedding.cpu().numpy()[0])
+            breakpoint()
         print('Image embeddings saved at -->', embedding_dir_path)
         print('Frozen Decider Features saved at -->', decfeat_dir_path)
 
