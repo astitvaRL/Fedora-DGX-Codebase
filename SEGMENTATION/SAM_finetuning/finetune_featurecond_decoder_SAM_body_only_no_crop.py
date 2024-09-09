@@ -16,7 +16,7 @@ from monai.networks import one_hot
 from segment_anything import SamPredictor, sam_model_registry
 from segment_anything.utils.transforms import ResizeLongestSide
 
-from utils.dataset import Dataset_body
+from utils.dataset import Dataset_body, Dataset_precomputed_body
 from utils.SurfaceDice import compute_dice_coefficient
 from utils.SemanticSegmentation import SemanticSegmentation
 join = os.path.join
@@ -34,8 +34,10 @@ if __name__ == '__main__':
     image_dir_name = 'drawings_synth_20k'
     label_id_dir_name = 'labels_2k' 
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
+    decfeat_dir_name = f"{image_dir_name}_decoder_features" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
-    task_name = 'vanilla_randomaug_syn_17k' # finetuned checkpoint will be saved here
+    decfeat_dir_path = join(data_root, decfeat_dir_name)
+    task_name = 'featurecond_NOrandomaug_syn_17k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -43,12 +45,12 @@ if __name__ == '__main__':
     
     # training choice
     precompute_embeddings = False # False if already precomputed and saved
+    precompute_decoder_features = True # False if already precomputed and saved
     resize_labels = False # False if already resized
-    resume_training = True
+    resume_training = False
     visualization_debug = False
     ignore_background = False
     bg_mask_given = True
-    random_flip = True
     # prepare SAM model
     model_type = 'vit_b'
 
@@ -57,12 +59,15 @@ if __name__ == '__main__':
     epoch_start = 0 # dont change this, change below one
     if resume_training:
         epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, 'no_crop_animseg_synth_20k_body_only_finetune_decoder/model_eval_best.pth')
+        resume_ckpt = join(ckpt_dir, 'featurecond_NOrandomaug_syn_17k/model_best.pth')
         init_checkpoint = resume_ckpt
+        print(f'Resuming training from checkpoint -->', resume_ckpt)
+        print(f'Starting from epoch -->', epoch_start)
 
     device = 'cuda:0'
     num_classes = 18 
     sam_model = sam_model_registry[model_type](num_classes = num_classes, checkpoint=init_checkpoint).to(device)
+    sam_autoseg_model = sam_model_registry[model_type](num_classes = num_classes, checkpoint=init_checkpoint).to(device)
 
     if resize_labels:
         labels = sorted(os.listdir(join(data_root, label_id_dir_name)))
@@ -73,7 +78,7 @@ if __name__ == '__main__':
             cv2.imwrite(join(data_root, label_id_dir_name, label_name.split('.png')[0]+'_1024.png'), label)
 
     # precompute image embeddings using original SAM model
-    if precompute_embeddings:
+    if precompute_embeddings or precompute_decoder_features:
         os.makedirs(embedding_dir_path, exist_ok=True)
         print('Precomputing image embeddings...')
         names = sorted(os.listdir(join(data_root, image_dir_name)))
@@ -91,12 +96,17 @@ if __name__ == '__main__':
             # precompute and save the image embedding
             with torch.no_grad():
                 embedding = sam_model.image_encoder(input_image)
-                np.save(join(embedding_dir_path, name.split('.png')[0]+'.npy'), embedding.cpu().numpy()[0])
+
+                if precompute_embeddings:
+                    np.save(join(embedding_dir_path, name.split('.png')[0]+'.npy'), embedding.cpu().numpy()[0])
+                if precompute_frozen_mask_embeddings:
+                    np.save(join(decfeat_dir_path, name.split('.png')[0]+'.npy'), embedding.cpu().numpy()[0])
         print('Image embeddings saved at -->', embedding_dir_path)
+        print('Frozen Decider Features saved at -->', decfeat_dir_path)
 
     # create dataset
-    train_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
-    test_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test', return_embeddings=True)
+    train_dataset = Dataset_precomputed_body(labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
+    test_dataset = Dataset_precomputed_body(labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
 
     # create dataloader
     train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True)
@@ -125,8 +135,6 @@ if __name__ == '__main__':
     # for name, param in sam_model.image_encoder.named_parameters():
     #     print(name, param.requires_grad)
 
-    # augmentations
-    crop_size = (800, 800)
     input_size = (1024, 1024)
 
     # start training
@@ -134,52 +142,12 @@ if __name__ == '__main__':
     for epoch in range(epoch_start, num_epochs):
         epoch_loss = 0
         # TRAINING
-        for step, (image_data, gt, bg_mask, bbox) in enumerate(tqdm(train_dataloader)):
-            # not loading precomputed embeddings during training
-            image_data = image_data.to(device)
+        for step, (image_embedding, gt, bg_mask, bbox) in enumerate(tqdm(train_dataloader)):
+            # loading precomputed embeddings during training
+            image_embedding = image_embedding.to(device)
             gt = gt.to(device)
             bg_mask = bg_mask.to(device)
             with torch.no_grad():
-                crop_probability = np.random.uniform(0,1)
-                if crop_probability<0.3:
-                    # random crop
-                    crop = torchvision.transforms.RandomCrop(crop_size)
-                    input_all = torch.cat([image_data, gt, bg_mask], axis=1)
-                    input_all = crop(input_all)
-                    image_data = input_all[:,:3,:,:] # encoder takes image size 1024x1024
-                    gt = input_all[:,3:4,:,:]
-                    bg_mask = input_all[:,4:,:,:]
-                    # for bounding box
-                    bbox[:,0] = 0
-                    bbox[:,1] = 0
-                    bbox[:,2] = 256
-                    bbox[:,3] = 256
-                
-                if random_flip:
-                    fliph = torchvision.transforms.RandomHorizontalFlip(p=0.4)                
-                    flipv = torchvision.transforms.RandomVerticalFlip(p=0.4)                
-                    input_all = torch.cat([image_data, gt, bg_mask], axis=1)
-                    input_all = fliph(input_all)
-                    input_all = flipv(input_all)
-                    image_data = input_all[:,:3,:,:] # encoder takes image size 1024x1024
-                    gt = input_all[:,3:4,:,:]
-                    bg_mask = input_all[:,4:,:,:]
-                    # for bounding box
-                    bbox[:,0] = 0
-                    bbox[:,1] = 0
-                    bbox[:,2] = 256
-                    bbox[:,3] = 256
-                
-                if np.random.uniform(0,1)<0.5: # add noise to bounding box
-                    # resizing bbox by a factor of 4 (1024-->256)
-                    bbox = bbox//4 
-                    # add random noise to bounding box within 256x256 range
-                    bbox[:,0] = torch.clamp(bbox[:,0] + torch.randint(-20,20,(bbox.shape[0],)), 0, 256)
-                    bbox[:,1] = torch.clamp(bbox[:,1] + torch.randint(-20,20,(bbox.shape[0],)), 0, 256)
-                    bbox[:,2] = torch.clamp(bbox[:,2] + torch.randint(-20,20,(bbox.shape[0],)), 0, 256)
-                    bbox[:,3] = torch.clamp(bbox[:,3] + torch.randint(-20,20,(bbox.shape[0],)), 0, 256)
-
-
                 gt = F.resize(gt, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes image size 256x256
                 bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes mask size 256x256
 
@@ -211,18 +179,16 @@ if __name__ == '__main__':
                 )
 
 
-                # predict image embedding
-                image_data = F.resize(image_data, 1024, torchvision.transforms.InterpolationMode.BILINEAR) # encoder takes image size 1024x1024
-                embedding = sam_model.image_encoder(image_data)
-
             # computing gradients for mask decoder only
             mask_predictions, _ = sam_model.mask_decoder(
-                image_embeddings=embedding, # (B, 256, 64, 64)
+                image_embeddings=image_embedding, # (B, 256, 64, 64)
                 image_pe=sam_model.prompt_encoder.get_dense_pe(), # (1, 256, 64, 64)
                 sparse_prompt_embeddings=sparse_embeddings, # (B, 2, 256)
                 dense_prompt_embeddings=dense_embeddings, # (B, 256, 64, 64)
                 multimask_output=True,
             )
+
+            breakpoint()
 
             # Optional, doesn't help much if mask is already being passed as prompt
             if ignore_background: 
@@ -255,7 +221,7 @@ if __name__ == '__main__':
         if epoch%eval_frequency==0:    
             # reset metrics for latest epoch
             eval_loss = 0
-            for step, (image_data, image_embedding, gt, bg_mask, bbox) in enumerate(test_dataloader):
+            for step, (image_embedding, gt, bg_mask, bbox) in enumerate(test_dataloader):
             # loading precomputed embeddings during training
                 eval_epoch_dir = join(model_save_path, f"eval/{epoch}")
                 os.makedirs(eval_epoch_dir, exist_ok=True)

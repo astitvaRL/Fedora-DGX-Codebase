@@ -35,7 +35,7 @@ if __name__ == '__main__':
     label_id_dir_name = 'labels_2k' 
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
-    task_name = 'vanilla_randomaug_syn_17k' # finetuned checkpoint will be saved here
+    task_name = 'encdec_randomaug_syn_17k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     # training choice
     precompute_embeddings = False # False if already precomputed and saved
     resize_labels = False # False if already resized
-    resume_training = True
+    resume_training = False
     visualization_debug = False
     ignore_background = False
     bg_mask_given = True
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     epoch_start = 0 # dont change this, change below one
     if resume_training:
         epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, 'no_crop_animseg_synth_20k_body_only_finetune_decoder/model_eval_best.pth')
+        resume_ckpt = join(ckpt_dir, 'encdec_randomaug_syn_17k/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
@@ -112,18 +112,26 @@ if __name__ == '__main__':
     best_eval_loss = 1e10
     semantics = SemanticSegmentation(labels_definition_file_path, num_classes=num_classes)
 
-    # Set up the optimizer, losses, hyperparameters
-    optimizer = torch.optim.Adam(sam_model.mask_decoder.parameters(), lr=1e-5, weight_decay=0)
-    dice_loss = monai.losses.DiceCELoss(sigmoid=True, squared_pred=True, reduction='mean')
-    focal_loss = monai.losses.FocalLoss(reduction='mean', gamma=2.0)
-
    # Freeze all layers of image encoder
     for param in sam_model.image_encoder.parameters():
         param.requires_grad = False
+    # set requires_grad=True for the last block
+    for name, param in sam_model.image_encoder.named_parameters():
+        if name.startswith('blocks.11'):
+            param.requires_grad = True
+    # set requires_grad=True for the neck layer
+    for param in sam_model.image_encoder.neck.parameters():
+        param.requires_grad = True
 
-    ## verify
-    # for name, param in sam_model.image_encoder.named_parameters():
-    #     print(name, param.requires_grad)
+    # verify
+    for name, param in sam_model.image_encoder.named_parameters():
+        print(name, param.requires_grad)
+
+
+    # Set up the optimizer, losses, hyperparameters
+    optimizer = torch.optim.Adam(sam_model.parameters(), lr=1e-5, weight_decay=0) # adding all parameters to optimizer
+    dice_loss = monai.losses.DiceCELoss(sigmoid=True, squared_pred=True, reduction='mean')
+    focal_loss = monai.losses.FocalLoss(reduction='mean', gamma=2.0)
 
     # augmentations
     crop_size = (800, 800)
@@ -204,6 +212,7 @@ if __name__ == '__main__':
 
                 bbox = bbox.to(device)            
 
+                # not computing gradients for prompt encoder during training
                 sparse_embeddings, dense_embeddings = sam_model.prompt_encoder(
                     points=None,
                     boxes=bbox[:, None, :],
@@ -211,11 +220,12 @@ if __name__ == '__main__':
                 )
 
 
-                # predict image embedding
-                image_data = F.resize(image_data, 1024, torchvision.transforms.InterpolationMode.BILINEAR) # encoder takes image size 1024x1024
-                embedding = sam_model.image_encoder(image_data)
+            # computing gradients for image encoder and mask decoder
 
-            # computing gradients for mask decoder only
+            # predict image embedding
+            image_data = F.resize(image_data, 1024, torchvision.transforms.InterpolationMode.BILINEAR) # encoder takes image size 1024x1024
+            embedding = sam_model.image_encoder(image_data)
+            # decode embeddings to get mask predictions
             mask_predictions, _ = sam_model.mask_decoder(
                 image_embeddings=embedding, # (B, 256, 64, 64)
                 image_pe=sam_model.prompt_encoder.get_dense_pe(), # (1, 256, 64, 64)

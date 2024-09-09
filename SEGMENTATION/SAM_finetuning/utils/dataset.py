@@ -177,9 +177,9 @@ class Dataset_precomputed_face(Dataset):
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
         self.img_embed_dir_name = img_embed_dir_name
-        self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[:20]
+        self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[:-1000]
         if self.mode == 'test':
-            self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[:20]
+            self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[-1000:]
         print(f"{mode} dataset : {len(self.files)} --> {self.files[0]} -- {self.files[-1]}") 
 
     def __len__(self):

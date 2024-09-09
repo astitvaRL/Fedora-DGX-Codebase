@@ -80,7 +80,7 @@ if __name__ == '__main__':
     if precompute_embeddings:
         os.makedirs(embedding_dir_path, exist_ok=True)
         print('Precomputing image embeddings...')
-        names = sorted(os.listdir(join(data_root, image_dir_name)))[:20]
+        names = sorted(os.listdir(join(data_root, image_dir_name)))
         for name in tqdm(names):
             embedding_save_path = join(embedding_dir_path, name.split('.png')[0]+'.npy')
             if os.path.exists(embedding_save_path):
@@ -90,7 +90,10 @@ if __name__ == '__main__':
             label_path = join(data_root, label_id_dir_name, label_name)
             gt2D = io.imread(label_path)
             gt2D_labels = semantics.colors_to_labels(gt2D)
-            face_binmask = gt2D_labels>0 
+            face_binmask = gt2D_labels>0
+            if face_binmask.max()==0: # no face in image
+                print('No face in image -->', name)
+                continue
             # for bbox crop
             Xs = np.where(face_binmask>0)[0]
             Ys = np.where(face_binmask>0)[1]

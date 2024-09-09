@@ -35,7 +35,7 @@ if __name__ == '__main__':
     label_id_dir_name = 'labels_2k' 
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
-    task_name = 'no_crop_animseg_synth_20k_body_only_finetune_decoder' # finetuned checkpoint will be saved here
+    task_name = 'no_crop_animseg_synth_20k_body_only_finetune_decoder_OLD' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     # training choice
     precompute_embeddings = False # False if already precomputed and saved
     resize_labels = False # False if already resized
-    resume_training = True
+    resume_training = False
     visualization_debug = False
     ignore_background = False
     bg_mask_given = True
@@ -152,7 +152,7 @@ if __name__ == '__main__':
                     ax[0].imshow(np.transpose(image_data_vis,(1,2,0)))
                     ax[1].imshow(gt_vis[0])
                     ax[2].imshow(bg_mask_vis[0])
-                    plt.show()
+                    breakpoint()
                 ######### -------------------------------------------------- #########
 
                 # convert gt to one hot encoding
