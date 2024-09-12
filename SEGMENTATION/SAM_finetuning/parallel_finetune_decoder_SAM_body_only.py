@@ -41,7 +41,7 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'dummy_train_cache.pt')
     test_cache_path = join(cache_dir, 'dummy_test_cache.pt')
-    task_name = 'parallel_vanilla_randomaug_syn_17k' # finetuned checkpoint will be saved here
+    task_name = 'multigpu_vanilla_randomaug_syn_17k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -118,13 +118,13 @@ if __name__ == '__main__':
         test_dataset.init_cache()
 
     # create dataloader
-    train_dataloader = DataLoader(train_dataset, batch_size=160, shuffle=True, num_workers=0, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=80, shuffle=True, num_workers=0, drop_last=True)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=0, drop_last=True)
 
     # training config
     num_epochs = 1000
     save_frequency = 1
-    eval_frequency = 10
+    eval_frequency = 1
     train_loss_log = []
     eval_loss_log = []
     best_loss = 1e10
@@ -257,7 +257,6 @@ if __name__ == '__main__':
         # save dataset cache after first epoch
         if not(cache_available) and epoch==0:
             train_dataset.save_cache(train_cache_path)
-            test_dataset.save_cache(test_cache_path)
         
         # save the latest model checkpoint as required
         if epoch%save_frequency==0:
@@ -323,6 +322,10 @@ if __name__ == '__main__':
             print(f'EVAL: {epoch}, Loss: {eval_loss}')
             eval_loss_log.append(eval_loss)
             np.save(join(model_save_path,f"eval_loss_log_latest.npy"),np.array(eval_loss_log))
+
+            # save test cache after first validation epoch
+            if not(cache_available) and epoch==0:
+                test_dataset.save_cache(test_cache_path)  
 
             # save best eval model checkpoint
             if eval_loss < best_eval_loss:

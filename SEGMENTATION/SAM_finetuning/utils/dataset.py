@@ -29,9 +29,9 @@ class Dataset_body(Dataset):
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
         self.img_embed_dir_name = img_embed_dir_name
-        self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[:-1000][:160]
+        self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[:-1000]
         if self.mode == 'test':
-            self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[-1000:][:160]
+            self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[-1000:]
 
     def __len__(self):
         return len(self.files)
