@@ -118,7 +118,7 @@ if __name__ == '__main__':
         test_dataset.init_cache()
 
     # create dataloader
-    train_dataloader = DataLoader(train_dataset, batch_size=160, shuffle=True, num_workers=0, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=80, shuffle=True, num_workers=0, drop_last=True)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=0, drop_last=True)
 
     # training config
