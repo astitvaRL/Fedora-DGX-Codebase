@@ -38,8 +38,9 @@ if __name__ == '__main__':
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
     cache_dir = join(data_root, '../cache_syn_17k')
-    train_cache_path = join(cache_dir, 'train_cache.pt')
-    test_cache_path = join(cache_dir, 'test_cache.pt')
+    os.makedirs(cache_dir, exist_ok=True)
+    train_cache_path = join(cache_dir, 'dummy_train_cache.pt')
+    test_cache_path = join(cache_dir, 'dummy_test_cache.pt')
     task_name = 'parallel_vanilla_randomaug_syn_17k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
