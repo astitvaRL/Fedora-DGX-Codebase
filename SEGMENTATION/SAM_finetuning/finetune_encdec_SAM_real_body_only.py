@@ -45,7 +45,7 @@ if __name__ == '__main__':
     precompute_embeddings = False # False if already precomputed and saved
     resize_labels = False # False if already resized
     resume_training = False
-    visualization_debug = False
+    visualization_debug = True
     ignore_background = False
     bg_mask_given = True
     random_flip = True
@@ -95,8 +95,8 @@ if __name__ == '__main__':
         print('Image embeddings saved at -->', embedding_dir_path)
 
     # create dataset
-    train_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
-    test_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test', return_embeddings=True)
+    train_dataset = Dataset_real_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
+    test_dataset = Dataset_real_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
 
     # create dataloader
     train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True)
@@ -269,7 +269,7 @@ if __name__ == '__main__':
         if epoch%eval_frequency==0:    
             # reset metrics for latest epoch
             eval_loss = 0
-            for step, (image_data, image_embedding, gt, bg_mask, bbox) in enumerate(test_dataloader):
+            for step, (image_data, gt, bg_mask, bbox) in enumerate(test_dataloader):
             # loading precomputed embeddings during training
                 eval_epoch_dir = join(model_save_path, f"eval/{epoch}")
                 os.makedirs(eval_epoch_dir, exist_ok=True)
@@ -295,7 +295,10 @@ if __name__ == '__main__':
                         masks=bg_mask if bg_mask_given else None,
                     )
                     
-                    # no need to predict image embedding, use precomputed embedding for validation
+                    # predict image embedding
+                    image_data = image_data.to(device)
+                    image_data = F.resize(image_data, 1024, torchvision.transforms.InterpolationMode.BILINEAR) # encoder takes image size 1024x1024
+                    image_embedding = sam_model.image_encoder(image_data)
 
                     mask_predictions, _ = sam_model.mask_decoder(
                         image_embeddings=image_embedding.to(device), # (B, 256, 64, 64)

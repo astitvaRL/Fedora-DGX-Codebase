@@ -167,6 +167,11 @@ class PromptEncoder(nn.Module):
                 bs, -1, self.image_embedding_size[0], self.image_embedding_size[1]
             )
 
+        # dense positional encoding for mask decoder (required computation within 'forward()' for data parallel training)
+        if self.parallel_training:
+            dense_pe = self.pe_layer(self.image_embedding_size).unsqueeze(0)
+            return sparse_embeddings, dense_embeddings, dense_pe
+
         return sparse_embeddings, dense_embeddings
 
 
