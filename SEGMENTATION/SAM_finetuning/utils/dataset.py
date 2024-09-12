@@ -33,7 +33,7 @@ class Dataset_body(Dataset):
         if self.mode == 'test':
             self.files = sorted(os.listdir(join(self.data_root, self.img_embed_dir_name)))[-1000:][:320]
 
-     def __len__(self):
+    def __len__(self):
         return len(self.files)
 
     def __getitem__(self, index):
