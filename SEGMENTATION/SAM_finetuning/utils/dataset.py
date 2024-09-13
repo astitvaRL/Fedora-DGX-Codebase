@@ -23,6 +23,7 @@ class Dataset_body(Dataset):
         self.num_classes = 18
         self.semantics = SemanticSegmentation(labels_definition_path=labels_definition_file_path, num_classes=self.num_classes)
         self.mode = mode
+        self.cache = None
         self.device = device
         self.return_embeddings = return_embeddings
         self.data_root = data_root
@@ -90,6 +91,10 @@ class Dataset_body(Dataset):
 
     def load_cache(self, path):
         self.cache = torch.load(path)
+
+################## --------------------------------------------------------------------------------------------------------------------------------------------
+
+
 
 
 

@@ -39,8 +39,8 @@ if __name__ == '__main__':
     embedding_dir_path = join(data_root, embed_dir_name)
     cache_dir = join(data_root, '../cache_syn_17k')
     os.makedirs(cache_dir, exist_ok=True)
-    train_cache_path = join(cache_dir, 'dummy_train_cache.pt')
-    test_cache_path = join(cache_dir, 'dummy_test_cache.pt')
+    train_cache_path = join(cache_dir, 'train_cache.pt')
+    test_cache_path = join(cache_dir, 'test_cache.pt')
     task_name = 'multigpu_vanilla_randomaug_syn_17k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     os.makedirs(join(model_save_path, 'eval'), exist_ok=True)
     
     # training choice
-    cache_available = False # save dataset cache after first epoch
+    cache_available = True # save dataset cache after first epoch
     precompute_embeddings = False # False if already precomputed and saved
     resize_labels = False # False if already resized
     resume_training = True
@@ -110,15 +110,21 @@ if __name__ == '__main__':
     train_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
     test_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test', return_embeddings=True)
     
+    cache_start = time.time()
     if cache_available:
+        print("Preloading Caches...")
         train_dataset.load_cache(train_cache_path)
         test_dataset.load_cache(test_cache_path)
     else: # initialize empty cache and populate during first epoch, save after first epoch
+        print("Initializing New Caches...")
         train_dataset.init_cache()
         test_dataset.init_cache()
+    cache_end = time.time()
+    
+    print(f"CACHES ARE READY! Took {cache_end-cache_start} seconds ---", train_dataset.cache.shape, test_dataset.cache.shape)
 
     # create dataloader
-    train_dataloader = DataLoader(train_dataset, batch_size=80, shuffle=True, num_workers=0, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=160, shuffle=True, num_workers=0, drop_last=True)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=0, drop_last=True)
 
     # training config
@@ -251,7 +257,7 @@ if __name__ == '__main__':
             optimizer.step()
             epoch_loss += loss.item()
 
-        epoch_loss /= step
+        epoch_loss /= (step+1)
         train_loss_log.append(epoch_loss)
 
         # save dataset cache after first epoch
@@ -260,7 +266,7 @@ if __name__ == '__main__':
         
         # save the latest model checkpoint as required
         if epoch%save_frequency==0:
-            print(f'EPOCH: {epoch}, Loss: {epoch_loss}')
+            print(f'TRAIN EPOCH: {epoch}, Loss: {epoch_loss}')
             # save the latest model checkpoint
             torch.save(sam_model.state_dict(), join(model_save_path, 'model_latest.pth'))
             labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0) # last sample from randomized current batch
@@ -275,7 +281,7 @@ if __name__ == '__main__':
         if epoch%eval_frequency==0:    
             # reset metrics for latest epoch
             eval_loss = 0
-            print('EVALUATION...')
+            print('Evaluating...')
             for step, (image_data, image_embedding, gt, bg_mask, bbox) in tqdm(enumerate(test_dataloader)):
             # loading precomputed embeddings during training
                 eval_epoch_dir = join(model_save_path, f"eval/{epoch}")
@@ -319,7 +325,8 @@ if __name__ == '__main__':
                     eval_loss += dice_loss(mask_predictions, gt.to(device)).item()
             
             # logging eval loss and metrics
-            print(f'EVAL: {epoch}, Loss: {eval_loss}')
+            eval_loss /= (step+1)
+            print(f'EVAL EPOCH: {epoch}, Loss: {eval_loss}')
             eval_loss_log.append(eval_loss)
             np.save(join(model_save_path,f"eval_loss_log_latest.npy"),np.array(eval_loss_log))
 
