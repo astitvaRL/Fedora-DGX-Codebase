@@ -26,7 +26,7 @@ join = os.path.join
 if __name__ == '__main__':
     torch.manual_seed(999)
     np.random.seed(999)
-    # torch.multiprocessing.set_start_method('spawn')
+    torch.multiprocessing.set_start_method('spawn')
 
     # set paths
     data_root = '/mnt/users_scratch/astitva/DATA/AD_SegMaps/'
@@ -54,6 +54,7 @@ if __name__ == '__main__':
     resume_training = True
     visualization_debug = False
     ignore_background = False
+    bbox_given = False
     bg_mask_given = True
     random_flip = True
     # prepare SAM model
@@ -71,6 +72,9 @@ if __name__ == '__main__':
     device_ids = [i for i in range(torch.cuda.device_count())]
     num_classes = 18 
     sam_model = sam_model_registry[model_type](num_classes = num_classes, checkpoint=init_checkpoint).to(device)
+    sam_model.image_encoder.to(device)
+    sam_model.prompt_encoder.to(device)
+    sam_model.mask_decoder.to(device)
     sam_model.prompt_encoder.parallel_training = True
     image_encoder = torch.nn.DataParallel(sam_model.image_encoder, device_ids=device_ids)
     prompt_encoder = torch.nn.DataParallel(sam_model.prompt_encoder, device_ids=device_ids)
@@ -80,9 +84,11 @@ if __name__ == '__main__':
         labels = sorted(os.listdir(join(data_root, label_id_dir_name)))
         print('Resizing Labels...')
         for label_name in tqdm(labels):
-            label = cv2.imread(join(data_root, label_id_dir_name, label_name))
-            label = cv2.resize(label, (1024,1024), interpolation=cv2.INTER_NEAREST)
-            cv2.imwrite(join(data_root, label_id_dir_name, label_name.split('.png')[0]+'_1024.png'), label)
+            save_path = join(data_root, label_id_dir_name, label_name.split('.png')[0]+'_1024.png')
+            if not os.path.exists(save_path):
+                label = cv2.imread(join(data_root, label_id_dir_name, label_name))
+                label = cv2.resize(label, (1024,1024), interpolation=cv2.INTER_NEAREST)
+                cv2.imwrite(label, label)
 
     # precompute image embeddings using original SAM model
     if precompute_embeddings:
@@ -108,12 +114,14 @@ if __name__ == '__main__':
 
     # create dataset
     train_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
-    test_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test', return_embeddings=True)
+    test_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
     
     cache_start = time.time()
     if cache_available:
         print("Preloading Caches...")
+        train_dataset.cache_available = True
         train_dataset.load_cache(train_cache_path)
+        test_dataset.cache_available = True
         test_dataset.load_cache(test_cache_path)
     else: # initialize empty cache and populate during first epoch, save after first epoch
         print("Initializing New Caches...")
@@ -124,8 +132,8 @@ if __name__ == '__main__':
     print(f"CACHES ARE READY! Took {cache_end-cache_start} seconds ---", train_dataset.cache.shape, test_dataset.cache.shape)
 
     # create dataloader
-    train_dataloader = DataLoader(train_dataset, batch_size=160, shuffle=True, num_workers=0, drop_last=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=0, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=160, num_workers=0, shuffle=True, drop_last=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=32, num_workers=0, shuffle=False, drop_last=True)
 
     # training config
     num_epochs = 1000
@@ -159,7 +167,7 @@ if __name__ == '__main__':
     for epoch in range(epoch_start, num_epochs):
         epoch_loss = 0
         # TRAINING
-        for step, (image_data, gt, bg_mask, bbox) in enumerate(tqdm(train_dataloader)):
+        for step, (image_data, gt, bg_mask, bbox) in enumerate(tqdm(train_dataloader, "Training")):
             # not loading precomputed embeddings during training
             image_data = image_data.to(device)
             gt = gt.to(device)
@@ -185,7 +193,7 @@ if __name__ == '__main__':
                     flipv = torchvision.transforms.RandomVerticalFlip(p=0.4)                
                     input_all = torch.cat([image_data, gt, bg_mask], axis=1)
                     input_all = fliph(input_all)
-                    input_all = flipv(input_all)
+                    # input_all = flipv(input_all)
                     image_data = input_all[:,:3,:,:] # encoder takes image size 1024x1024
                     gt = input_all[:,3:4,:,:]
                     bg_mask = input_all[:,4:,:,:]
@@ -229,7 +237,7 @@ if __name__ == '__main__':
 
                 sparse_embeddings, dense_embeddings, image_pe = prompt_encoder(
                     points=None,
-                    boxes=bbox[:, None, :],
+                    boxes=bbox[:, None, :] if bbox_given else None,
                     masks=bg_mask if bg_mask_given else None,
                 )
 
@@ -281,8 +289,7 @@ if __name__ == '__main__':
         if epoch%eval_frequency==0:    
             # reset metrics for latest epoch
             eval_loss = 0
-            print('Evaluating...')
-            for step, (image_data, image_embedding, gt, bg_mask, bbox) in tqdm(enumerate(test_dataloader)):
+            for step, (image_data, gt, bg_mask, bbox) in enumerate(tqdm(test_dataloader,"EVAL")):
             # loading precomputed embeddings during training
                 eval_epoch_dir = join(model_save_path, f"eval/{epoch}")
                 os.makedirs(eval_epoch_dir, exist_ok=True)
@@ -293,37 +300,59 @@ if __name__ == '__main__':
                     gt = torch.nn.functional.one_hot(gt.squeeze(1),num_classes)
                     B,_, H, W = gt.shape
                     gt = torch.permute(gt,(0,3,1,2))
-
                     # resize bg_mask to 256x256
                     bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST)
                     bg_mask = bg_mask.to(device)
-                    
                     # resizing by a factor of 4 (1024-->256)
                     bbox = bbox//4 
                     bbox = bbox.to(device)            
-                    
+                    # prompt encoding
                     sparse_embeddings, dense_embeddings, image_pe = prompt_encoder(
                         points=None,
-                        boxes=bbox[:, None, :],
+                        boxes=bbox[:, None, :] if bbox_given else None,
                         masks=bg_mask if bg_mask_given else None,
                     )
-                    
-                    # no need to predict image embedding, use precomputed embedding for validation
-
+                    # image embedding estimation
+                    image_data = image_data.to(device)
+                    image_data = F.resize(image_data, 1024, torchvision.transforms.InterpolationMode.BILINEAR) # encoder takes image size 1024x1024
+                    embedding = image_encoder(image_data)
+                    # segmentation prediction
                     mask_predictions, _ = mask_decoder(
-                        image_embeddings=image_embedding.to(device), # (B, 256, 64, 64)
+                        image_embeddings=embedding.to(device), # (B, 256, 64, 64)
                         image_pe=image_pe, # (1, 256, 64, 64)
                         sparse_prompt_embeddings=sparse_embeddings, # (B, 2, 256)
                         dense_prompt_embeddings=dense_embeddings, # (B, 256, 64, 64)
                         multimask_output=True,
                     )
-                    labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0) # last sample from fixed current batch
-                    plt.imshow(semantics.labels_to_colors(labels_out.cpu().numpy().astype('uint8')))
+                    # visualizing last sample from every batch
+                    labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0) 
+                    labels_out_vis = semantics.labels_to_colors(labels_out.cpu().numpy().astype('uint8'))
+                    labels_out_vis = cv2.resize(labels_out_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
+                    gt_vis = torch.argmax(torch.Tensor(gt[-1]), dim=0)
+                    gt_vis = semantics.labels_to_colors(gt_vis.cpu().numpy().astype('uint8'))
+                    gt_vis = cv2.resize(gt_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
+                    bg_mask_vis = cv2.resize(bg_mask[-1][0].cpu().numpy().astype('uint8'), (1024,1024), interpolation=cv2.INTER_NEAREST)
+                    image_data_vis = np.transpose(image_data[-1].cpu().numpy().astype('uint8'), (1,2,0))
+                    # plot eval results
+                    TITLE_SIZE = 30
+                    fig, ax = plt.subplots(1,4, figsize=(40,10))
+                    ax[0].imshow(image_data_vis)
+                    ax[0].set_title("Input Image", fontsize=TITLE_SIZE)
+                    ax[0].axis('off')
+                    ax[1].imshow(bg_mask_vis, cmap='gray')
+                    ax[1].set_title("Mask", fontsize=TITLE_SIZE)
+                    ax[1].axis('off')
+                    ax[2].imshow(labels_out_vis)
+                    ax[2].set_title("Prediction", fontsize=TITLE_SIZE)
+                    ax[2].axis('off')
+                    ax[3].imshow(gt_vis)
+                    ax[3].set_title("GT", fontsize=TITLE_SIZE)
+                    ax[3].axis('off')
                     plt.savefig(f"{eval_epoch_dir}/{step}.png")
-
+                    plt.close()
+                    
                     # compute eval loss
                     eval_loss += dice_loss(mask_predictions, gt.to(device)).item()
-            
             # logging eval loss and metrics
             eval_loss /= (step+1)
             print(f'EVAL EPOCH: {epoch}, Loss: {eval_loss}')

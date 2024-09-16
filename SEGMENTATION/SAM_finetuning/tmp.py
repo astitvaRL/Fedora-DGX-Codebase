@@ -32,22 +32,28 @@ if __name__ == '__main__':
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
     image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
-    second_image_dir_name = 'AD_SegMaps/drawings_synth_20k'
+    second_image_dir_name = 'MANIFOLD/Stimuli_HighRes/'
     label_id_dir_name = 'AD_SegMaps/labels_2k'
 
     COUNT = 0
-    COUNT_MANIFOLD = 0
+    COUNT_SECOND = 0
     names = sorted(os.listdir(join(data_root, label_id_dir_name)))
     for name in names:
+        if not name.endswith('_1024.png'):
+            continue
         image_name = name.split('_')[0] + '.png'
         image_path = join(data_root, image_dir_name, image_name)
         if not os.path.exists(image_path):
-            print(image_name)
+            second_image_path = join(data_root, second_image_dir_name, image_name)
+            if os.path.exists(second_image_path):
+                print(image_name)
+                COUNT_SECOND += 1
+        else:
             COUNT += 1
             # cmd = f"manifold -vip -cert ~/astitva_manifold.pem ls animated_drawings_images_prior_april22/tree/cropped_image/{image_name}"
             # try:
             #     os.system(cmd)
             # except:
             #     COUNT_MANIFOLD += 1
-    # print(COUNT)
+    print(COUNT, COUNT_SECOND)
     # print(COUNT, COUNT_MANIFOLD)

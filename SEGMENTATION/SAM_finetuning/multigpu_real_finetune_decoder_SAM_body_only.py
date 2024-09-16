@@ -17,7 +17,7 @@ from monai.networks import one_hot
 from segment_anything_parallel import SamPredictor, sam_model_registry
 from segment_anything_parallel.utils.transforms import ResizeLongestSide
 
-from utils.dataset import Dataset_body
+from utils.dataset import Dataset_body, Dataset_body_real
 from utils.SurfaceDice import compute_dice_coefficient
 from utils.SemanticSegmentation import SemanticSegmentation
 join = os.path.join
@@ -26,29 +26,35 @@ join = os.path.join
 if __name__ == '__main__':
     torch.manual_seed(999)
     np.random.seed(999)
-    # torch.multiprocessing.set_start_method('spawn')
+    torch.multiprocessing.set_start_method('spawn')
 
     # set paths
-    data_root = '/mnt/users_scratch/astitva/DATA/AD_SegMaps/'
+    data_root = '/mnt/users_scratch/astitva/DATA/'
     labels_definition_file_path = 'label_definition.json'
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
-    image_dir_name = 'drawings_synth_20k'
-    label_id_dir_name = 'labels_2k' 
+    image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
+    label_id_dir_name = 'AD_SegMaps/labels_2k_1024' 
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
-    task_name = 'parallel_vanilla_randomaug_syn_17k' # finetuned checkpoint will be saved here
+    cache_dir = join(data_root, 'cache_real_2k')
+    os.makedirs(cache_dir, exist_ok=True)
+    train_cache_path = join(cache_dir, 'train_cache.pt')
+    test_cache_path = join(cache_dir, 'test_cache.pt')
+    task_name = 'multigpu_vanilla_randomaug_real_2k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
     os.makedirs(join(model_save_path, 'eval'), exist_ok=True)
     
     # training choice
+    cache_available = False # save dataset cache after first epoch
     precompute_embeddings = False # False if already precomputed and saved
     resize_labels = False # False if already resized
-    resume_training = True
-    visualization_debug = False
+    resume_training = False
+    visualization_debug = True
     ignore_background = False
+    bbox_given = False
     bg_mask_given = True
     random_flip = True
     # prepare SAM model
@@ -59,13 +65,16 @@ if __name__ == '__main__':
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
         epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, 'vanilla_randomaug_syn_17k/model_eval_best.pth')
+        resume_ckpt = join(ckpt_dir, 'multigpu_vanilla_randomaug_syn_17k/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
     device_ids = [i for i in range(torch.cuda.device_count())]
     num_classes = 18 
     sam_model = sam_model_registry[model_type](num_classes = num_classes, checkpoint=init_checkpoint).to(device)
+    sam_model.image_encoder.to(device)
+    sam_model.prompt_encoder.to(device)
+    sam_model.mask_decoder.to(device)
     sam_model.prompt_encoder.parallel_training = True
     image_encoder = torch.nn.DataParallel(sam_model.image_encoder, device_ids=device_ids)
     prompt_encoder = torch.nn.DataParallel(sam_model.prompt_encoder, device_ids=device_ids)
@@ -75,9 +84,11 @@ if __name__ == '__main__':
         labels = sorted(os.listdir(join(data_root, label_id_dir_name)))
         print('Resizing Labels...')
         for label_name in tqdm(labels):
-            label = cv2.imread(join(data_root, label_id_dir_name, label_name))
-            label = cv2.resize(label, (1024,1024), interpolation=cv2.INTER_NEAREST)
-            cv2.imwrite(join(data_root, label_id_dir_name, label_name.split('.png')[0]+'_1024.png'), label)
+            save_path = join(data_root, label_id_dir_name, label_name.split('.png')[0]+'_1024.png')
+            if not os.path.exists(save_path):
+                label = cv2.imread(join(data_root, label_id_dir_name, label_name))
+                label = cv2.resize(label, (1024,1024), interpolation=cv2.INTER_NEAREST)
+                cv2.imwrite(label, label)
 
     # precompute image embeddings using original SAM model
     if precompute_embeddings:
@@ -102,17 +113,32 @@ if __name__ == '__main__':
         print('Image embeddings saved at -->', embedding_dir_path)
 
     # create dataset
-    train_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
-    test_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test', return_embeddings=True)
+    train_dataset = Dataset_body_real(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
+    test_dataset = Dataset_body_real(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
+    
+    cache_start = time.time()
+    if cache_available:
+        print("Preloading Caches...")
+        train_dataset.cache_available = True
+        train_dataset.load_cache(train_cache_path)
+        test_dataset.cache_available = True
+        test_dataset.load_cache(test_cache_path)
+    else: # initialize empty cache and populate during first epoch, save after first epoch
+        print("NEW CACHES WILL BE CREATED!")
+        train_dataset.init_cache()
+        test_dataset.init_cache()
+    cache_end = time.time()
+    
+    print(f"CACHES ARE READY! Took {cache_end-cache_start} seconds ---", train_dataset.cache.shape, test_dataset.cache.shape)
 
     # create dataloader
-    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+    train_dataloader = DataLoader(train_dataset, batch_size=32, num_workers=0, shuffle=True, drop_last=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=8, num_workers=0, shuffle=False, drop_last=True)
 
     # training config
     num_epochs = 1000
     save_frequency = 1
-    eval_frequency = 10
+    eval_frequency = 1
     train_loss_log = []
     eval_loss_log = []
     best_loss = 1e10
@@ -141,14 +167,11 @@ if __name__ == '__main__':
     for epoch in range(epoch_start, num_epochs):
         epoch_loss = 0
         # TRAINING
-        for step, (image_data, gt, bg_mask, bbox) in enumerate(tqdm(train_dataloader)):
+        for step, (image_data, gt, bg_mask, bbox) in enumerate(tqdm(train_dataloader, "Training")):
             # not loading precomputed embeddings during training
-            start = time.time()
             image_data = image_data.to(device)
             gt = gt.to(device)
             bg_mask = bg_mask.to(device)
-            end = time.time()
-            print(f"GPU transfer time: {end - start}")
             with torch.no_grad():
                 crop_probability = np.random.uniform(0,1)
                 if crop_probability<0.3:
@@ -170,7 +193,7 @@ if __name__ == '__main__':
                     flipv = torchvision.transforms.RandomVerticalFlip(p=0.4)                
                     input_all = torch.cat([image_data, gt, bg_mask], axis=1)
                     input_all = fliph(input_all)
-                    input_all = flipv(input_all)
+                    # input_all = flipv(input_all)
                     image_data = input_all[:,:3,:,:] # encoder takes image size 1024x1024
                     gt = input_all[:,3:4,:,:]
                     bg_mask = input_all[:,4:,:,:]
@@ -188,7 +211,6 @@ if __name__ == '__main__':
                     bbox[:,1] = torch.clamp(bbox[:,1] + torch.randint(-20,20,(bbox.shape[0],)), 0, 256)
                     bbox[:,2] = torch.clamp(bbox[:,2] + torch.randint(-20,20,(bbox.shape[0],)), 0, 256)
                     bbox[:,3] = torch.clamp(bbox[:,3] + torch.randint(-20,20,(bbox.shape[0],)), 0, 256)
-                start=time.time()
                 gt = F.resize(gt, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes image size 256x256
                 bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes mask size 256x256
 
@@ -213,24 +235,17 @@ if __name__ == '__main__':
 
                 bbox = bbox.to(device)            
 
-                start = time.time()
                 sparse_embeddings, dense_embeddings, image_pe = prompt_encoder(
                     points=None,
-                    boxes=bbox[:, None, :],
+                    boxes=bbox[:, None, :] if bbox_given else None,
                     masks=bg_mask if bg_mask_given else None,
                 )
-                end = time.time()
-                print(f"Prompt encoder time: {end - start}")
 
                 # predict image embedding
                 image_data = F.resize(image_data, 1024, torchvision.transforms.InterpolationMode.BILINEAR) # encoder takes image size 1024x1024
-                start = time.time()
                 embedding = image_encoder(image_data)
-                end = time.time()
-                print(f"Image encoder time: {end - start}")
-
+                
             # computing gradients for mask decoder only
-            start = time.time()
             mask_predictions, _ = mask_decoder(
                 image_embeddings=embedding, # (B, 256, 64, 64)
                 # image_pe=prompt_encoder.get_dense_pe(), # (1, 256, 64, 64)
@@ -239,30 +254,28 @@ if __name__ == '__main__':
                 dense_prompt_embeddings=dense_embeddings, # (B, 256, 64, 64)
                 multimask_output=True,
             )
-            end = time.time()
-            print(f"Mask decoder time: {end - start}")
 
             # Optional, doesn't help much if mask is already being passed as prompt
             if ignore_background: 
                 mask_predictions = mask_predictions*bg_mask
                 gt = gt*bg_mask
-            end = time.time()
-            print("Forward pass:", end-start)
-            start = time.time()
             loss = 0.8*dice_loss(mask_predictions, gt) + 0.2*focal_loss(mask_predictions, gt)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
-            end = time.time()
-            print("Backward pass:", end-start)
 
-        epoch_loss /= step
+        epoch_loss /= (step+1)
         train_loss_log.append(epoch_loss)
+
+        # save dataset cache after first epoch
+        if not(cache_available) and epoch==0:
+            train_dataset.save_cache(train_cache_path)
+            train_dataset.cache_available = True
         
         # save the latest model checkpoint as required
         if epoch%save_frequency==0:
-            print(f'EPOCH: {epoch}, Loss: {epoch_loss}')
+            print(f'TRAIN EPOCH: {epoch}, Loss: {epoch_loss}')
             # save the latest model checkpoint
             torch.save(sam_model.state_dict(), join(model_save_path, 'model_latest.pth'))
             labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0) # last sample from randomized current batch
@@ -277,8 +290,7 @@ if __name__ == '__main__':
         if epoch%eval_frequency==0:    
             # reset metrics for latest epoch
             eval_loss = 0
-            print('EVALUATION...')
-            for step, (image_data, image_embedding, gt, bg_mask, bbox) in tqdm(enumerate(test_dataloader)):
+            for step, (image_data, gt, bg_mask, bbox) in enumerate(tqdm(test_dataloader,"EVAL")):
             # loading precomputed embeddings during training
                 eval_epoch_dir = join(model_save_path, f"eval/{epoch}")
                 os.makedirs(eval_epoch_dir, exist_ok=True)
@@ -289,41 +301,69 @@ if __name__ == '__main__':
                     gt = torch.nn.functional.one_hot(gt.squeeze(1),num_classes)
                     B,_, H, W = gt.shape
                     gt = torch.permute(gt,(0,3,1,2))
-
                     # resize bg_mask to 256x256
                     bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST)
                     bg_mask = bg_mask.to(device)
-                    
                     # resizing by a factor of 4 (1024-->256)
                     bbox = bbox//4 
                     bbox = bbox.to(device)            
-                    
+                    # prompt encoding
                     sparse_embeddings, dense_embeddings, image_pe = prompt_encoder(
                         points=None,
-                        boxes=bbox[:, None, :],
+                        boxes=bbox[:, None, :] if bbox_given else None,
                         masks=bg_mask if bg_mask_given else None,
                     )
-                    
-                    # no need to predict image embedding, use precomputed embedding for validation
-
+                    # image embedding estimation
+                    image_data = image_data.to(device)
+                    image_data = F.resize(image_data, 1024, torchvision.transforms.InterpolationMode.BILINEAR) # encoder takes image size 1024x1024
+                    embedding = image_encoder(image_data)
+                    # segmentation prediction
                     mask_predictions, _ = mask_decoder(
-                        image_embeddings=image_embedding.to(device), # (B, 256, 64, 64)
+                        image_embeddings=embedding.to(device), # (B, 256, 64, 64)
                         image_pe=image_pe, # (1, 256, 64, 64)
                         sparse_prompt_embeddings=sparse_embeddings, # (B, 2, 256)
                         dense_prompt_embeddings=dense_embeddings, # (B, 256, 64, 64)
                         multimask_output=True,
                     )
-                    labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0) # last sample from fixed current batch
-                    plt.imshow(semantics.labels_to_colors(labels_out.cpu().numpy().astype('uint8')))
+                    # visualizing last sample from every batch
+                    labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0) 
+                    labels_out_vis = semantics.labels_to_colors(labels_out.cpu().numpy().astype('uint8'))
+                    labels_out_vis = cv2.resize(labels_out_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
+                    gt_vis = torch.argmax(torch.Tensor(gt[-1]), dim=0)
+                    gt_vis = semantics.labels_to_colors(gt_vis.cpu().numpy().astype('uint8'))
+                    gt_vis = cv2.resize(gt_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
+                    bg_mask_vis = cv2.resize(bg_mask[-1][0].cpu().numpy().astype('uint8'), (1024,1024), interpolation=cv2.INTER_NEAREST)
+                    image_data_vis = np.transpose(image_data[-1].cpu().numpy().astype('uint8'), (1,2,0))
+                    # plot eval results
+                    TITLE_SIZE = 30
+                    fig, ax = plt.subplots(1,4, figsize=(40,10))
+                    ax[0].imshow(image_data_vis)
+                    ax[0].set_title("Input Image", fontsize=TITLE_SIZE)
+                    ax[0].axis('off')
+                    ax[1].imshow(bg_mask_vis, cmap='gray')
+                    ax[1].set_title("Mask", fontsize=TITLE_SIZE)
+                    ax[1].axis('off')
+                    ax[2].imshow(labels_out_vis)
+                    ax[2].set_title("Prediction", fontsize=TITLE_SIZE)
+                    ax[2].axis('off')
+                    ax[3].imshow(gt_vis)
+                    ax[3].set_title("GT", fontsize=TITLE_SIZE)
+                    ax[3].axis('off')
                     plt.savefig(f"{eval_epoch_dir}/{step}.png")
-
+                    plt.close()
+                    
                     # compute eval loss
                     eval_loss += dice_loss(mask_predictions, gt.to(device)).item()
-            
             # logging eval loss and metrics
-            print(f'EVAL: {epoch}, Loss: {eval_loss}')
+            eval_loss /= (step+1)
+            print(f'EVAL EPOCH: {epoch}, Loss: {eval_loss}')
             eval_loss_log.append(eval_loss)
             np.save(join(model_save_path,f"eval_loss_log_latest.npy"),np.array(eval_loss_log))
+
+            # save test cache after first validation epoch
+            if not(cache_available) and epoch==0:
+                test_dataset.save_cache(test_cache_path) 
+                test_dataset.cache_available = True
 
             # save best eval model checkpoint
             if eval_loss < best_eval_loss:
