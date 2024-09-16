@@ -52,7 +52,7 @@ if __name__ == '__main__':
     precompute_embeddings = False # False if already precomputed and saved
     resize_labels = False # False if already resized
     resume_training = False
-    visualization_debug = True
+    visualization_debug = False
     ignore_background = False
     bbox_given = False
     bg_mask_given = True
@@ -124,7 +124,7 @@ if __name__ == '__main__':
         test_dataset.cache_available = True
         test_dataset.load_cache(test_cache_path)
     else: # initialize empty cache and populate during first epoch, save after first epoch
-        print("NEW CACHES WILL BE CREATED!")
+        print("NEW CACHES will be saved here -->", cache_dir)
         train_dataset.init_cache()
         test_dataset.init_cache()
     cache_end = time.time()
@@ -214,12 +214,12 @@ if __name__ == '__main__':
                 gt = F.resize(gt, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes image size 256x256
                 bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes mask size 256x256
 
-                ######### ------- plt visualizations after resizing -------- #########
+                ######### ------- plt visualizations after resizing  (last sample from batch) -------- #########
                 if visualization_debug:
-                    image_data_vis = image_data.cpu().numpy()[0]
+                    image_data_vis = image_data.cpu().numpy()[-1] # last sample from batch
                     image_data_vis = (image_data_vis*2.0 + 1.0)/2.0
-                    gt_vis = gt.cpu().numpy()[0]
-                    bg_mask_vis = bg_mask.cpu().numpy()[0]
+                    gt_vis = gt.cpu().numpy()[-1] # last sample from batch
+                    bg_mask_vis = bg_mask.cpu().numpy()[-1] # last sample from batch
                     fig, ax = plt.subplots(1,3,figsize=(30,10))
                     ax[0].imshow(np.transpose(image_data_vis,(1,2,0)))
                     ax[1].imshow(gt_vis[0])
@@ -326,14 +326,16 @@ if __name__ == '__main__':
                         multimask_output=True,
                     )
                     # visualizing last sample from every batch
-                    labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0) 
+                    labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0)  # last sample from batch
                     labels_out_vis = semantics.labels_to_colors(labels_out.cpu().numpy().astype('uint8'))
                     labels_out_vis = cv2.resize(labels_out_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
-                    gt_vis = torch.argmax(torch.Tensor(gt[-1]), dim=0)
+                    gt_vis = torch.argmax(torch.Tensor(gt[-1]), dim=0)  # last sample from batch
                     gt_vis = semantics.labels_to_colors(gt_vis.cpu().numpy().astype('uint8'))
                     gt_vis = cv2.resize(gt_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
-                    bg_mask_vis = cv2.resize(bg_mask[-1][0].cpu().numpy().astype('uint8'), (1024,1024), interpolation=cv2.INTER_NEAREST)
-                    image_data_vis = np.transpose(image_data[-1].cpu().numpy().astype('uint8'), (1,2,0))
+                    bg_mask_vis = cv2.resize(bg_mask[-1][0].cpu().numpy().astype('uint8'), (1024,1024), interpolation=cv2.INTER_NEAREST)  # last sample from batch
+                    image_data_vis = image_data.cpu().numpy()[-1] # last sample from batch
+                    image_data_vis = (image_data_vis*2.0 + 1.0)/2.0
+                    
                     # plot eval results
                     TITLE_SIZE = 30
                     fig, ax = plt.subplots(1,4, figsize=(40,10))
