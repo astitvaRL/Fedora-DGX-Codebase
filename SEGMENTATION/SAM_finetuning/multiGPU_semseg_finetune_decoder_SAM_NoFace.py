@@ -17,7 +17,7 @@ from monai.networks import one_hot
 from segment_anything_parallel import SamPredictor, sam_model_registry
 from segment_anything_parallel.utils.transforms import ResizeLongestSide
 
-from utils.dataset import Dataset_NoFace
+from utils.dataset import DrawingsDataset
 from utils.SurfaceDice import compute_dice_coefficient
 from utils.SemanticSegmentation import SemanticSegmentation
 from utils.augment import RandomAug
@@ -50,9 +50,9 @@ if __name__ == '__main__':
     train_input_visualization_dir = join(data_root, 'TMP_INPUT_VIS')
     
     # training choice
-    cache_available = False # save dataset cache after first epoch
+    cache_available = True # save dataset cache after first epoch
     resize_labels = False # False if already resized
-    resume_training = False
+    resume_training = True
     visualize_train_input = False
     ignore_background = False
     bbox_given = False
@@ -65,8 +65,8 @@ if __name__ == '__main__':
     init_checkpoint = join(sam_original_ckpt_path)
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
-        epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, 'multigpu_vanilla_randomaug_real_2k/model_eval_best.pth')
+        epoch_start = 3 # change this
+        resume_ckpt = join(ckpt_dir, 'semseg_DecoderOnly_NoFace_REAL7k/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
@@ -99,9 +99,15 @@ if __name__ == '__main__':
                 cv2.imwrite(save_path, label)
 
     # create dataset
-    train_dataset = Dataset_NoFace(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
-    test_dataset = Dataset_NoFace(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
+    train_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
+    test_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
     
+    # set semantic definition
+    train_dataset.num_classes = num_classes
+    test_dataset.num_classes = num_classes
+    train_dataset.semantics = semantics
+    test_dataset.semantics = semantics
+
     cache_start = time.time()
     if cache_available:
         print("Preloading Caches...")
@@ -118,8 +124,8 @@ if __name__ == '__main__':
     print(f"CACHES ARE READY! Took {cache_end-cache_start} seconds ---", train_dataset.cache.shape, test_dataset.cache.shape)
 
     # create dataloader
-    train_dataloader = DataLoader(train_dataset, batch_size=64, num_workers=0, shuffle=True, drop_last=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=8, num_workers=0, shuffle=False, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=160, num_workers=0, shuffle=True, drop_last=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=4, num_workers=0, shuffle=False, drop_last=True)
 
     # training config
     num_epochs = 1000

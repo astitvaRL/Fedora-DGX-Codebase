@@ -17,7 +17,7 @@ from monai.networks import one_hot
 from segment_anything_parallel import SamPredictor, sam_model_registry
 from segment_anything_parallel.utils.transforms import ResizeLongestSide
 
-from utils.dataset import Dataset_NoFace
+from utils.dataset import DrawingsDataset
 from utils.SurfaceDice import compute_dice_coefficient
 from utils.SemanticSegmentation import SemanticSegmentationCoarse
 from utils.augment import RandomAug
@@ -99,8 +99,8 @@ if __name__ == '__main__':
                 cv2.imwrite(save_path, label)
 
     # create dataset
-    train_dataset = Dataset_NoFace(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
-    test_dataset = Dataset_NoFace(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
+    train_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
+    test_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
 
     # set semantic definition
     train_dataset.num_classes = num_classes
