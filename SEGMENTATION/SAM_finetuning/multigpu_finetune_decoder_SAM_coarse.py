@@ -20,7 +20,7 @@ from segment_anything_parallel.utils.transforms import ResizeLongestSide
 
 from utils.dataset import Dataset_body
 from utils.SurfaceDice import compute_dice_coefficient
-from utils.SemanticSegmentation import SemanticSegmentation
+from utils.SemanticSegmentation import SemanticSegmentationCoarse
 join = os.path.join
 
 
@@ -38,11 +38,11 @@ if __name__ == '__main__':
     label_id_dir_name = 'labels_2k' 
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
-    cache_dir = join(data_root, '../cache_syn_17k')
+    cache_dir = join(data_root, '../cache_coarse_syn_17k')
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'multigpu_vanilla_randomaug_syn_17k' # finetuned checkpoint will be saved here
+    task_name = 'multigpu_coarse_vanilla_randomaug_syn_17k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     cache_available = True # save dataset cache after first epoch
     precompute_embeddings = False # False if already precomputed and saved
     resize_labels = False # False if already resized
-    resume_training = True
+    resume_training = False
     visualize_train_input_breakpoint = False
     ignore_background = False
     bbox_given = False
@@ -66,12 +66,12 @@ if __name__ == '__main__':
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
         epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, 'vanilla_randomaug_syn_17k/model_eval_best.pth')
+        resume_ckpt = join(ckpt_dir, 'multigpu_coarse_vanilla_randomaug_syn_17k/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
     device_ids = [i for i in range(torch.cuda.device_count())]
-    num_classes = 18 
+    num_classes = 8
     sam_model = sam_model_registry[model_type](num_classes = num_classes, checkpoint=init_checkpoint).to(device)
     sam_model.image_encoder.to(device)
     sam_model.prompt_encoder.to(device)
@@ -80,6 +80,9 @@ if __name__ == '__main__':
     image_encoder = torch.nn.DataParallel(sam_model.image_encoder, device_ids=device_ids)
     prompt_encoder = torch.nn.DataParallel(sam_model.prompt_encoder, device_ids=device_ids)
     mask_decoder = torch.nn.DataParallel(sam_model.mask_decoder, device_ids=device_ids)
+
+    # semantic segmentation class
+    semantics = SemanticSegmentationCoarse(labels_definition_file_path, num_classes=num_classes)
 
     if resize_labels:
         labels = sorted(os.listdir(join(data_root, label_id_dir_name)))
@@ -116,7 +119,9 @@ if __name__ == '__main__':
     # create dataset
     train_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
     test_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
-    
+    train_dataset.semantics = semantics
+    test_dataset.semantics = semantics
+
     cache_start = time.time()
     if cache_available:
         print("Preloading Caches...")
@@ -144,7 +149,6 @@ if __name__ == '__main__':
     eval_loss_log = []
     best_loss = 1e10
     best_eval_loss = 1e10
-    semantics = SemanticSegmentation(labels_definition_file_path, num_classes=num_classes)
 
     # Set up the optimizer, losses, hyperparameters
     optimizer = torch.optim.Adam(mask_decoder.parameters(), lr=1e-5, weight_decay=0)

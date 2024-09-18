@@ -42,7 +42,7 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'multigpu_vanilla_randomaug_syn_17k' # finetuned checkpoint will be saved here
+    task_name = 'multigpu_encdec_randomaug_syn_17k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -133,7 +133,7 @@ if __name__ == '__main__':
     print(f"CACHES ARE READY! Took {cache_end-cache_start} seconds ---", train_dataset.cache.shape, test_dataset.cache.shape)
 
     # create dataloader
-    train_dataloader = DataLoader(train_dataset, batch_size=160, num_workers=0, shuffle=True, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=128, num_workers=0, shuffle=True, drop_last=True)
     test_dataloader = DataLoader(test_dataset, batch_size=32, num_workers=0, shuffle=False, drop_last=True)
 
     # training config
@@ -146,18 +146,30 @@ if __name__ == '__main__':
     best_eval_loss = 1e10
     semantics = SemanticSegmentation(labels_definition_file_path, num_classes=num_classes)
 
+    encoder_params = []
+   # Freeze all layers of image encoder
+    for param in sam_model.image_encoder.parameters():
+        param.requires_grad = False
+    # set requires_grad=True for the last block
+    for name, param in sam_model.image_encoder.named_parameters():
+        if name.startswith('blocks.11'):
+            param.requires_grad = True
+            encoder_params.append(param)
+    # set requires_grad=True for the neck layer
+    for param in sam_model.image_encoder.neck.parameters():
+        param.requires_grad = True
+        encoder_params.append(param)
+
+    # verify
+    for name, param in sam_model.image_encoder.named_parameters():
+        print(name, param.requires_grad)
+
+
     # Set up the optimizer, losses, hyperparameters
-    optimizer = torch.optim.Adam(mask_decoder.parameters(), lr=1e-5, weight_decay=0)
+    encdec_params = encoder_params + list(sam_model.mask_decoder.parameters())
+    optimizer = torch.optim.Adam(iter(encdec_params), lr=1e-5, weight_decay=0) # adding all parameters to optimizer as an iterable
     dice_loss = monai.losses.DiceCELoss(sigmoid=True, squared_pred=True, reduction='mean')
     focal_loss = monai.losses.FocalLoss(reduction='mean', gamma=2.0)
-
-   # Freeze all layers of image encoder
-    for param in image_encoder.parameters():
-        param.requires_grad = False
-
-    ## verify
-    # for name, param in image_encoder.named_parameters():
-    #     print(name, param.requires_grad)
 
     # augmentations
     crop_size = (800, 800)

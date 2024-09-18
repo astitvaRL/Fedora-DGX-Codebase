@@ -18,9 +18,9 @@ from monai.networks import one_hot
 from segment_anything_parallel import SamPredictor, sam_model_registry
 from segment_anything_parallel.utils.transforms import ResizeLongestSide
 
-from utils.dataset import Dataset_body
+from utils.dataset import Dataset_body_ternary
 from utils.SurfaceDice import compute_dice_coefficient
-from utils.SemanticSegmentation import SemanticSegmentation
+from utils.SemanticSegmentation import SemanticSegmentationTernary
 join = os.path.join
 
 
@@ -38,11 +38,11 @@ if __name__ == '__main__':
     label_id_dir_name = 'labels_2k' 
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
-    cache_dir = join(data_root, '../cache_syn_17k')
+    cache_dir = join(data_root, '../cache_ternary_syn_17k')
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'multigpu_vanilla_randomaug_syn_17k' # finetuned checkpoint will be saved here
+    task_name = 'multigpu_ternary_randomaug_syn_17k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -65,13 +65,13 @@ if __name__ == '__main__':
     init_checkpoint = join(sam_original_ckpt_path)
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
-        epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, 'vanilla_randomaug_syn_17k/model_eval_best.pth')
+        epoch_start = 63 # change this
+        resume_ckpt = join(ckpt_dir, 'multigpu_ternary_randomaug_syn_17k/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
     device_ids = [i for i in range(torch.cuda.device_count())]
-    num_classes = 18 
+    num_classes = 3
     sam_model = sam_model_registry[model_type](num_classes = num_classes, checkpoint=init_checkpoint).to(device)
     sam_model.image_encoder.to(device)
     sam_model.prompt_encoder.to(device)
@@ -114,8 +114,8 @@ if __name__ == '__main__':
         print('Image embeddings saved at -->', embedding_dir_path)
 
     # create dataset
-    train_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
-    test_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
+    train_dataset = Dataset_body_ternary(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
+    test_dataset = Dataset_body_ternary(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
     
     cache_start = time.time()
     if cache_available:
@@ -144,7 +144,7 @@ if __name__ == '__main__':
     eval_loss_log = []
     best_loss = 1e10
     best_eval_loss = 1e10
-    semantics = SemanticSegmentation(labels_definition_file_path, num_classes=num_classes)
+    semantics = SemanticSegmentationTernary(labels_definition_file_path, num_classes=num_classes)
 
     # Set up the optimizer, losses, hyperparameters
     optimizer = torch.optim.Adam(mask_decoder.parameters(), lr=1e-5, weight_decay=0)

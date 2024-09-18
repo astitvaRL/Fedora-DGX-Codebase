@@ -18,9 +18,9 @@ from monai.networks import one_hot
 from segment_anything_parallel import SamPredictor, sam_model_registry
 from segment_anything_parallel.utils.transforms import ResizeLongestSide
 
-from utils.dataset import Dataset_body
+from utils.dataset import Dataset_body, Dataset_body_real, Dataset_body_real_ternary
 from utils.SurfaceDice import compute_dice_coefficient
-from utils.SemanticSegmentation import SemanticSegmentation
+from utils.SemanticSegmentation import SemanticSegmentationTernary
 join = os.path.join
 
 
@@ -30,19 +30,19 @@ if __name__ == '__main__':
     torch.multiprocessing.set_start_method('spawn')
 
     # set paths
-    data_root = '/mnt/users_scratch/astitva/DATA/AD_SegMaps/'
+    data_root = '/mnt/users_scratch/astitva/DATA/'
     labels_definition_file_path = 'label_definition.json'
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
-    image_dir_name = 'drawings_synth_20k'
-    label_id_dir_name = 'labels_2k' 
+    image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
+    label_id_dir_name = 'AD_SegMaps/labels_2k_1024' 
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
-    cache_dir = join(data_root, '../cache_syn_17k')
+    cache_dir = join(data_root, 'cache_ternary_real_2k')
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'multigpu_vanilla_randomaug_syn_17k' # finetuned checkpoint will be saved here
+    task_name = 'multigpu_ternary_randomaug_real_2k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -52,11 +52,11 @@ if __name__ == '__main__':
     cache_available = True # save dataset cache after first epoch
     precompute_embeddings = False # False if already precomputed and saved
     resize_labels = False # False if already resized
-    resume_training = True
+    resume_training = False
     visualize_train_input_breakpoint = False
     ignore_background = False
     bbox_given = False
-    bg_mask_given = True
+    bg_mask_given = False
     random_flip = True
     # prepare SAM model
     model_type = 'vit_b'
@@ -66,12 +66,12 @@ if __name__ == '__main__':
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
         epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, 'vanilla_randomaug_syn_17k/model_eval_best.pth')
+        resume_ckpt = join(ckpt_dir, 'multigpu_vanilla_randomaug_syn_17k/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
     device_ids = [i for i in range(torch.cuda.device_count())]
-    num_classes = 18 
+    num_classes = 3
     sam_model = sam_model_registry[model_type](num_classes = num_classes, checkpoint=init_checkpoint).to(device)
     sam_model.image_encoder.to(device)
     sam_model.prompt_encoder.to(device)
@@ -114,8 +114,8 @@ if __name__ == '__main__':
         print('Image embeddings saved at -->', embedding_dir_path)
 
     # create dataset
-    train_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
-    test_dataset = Dataset_body(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
+    train_dataset = Dataset_body_real_ternary(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
+    test_dataset = Dataset_body_real_ternary(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
     
     cache_start = time.time()
     if cache_available:
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         test_dataset.cache_available = True
         test_dataset.load_cache(test_cache_path)
     else: # initialize empty cache and populate during first epoch, save after first epoch
-        print("Initializing New Caches...")
+        print("NEW CACHES will be saved here -->", cache_dir)
         train_dataset.init_cache()
         test_dataset.init_cache()
     cache_end = time.time()
@@ -133,8 +133,8 @@ if __name__ == '__main__':
     print(f"CACHES ARE READY! Took {cache_end-cache_start} seconds ---", train_dataset.cache.shape, test_dataset.cache.shape)
 
     # create dataloader
-    train_dataloader = DataLoader(train_dataset, batch_size=160, num_workers=0, shuffle=True, drop_last=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=32, num_workers=0, shuffle=False, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=64, num_workers=0, shuffle=True, drop_last=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=8, num_workers=0, shuffle=False, drop_last=True)
 
     # training config
     num_epochs = 1000
@@ -144,7 +144,7 @@ if __name__ == '__main__':
     eval_loss_log = []
     best_loss = 1e10
     best_eval_loss = 1e10
-    semantics = SemanticSegmentation(labels_definition_file_path, num_classes=num_classes)
+    semantics = SemanticSegmentationTernary(labels_definition_file_path, num_classes=num_classes)
 
     # Set up the optimizer, losses, hyperparameters
     optimizer = torch.optim.Adam(mask_decoder.parameters(), lr=1e-5, weight_decay=0)
@@ -221,11 +221,13 @@ if __name__ == '__main__':
                     image_data_vis = (image_data_vis*2.0 + 1.0)/2.0
                     image_data_vis = np.transpose(image_data_vis,(1,2,0))
                     gt_vis = gt.cpu().numpy()[-1] # last sample from batch
+                    gt_vis = cv2.resize(gt_vis[0], (1024,1024), interpolation=cv2.INTER_NEAREST)
                     bg_mask_vis = bg_mask.cpu().numpy()[-1] # last sample from batch
+                    bg_mask_vis = cv2.resize(bg_mask_vis[0], (1024,1024), interpolation=cv2.INTER_NEAREST)
                     fig, ax = plt.subplots(1,3,figsize=(30,10))
                     ax[0].imshow(image_data_vis)
-                    ax[1].imshow(gt_vis[0]) #ignoring channel dim
-                    ax[2].imshow(bg_mask_vis[0]) #ignoring channel dim
+                    ax[1].imshow(gt_vis)
+                    ax[2].imshow(bg_mask_vis)
                     breakpoint()
                 ######### -------------------------------------------------- #########
 
@@ -273,6 +275,7 @@ if __name__ == '__main__':
         # save dataset cache after first epoch
         if not(cache_available) and epoch==0:
             train_dataset.save_cache(train_cache_path)
+            train_dataset.cache_available = True
         
         # save the latest model checkpoint as required
         if epoch%save_frequency==0:
@@ -365,7 +368,8 @@ if __name__ == '__main__':
 
             # save test cache after first validation epoch
             if not(cache_available) and epoch==0:
-                test_dataset.save_cache(test_cache_path)  
+                test_dataset.save_cache(test_cache_path) 
+                test_dataset.cache_available = True
 
             # save best eval model checkpoint
             if eval_loss < best_eval_loss:

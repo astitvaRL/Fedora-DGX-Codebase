@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import os
 import cv2
 import time
-from skimage import io
+# from skimage import io
+import imageio as io
 from tqdm import tqdm
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -48,11 +49,11 @@ if __name__ == '__main__':
     os.makedirs(join(model_save_path, 'eval'), exist_ok=True)
     
     # training choice
-    cache_available = False # save dataset cache after first epoch
+    cache_available = True # save dataset cache after first epoch
     precompute_embeddings = False # False if already precomputed and saved
     resize_labels = False # False if already resized
     resume_training = False
-    visualization_debug = False
+    visualize_train_input_breakpoint = False
     ignore_background = False
     bbox_given = False
     bg_mask_given = True
@@ -132,7 +133,7 @@ if __name__ == '__main__':
     print(f"CACHES ARE READY! Took {cache_end-cache_start} seconds ---", train_dataset.cache.shape, test_dataset.cache.shape)
 
     # create dataloader
-    train_dataloader = DataLoader(train_dataset, batch_size=32, num_workers=0, shuffle=True, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=64, num_workers=0, shuffle=True, drop_last=True)
     test_dataloader = DataLoader(test_dataset, batch_size=8, num_workers=0, shuffle=False, drop_last=True)
 
     # training config
@@ -215,15 +216,18 @@ if __name__ == '__main__':
                 bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes mask size 256x256
 
                 ######### ------- plt visualizations after resizing  (last sample from batch) -------- #########
-                if visualization_debug:
+                if visualize_train_input_breakpoint:
                     image_data_vis = image_data.cpu().numpy()[-1] # last sample from batch
                     image_data_vis = (image_data_vis*2.0 + 1.0)/2.0
+                    image_data_vis = np.transpose(image_data_vis,(1,2,0))
                     gt_vis = gt.cpu().numpy()[-1] # last sample from batch
+                    gt_vis = cv2.resize(gt_vis[0], (1024,1024), interpolation=cv2.INTER_NEAREST)
                     bg_mask_vis = bg_mask.cpu().numpy()[-1] # last sample from batch
+                    bg_mask_vis = cv2.resize(bg_mask_vis[0], (1024,1024), interpolation=cv2.INTER_NEAREST)
                     fig, ax = plt.subplots(1,3,figsize=(30,10))
-                    ax[0].imshow(np.transpose(image_data_vis,(1,2,0)))
-                    ax[1].imshow(gt_vis[0])
-                    ax[2].imshow(bg_mask_vis[0])
+                    ax[0].imshow(image_data_vis)
+                    ax[1].imshow(gt_vis)
+                    ax[2].imshow(bg_mask_vis)
                     breakpoint()
                 ######### -------------------------------------------------- #########
 
@@ -290,7 +294,7 @@ if __name__ == '__main__':
         if epoch%eval_frequency==0:    
             # reset metrics for latest epoch
             eval_loss = 0
-            for step, (image_data, gt, bg_mask, bbox) in enumerate(tqdm(test_dataloader,"EVAL")):
+            for step, (image_data_eval, gt, bg_mask, bbox) in enumerate(tqdm(test_dataloader,"EVAL")):
             # loading precomputed embeddings during training
                 eval_epoch_dir = join(model_save_path, f"eval/{epoch}")
                 os.makedirs(eval_epoch_dir, exist_ok=True)
@@ -314,9 +318,9 @@ if __name__ == '__main__':
                         masks=bg_mask if bg_mask_given else None,
                     )
                     # image embedding estimation
-                    image_data = image_data.to(device)
-                    image_data = F.resize(image_data, 1024, torchvision.transforms.InterpolationMode.BILINEAR) # encoder takes image size 1024x1024
-                    embedding = image_encoder(image_data)
+                    image_data_eval = image_data_eval.to(device)
+                    image_data_eval = F.resize(image_data_eval, 1024, torchvision.transforms.InterpolationMode.BILINEAR) # encoder takes image size 1024x1024
+                    embedding = image_encoder(image_data_eval)
                     # segmentation prediction
                     mask_predictions, _ = mask_decoder(
                         image_embeddings=embedding.to(device), # (B, 256, 64, 64)
@@ -333,9 +337,9 @@ if __name__ == '__main__':
                     gt_vis = semantics.labels_to_colors(gt_vis.cpu().numpy().astype('uint8'))
                     gt_vis = cv2.resize(gt_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
                     bg_mask_vis = cv2.resize(bg_mask[-1][0].cpu().numpy().astype('uint8'), (1024,1024), interpolation=cv2.INTER_NEAREST)  # last sample from batch
-                    image_data_vis = image_data.cpu().numpy()[-1] # last sample from batch
-                    image_data_vis = (image_data_vis*2.0 + 1.0)/2.0
-                    
+                    image_data_vis = image_data_eval.cpu().numpy()[-1] # last sample from batch
+                    image_data_vis = (image_data_vis - image_data_vis.min()) / (image_data_vis.max() - image_data_vis.min())
+                    image_data_vis = np.transpose(image_data_vis,(1,2,0))
                     # plot eval results
                     TITLE_SIZE = 30
                     fig, ax = plt.subplots(1,4, figsize=(40,10))

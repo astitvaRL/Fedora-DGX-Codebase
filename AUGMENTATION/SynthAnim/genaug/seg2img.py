@@ -23,11 +23,11 @@ import json
 # paths
 ROOT_DIR = "/mnt/users_scratch/astitva/DATA/AD_SegMaps/"
 drawings_dir = os.path.join(ROOT_DIR, "drawings_resized")
-labels_dir = os.path.join(ROOT_DIR, "labels_2k")
-prompt_file_path = "prompts.txt"
+labels_dir = os.path.join(ROOT_DIR, "labels_2k_1024")
+prompt_file_path = "custom_prompts.txt"
 
 # output directory
-output_dir = os.path.join(ROOT_DIR, "drawings_synth_20k")
+output_dir = os.path.join(ROOT_DIR, "drawings_synth_17k_v3")
 os.makedirs(output_dir, exist_ok=True)
 
 # taken from https://huggingface.co/tianweiy/DMD2
@@ -63,7 +63,7 @@ for p in prompts:
         processed_prompts.append(p)
 
 # load the labels
-NUM_IMAGES = 12
+NUM_IMAGES = 6
 labels = sorted(os.listdir(labels_dir))
 prompts_dict = {}
 for label_name in tqdm(labels):
@@ -75,20 +75,21 @@ for label_name in tqdm(labels):
     binmask = mask == 0
     cond_img = preprocessor(label_img, detect_resolution=384, image_resolution=1024)
     # randomly select NUM_IMAGES unique prompts
-    sampled_prompts = np.random.choice(processed_prompts, NUM_IMAGES, replace=False)
+    sampled_prompts = np.random.choice(processed_prompts, NUM_IMAGES, replace=True)
     for idx in range(NUM_IMAGES):
         # text_prompt = f"an image of a drawing of an animated cartoon character."
         text_prompt = sampled_prompts[idx]
         if np.random.rand() < 0.5:
-            text_prompt += f", smudgy, colors leaking from the edges, hand drawn on a white paper."
+            #text_prompt += f", smudgy, colors leaking from the edges, paper notebook"
+            text_prompt = f"drawing of an animated character, crayon strokes, pencil art, amateur art by a kid, 8k, noisy."
         else:
-            text_prompt = f"a creative line-art sketch" + text_prompt
-            text_prompt += ", solid white background"
+            text_prompt = f"a colorful line art, drawn in a class notebook with lines"
+            text_prompt += "smudgy background, shadows"
         # generate image
-        gen_img = pipe(prompt=text_prompt, image=cond_img, num_inference_steps=4, guidance_scale=0, adapter_conditioning_scale=1.0, adapter_conditioning_factor=1.0, timesteps=[999, 749, 499, 249]).images[0]
+        gen_img = pipe(prompt=text_prompt, image=cond_img, num_inference_steps=4, guidance_scale=0, adapter_conditioning_scale=0.8, adapter_conditioning_factor=1.0, timesteps=[999, 749, 499, 249]).images[0]
         #mask the image
         gen_img_np = np.array(gen_img)
-        gen_img_np[binmask] = [255, 255, 255]
+        #gen_img_np[binmask] = [255, 255, 255]
         gen_img = Image.fromarray(gen_img_np)
         # save image
         gen_img.save(os.path.join(output_dir, f"{label_name[:-4]}_{idx}.png"))
