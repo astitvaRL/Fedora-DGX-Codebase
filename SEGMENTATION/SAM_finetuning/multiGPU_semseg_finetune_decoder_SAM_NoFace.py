@@ -37,7 +37,7 @@ if __name__ == '__main__':
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
     image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
     label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
-    cache_dir = join(data_root, 'cache_real_7k')
+    cache_dir = join(data_root, 'dataset_caches/cache_REAL7k')
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
@@ -47,18 +47,16 @@ if __name__ == '__main__':
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
     os.makedirs(join(model_save_path, 'eval'), exist_ok=True)
     os.makedirs(join(data_root, label_id_dir_name), exist_ok=True)
-    train_input_visualization_dir = join(data_root, 'TMP')
+    train_input_visualization_dir = join(data_root, 'TMP_INPUT_VIS')
     
     # training choice
-    cache_available = True # save dataset cache after first epoch
-    resize_labels = True # False if already resized
-    resume_training = True
+    cache_available = False # save dataset cache after first epoch
+    resize_labels = False # False if already resized
+    resume_training = False
     visualize_train_input = False
     ignore_background = False
     bbox_given = False
     bg_mask_given = True
-    # prepare SAM model
-    model_type = 'vit_b'
     
     if visualize_train_input:
         os.makedirs(train_input_visualization_dir, exist_ok=True)
@@ -79,6 +77,7 @@ if __name__ == '__main__':
     semantics = SemanticSegmentation(labels_definition_file_path, num_classes=num_classes)
 
     # prepare SAM model
+    model_type = 'vit_b'
     sam_model = sam_model_registry[model_type](num_classes = num_classes, checkpoint=init_checkpoint).to(device)
     sam_model.image_encoder.to(device)
     sam_model.prompt_encoder.to(device)
@@ -89,15 +88,16 @@ if __name__ == '__main__':
     mask_decoder = torch.nn.DataParallel(sam_model.mask_decoder, device_ids=device_ids)
 
     if resize_labels:
-        labels = sorted(os.listdir(join(data_root, label_id_dir_name[:-5])))
+        load_dir_name = label_id_dir_name[:-5] # remove '_1024'
+        labels = sorted(os.listdir(join(data_root, load_dir_name)))
         print('Resizing Labels...')
         for label_name in tqdm(labels):
             save_path = join(data_root, label_id_dir_name, label_name.split('.png')[0]+'_1024.png')
             if not os.path.exists(save_path):
-                label = cv2.imread(join(data_root, label_id_dir_name, label_name))
+                label = cv2.imread(join(data_root, load_dir_name, label_name))
                 label = cv2.resize(label, (1024,1024), interpolation=cv2.INTER_NEAREST)
-                cv2.imwrite(label, label)
-    breakpoint()
+                cv2.imwrite(save_path, label)
+
     # create dataset
     train_dataset = Dataset_NoFace(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
     test_dataset = Dataset_NoFace(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
@@ -173,7 +173,7 @@ if __name__ == '__main__':
 
             if visualize_train_input and epoch==0:
                 for batch_idx in range(image_data.shape[0]):
-                    original_image_data_vis = image_data_cpu.numpy()[batch_idx] # last sample from batch
+                    original_image_data_vis = image_data_cpu.cpu().numpy()[batch_idx] # last sample from batch
                     original_image_data_vis = (original_image_data_vis + 1.0)/2.0
                     original_image_data_vis = np.transpose(original_image_data_vis,(1,2,0))
                     image_data_vis = image_data.cpu().numpy()[batch_idx] # last sample from batch

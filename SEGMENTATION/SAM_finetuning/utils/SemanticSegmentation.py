@@ -38,7 +38,7 @@ import cv2
 '''
 
 class SemanticSegmentationCoarse():
-    def __init__(self, labels_definition_path, num_classes=18):
+    def __init__(self, labels_definition_path, num_classes=8):
         self.num_classes = num_classes
         self.data = None
         with open(labels_definition_path) as json_file:
