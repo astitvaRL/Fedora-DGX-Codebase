@@ -52,7 +52,7 @@ if __name__ == '__main__':
     cache_available = True # save dataset cache after first epoch
     resize_labels = False # False if already resized
     resume_training = False
-    visualize_train_input = True
+    visualize_train_input = False
     ignore_background = False
     bbox_given = False
     bg_mask_given = True
@@ -173,16 +173,17 @@ if __name__ == '__main__':
             if visualize_train_input and epoch==0:
                 for batch_idx in range(image_data.shape[0]):
                     original_image_data_vis = image_data_cpu.numpy()[batch_idx] # last sample from batch
-                    original_image_data_vis = (original_image_data_vis*2.0 + 1.0)/2.0
+                    original_image_data_vis = (original_image_data_vis + 1.0)/2.0
                     original_image_data_vis = np.transpose(original_image_data_vis,(1,2,0))
                     image_data_vis = image_data.cpu().numpy()[batch_idx] # last sample from batch
-                    image_data_vis = (image_data_vis*2.0 + 1.0)/2.0
+                    image_data_vis = (image_data_vis + 1.0)/2.0
                     image_data_vis = np.transpose(image_data_vis,(1,2,0))
                     gt_vis = gt.cpu().numpy()[batch_idx] # last sample from batch
                     gt_vis = semantics.labels_to_colors(cv2.resize(gt_vis[0], (1024,1024), interpolation=cv2.INTER_NEAREST))
                     bg_mask_vis = bg_mask.cpu().numpy()[batch_idx] # last sample from batch
                     bg_mask_vis = cv2.resize(bg_mask_vis[0], (1024,1024), interpolation=cv2.INTER_NEAREST)
                     fig, ax = plt.subplots(1,4,figsize=(40,10))
+                    TITLE_SIZE = 30
                     ax[0].imshow(original_image_data_vis)
                     ax[0].set_title('Original Image', fontsize=TITLE_SIZE)
                     ax[1].imshow(image_data_vis)
