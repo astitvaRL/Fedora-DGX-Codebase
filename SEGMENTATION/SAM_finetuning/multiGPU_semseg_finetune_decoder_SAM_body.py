@@ -36,22 +36,23 @@ if __name__ == '__main__':
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
     image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
-    label_id_dir_name = 'AD_SegMaps/labels_2k_1024' 
-    cache_dir = join(data_root, 'cache_real_2k')
+    label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
+    cache_dir = join(data_root, 'cache_real_7k')
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'dummy' # finetuned checkpoint will be saved here
+    task_name = 'semseg_DecoderOnly_NoFace_REAL7k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
     os.makedirs(join(model_save_path, 'eval'), exist_ok=True)
+    os.makedirs(join(data_root, label_id_dir_name), exist_ok=True)
     train_input_visualization_dir = join(data_root, 'TMP')
     
     # training choice
     cache_available = True # save dataset cache after first epoch
-    resize_labels = False # False if already resized
-    resume_training = False
+    resize_labels = True # False if already resized
+    resume_training = True
     visualize_train_input = False
     ignore_background = False
     bbox_given = False
@@ -67,7 +68,7 @@ if __name__ == '__main__':
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
         epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, 'dummy/model_eval_best.pth')
+        resume_ckpt = join(ckpt_dir, 'multigpu_vanilla_randomaug_real_2k/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
@@ -88,7 +89,7 @@ if __name__ == '__main__':
     mask_decoder = torch.nn.DataParallel(sam_model.mask_decoder, device_ids=device_ids)
 
     if resize_labels:
-        labels = sorted(os.listdir(join(data_root, label_id_dir_name)))
+        labels = sorted(os.listdir(join(data_root, label_id_dir_name[:-5])))
         print('Resizing Labels...')
         for label_name in tqdm(labels):
             save_path = join(data_root, label_id_dir_name, label_name.split('.png')[0]+'_1024.png')
@@ -96,7 +97,7 @@ if __name__ == '__main__':
                 label = cv2.imread(join(data_root, label_id_dir_name, label_name))
                 label = cv2.resize(label, (1024,1024), interpolation=cv2.INTER_NEAREST)
                 cv2.imwrite(label, label)
-
+    breakpoint()
     # create dataset
     train_dataset = Dataset_NoFace(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
     test_dataset = Dataset_NoFace(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
