@@ -19,7 +19,7 @@ from segment_anything_parallel.utils.transforms import ResizeLongestSide
 
 from utils.dataset import DrawingsDataset
 from utils.SurfaceDice import compute_dice_coefficient
-from utils.SemanticSegmentation import SemanticSegmentationCoarse
+from utils.SemanticSegmentation import SemanticSegmentation
 from utils.augment import RandomAug
 
 join = os.path.join
@@ -37,11 +37,11 @@ if __name__ == '__main__':
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
     image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
     label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
-    cache_dir = join(data_root, 'dataset_caches/cache_Coarse_REAL7k')
+    cache_dir = join(data_root, 'dataset_caches/cache_REAL7k')
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'semseg_DecoderOnly_Coarse_REAL7k' # finetuned checkpoint will be saved here
+    task_name = 'semseg_EncDec_NoFace_REAL7k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -65,16 +65,16 @@ if __name__ == '__main__':
     init_checkpoint = join(sam_original_ckpt_path)
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
-        epoch_start = 3 # change this
-        resume_ckpt = join(ckpt_dir, 'semseg_DecoderOnly_Coarse_REAL7k/model_eval_best.pth')
+        epoch_start = 0 # change this
+        resume_ckpt = join(ckpt_dir, 'semseg_DecoderOnly_NoFace_REAL7k/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
     device_ids = [i for i in range(torch.cuda.device_count())]
 
     # semantic segmentation definition
-    num_classes = 8
-    semantics = SemanticSegmentationCoarse(labels_definition_file_path, num_classes=num_classes)
+    num_classes = 18 
+    semantics = SemanticSegmentation(labels_definition_file_path, num_classes=num_classes)
 
     # prepare SAM model
     model_type = 'vit_b'
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     # create dataset
     train_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
     test_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
-
+    
     # set semantic definition
     train_dataset.num_classes = num_classes
     test_dataset.num_classes = num_classes
@@ -124,7 +124,7 @@ if __name__ == '__main__':
     print(f"CACHES ARE READY! Took {cache_end-cache_start} seconds ---", train_dataset.cache.shape, test_dataset.cache.shape)
 
     # create dataloader
-    train_dataloader = DataLoader(train_dataset, batch_size=160, num_workers=0, shuffle=True, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=128, num_workers=0, shuffle=True, drop_last=True)
     test_dataloader = DataLoader(test_dataset, batch_size=4, num_workers=0, shuffle=False, drop_last=True)
 
     # training config
@@ -136,18 +136,34 @@ if __name__ == '__main__':
     best_loss = 1e10
     best_eval_loss = 1e10
 
+
+    # PARTIAL FREEZING OF ENCODER
+    encoder_params = []
+    # Freeze all layers of image encoder
+    for param in sam_model.image_encoder.parameters():
+        param.requires_grad = False
+    # set 'requires_grad=True' for the last block
+    for name, param in sam_model.image_encoder.named_parameters():
+        if name.startswith('blocks.11'):
+            param.requires_grad = True
+            encoder_params.append(param)
+    # set requires_grad=True for the neck layer
+    for param in sam_model.image_encoder.neck.parameters():
+        param.requires_grad = True
+        encoder_params.append(param)
+    # verify
+    for name, param in sam_model.image_encoder.named_parameters():
+        print(name, param.requires_grad)
+
+
+    # Set up the optimizer, losses, hyperparameters
+    encdec_params = encoder_params + list(sam_model.mask_decoder.parameters())
+    optimizer = torch.optim.Adam(iter(encdec_params), lr=1e-5, weight_decay=0) # adding all parameters to optimizer as an iterable
+
     # Set up the optimizer, losses, hyperparameters
     optimizer = torch.optim.Adam(mask_decoder.parameters(), lr=1e-5, weight_decay=0)
     dice_loss = monai.losses.DiceCELoss(sigmoid=True, squared_pred=True, reduction='mean')
     focal_loss = monai.losses.FocalLoss(reduction='mean', gamma=2.0)
-
-   # Freeze all layers of image encoder
-    for param in image_encoder.parameters():
-        param.requires_grad = False
-
-    ## verify
-    # for name, param in image_encoder.named_parameters():
-    #     print(name, param.requires_grad)
 
     # augmentations
     input_size = (1024, 1024)

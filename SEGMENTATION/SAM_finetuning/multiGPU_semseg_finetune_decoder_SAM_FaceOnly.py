@@ -17,9 +17,9 @@ from monai.networks import one_hot
 from segment_anything_parallel import SamPredictor, sam_model_registry
 from segment_anything_parallel.utils.transforms import ResizeLongestSide
 
-from utils.dataset import DrawingsDataset
+from utils.dataset import DrawingsDatasetFace
 from utils.SurfaceDice import compute_dice_coefficient
-from utils.SemanticSegmentation import SemanticSegmentationCoarse
+from utils.SemanticSegmentation import SemanticSegmentationFace
 from utils.augment import RandomAug
 
 join = os.path.join
@@ -37,11 +37,11 @@ if __name__ == '__main__':
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
     image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
     label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
-    cache_dir = join(data_root, 'dataset_caches/cache_Coarse_REAL7k')
+    cache_dir = join(data_root, 'dataset_caches/cache_FaceOnly_REAL7k')
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'semseg_DecoderOnly_Coarse_REAL7k' # finetuned checkpoint will be saved here
+    task_name = 'semseg_DecoderOnly_FaceOnly_REAL7k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -50,10 +50,10 @@ if __name__ == '__main__':
     train_input_visualization_dir = join(data_root, 'TMP_INPUT_VIS')
     
     # training choice
-    cache_available = True # save dataset cache after first epoch
+    cache_available = False # save dataset cache after first epoch
     resize_labels = False # False if already resized
-    resume_training = True
-    visualize_train_input = False
+    resume_training = False
+    visualize_train_input = True
     ignore_background = False
     bbox_given = False
     bg_mask_given = True
@@ -66,15 +66,15 @@ if __name__ == '__main__':
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
         epoch_start = 3 # change this
-        resume_ckpt = join(ckpt_dir, 'semseg_DecoderOnly_Coarse_REAL7k/model_eval_best.pth')
+        resume_ckpt = join(ckpt_dir, 'semseg_DecoderOnly_FaceOnly_REAL7k/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
     device_ids = [i for i in range(torch.cuda.device_count())]
 
     # semantic segmentation definition
-    num_classes = 8
-    semantics = SemanticSegmentationCoarse(labels_definition_file_path, num_classes=num_classes)
+    num_classes = 11
+    semantics = SemanticSegmentationFace(labels_definition_file_path, num_classes=num_classes)
 
     # prepare SAM model
     model_type = 'vit_b'
@@ -99,8 +99,8 @@ if __name__ == '__main__':
                 cv2.imwrite(save_path, label)
 
     # create dataset
-    train_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
-    test_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
+    train_dataset = DrawingsDatasetFace(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
+    test_dataset = DrawingsDatasetFace(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
 
     # set semantic definition
     train_dataset.num_classes = num_classes

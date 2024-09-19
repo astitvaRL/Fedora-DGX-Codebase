@@ -147,7 +147,7 @@ if __name__ == '__main__':
     semantics = SemanticSegmentation(labels_definition_file_path, num_classes=num_classes)
 
     encoder_params = []
-   # Freeze all layers of image encoder
+    # Freeze all layers of image encoder
     for param in sam_model.image_encoder.parameters():
         param.requires_grad = False
     # set requires_grad=True for the last block
