@@ -92,7 +92,7 @@ if __name__ == '__main__':
     elif num_classes==3:
         semantics = SemanticSegmentationTernary(labels_definition_file_path, num_classes=num_classes)
     elif num_classes==6:
-        semantics = SemanticSegmentationCoarse(labels_definition_file_path, num_classes=num_classes, ignore_background=ignore_background)
+        semantics = SemanticSegmentationCoarse(labels_definition_file_path, num_classes=num_classes)
     
     # train_dataset.semantics = semantics
     test_dataset.semantics = semantics
