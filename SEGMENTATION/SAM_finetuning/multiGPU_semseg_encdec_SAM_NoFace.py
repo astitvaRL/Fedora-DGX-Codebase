@@ -124,7 +124,7 @@ if __name__ == '__main__':
     print(f"CACHES ARE READY! Took {cache_end-cache_start} seconds ---", train_dataset.cache.shape, test_dataset.cache.shape)
 
     # create dataloader
-    train_dataloader = DataLoader(train_dataset, batch_size=128, num_workers=0, shuffle=True, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=64, num_workers=0, shuffle=True, drop_last=True)
     test_dataloader = DataLoader(test_dataset, batch_size=4, num_workers=0, shuffle=False, drop_last=True)
 
     # training config
@@ -161,7 +161,6 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(iter(encdec_params), lr=1e-5, weight_decay=0) # adding all parameters to optimizer as an iterable
 
     # Set up the optimizer, losses, hyperparameters
-    optimizer = torch.optim.Adam(mask_decoder.parameters(), lr=1e-5, weight_decay=0)
     dice_loss = monai.losses.DiceCELoss(sigmoid=True, squared_pred=True, reduction='mean')
     focal_loss = monai.losses.FocalLoss(reduction='mean', gamma=2.0)
 

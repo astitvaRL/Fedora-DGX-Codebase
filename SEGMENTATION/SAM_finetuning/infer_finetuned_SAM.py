@@ -18,9 +18,9 @@ from monai.networks import one_hot
 from segment_anything_parallel import SamPredictor, sam_model_registry
 from segment_anything_parallel.utils.transforms import ResizeLongestSide
 
-from utils.dataset import Dataset_body, Dataset_body_real
+from utils.dataset import DrawingsDataset, DrawingsDatasetFace
 from utils.SurfaceDice import compute_dice_coefficient
-from utils.SemanticSegmentation import SemanticSegmentation, SemanticSegmentationTernary
+from utils.SemanticSegmentation import SemanticSegmentation, SemanticSegmentationTernary, SemanticSegmentationCoarse
 join = os.path.join
 
 
@@ -39,13 +39,13 @@ if __name__ == '__main__':
     label_id_dir_name = 'AD_SegMaps/labels_2k_1024' 
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
-    cache_dir = join(data_root, 'cache_ternary_real_2k')
+    cache_dir = join(data_root, 'dataset_caches/cache_Coarse_REAL7k')
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
 
     # EXPERIMENT CONFIG
-    task_name = 'multigpu_ternary_randomaug_syn_17k'
+    task_name = 'semseg_EncDec_Coarse_NoBinmask_REAL7k'
     encoder_pretrained = False
 
     model_save_path = join(ckpt_dir, task_name)
@@ -56,9 +56,9 @@ if __name__ == '__main__':
     cache_available = True # save dataset cache after first epoch
     ignore_background = False
     bbox_given = False
-    bg_mask_given = True
+    bg_mask_given = False
     model_type = 'vit_b'
-    num_classes = 18 
+    num_classes = 6
 
      # load original SAM cackpoint for finetuning, or load an existing checkpoint for further training
     init_checkpoint = join(ckpt_dir, f'{task_name}/model_latest.pth')
@@ -82,8 +82,8 @@ if __name__ == '__main__':
     mask_decoder = torch.nn.DataParallel(sam_model.mask_decoder, device_ids=device_ids)
 
     # create dataset
-    # train_dataset = Dataset_body_real(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
-    test_dataset = Dataset_body_real(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, img_embed_dir_name = embed_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
+    # train_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
+    test_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
     
     # define semantics
     semantics = None
@@ -91,6 +91,9 @@ if __name__ == '__main__':
         semantics = SemanticSegmentation(labels_definition_file_path, num_classes=num_classes)
     elif num_classes==3:
         semantics = SemanticSegmentationTernary(labels_definition_file_path, num_classes=num_classes)
+    elif num_classes==6:
+        semantics = SemanticSegmentationCoarse(labels_definition_file_path, num_classes=num_classes, ignore_background=ignore_background)
+    
     # train_dataset.semantics = semantics
     test_dataset.semantics = semantics
 
@@ -105,15 +108,13 @@ if __name__ == '__main__':
 
     # create dataloader
     # train_dataloader = DataLoader(train_dataset, batch_size=1, num_workers=0, shuffle=True, drop_last=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=1, num_workers=0, shuffle=False, drop_last=True)
-
-    # training config
+    test_dataloader = DataLoader(test_dataset, batch_size=32, num_workers=0, shuffle=False, drop_last=True)
 
     # Set up the optimizer, losses, hyperparameters
     dice_loss = monai.losses.DiceCELoss(sigmoid=True, squared_pred=True, reduction='mean')
     focal_loss = monai.losses.FocalLoss(reduction='mean', gamma=2.0)
 
-    epoch = 89
+    epoch = 0
     eval_loss = 0
     for step, (image_data_eval, gt, bg_mask, bbox) in enumerate(tqdm(test_dataloader,"EVAL")):
     # loading precomputed embeddings during training
@@ -150,34 +151,51 @@ if __name__ == '__main__':
                 dense_prompt_embeddings=dense_embeddings, # (B, 256, 64, 64)
                 multimask_output=True,
             )
-            # visualizing last sample from every batch
-            labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0)  # last sample from batch
-            labels_out_vis = semantics.labels_to_colors(labels_out.cpu().numpy().astype('uint8'))
-            labels_out_vis = cv2.resize(labels_out_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
-            gt_vis = torch.argmax(torch.Tensor(gt[-1]), dim=0)  # last sample from batch
-            gt_vis = semantics.labels_to_colors(gt_vis.cpu().numpy().astype('uint8'))
-            gt_vis = cv2.resize(gt_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
-            bg_mask_vis = cv2.resize(bg_mask[-1][0].cpu().numpy().astype('uint8'), (1024,1024), interpolation=cv2.INTER_NEAREST)  # last sample from batch
-            image_data_vis = image_data_eval.cpu().numpy()[-1] # last sample from batch
-            image_data_vis = (image_data_vis - image_data_vis.min()) / (image_data_vis.max() - image_data_vis.min())
-            image_data_vis = np.transpose(image_data_vis,(1,2,0))
-            # plot eval results
-            TITLE_SIZE = 30
-            fig, ax = plt.subplots(1,3, figsize=(30,10))
-            ax[0].imshow(image_data_vis)
-            ax[0].set_title("Input Image", fontsize=TITLE_SIZE)
-            ax[0].axis('off')
-            # ax[1].imshow(bg_mask_vis, cmap='gray')
-            # ax[1].set_title("Mask", fontsize=TITLE_SIZE)
-            # ax[1].axis('off')
-            ax[1].imshow(labels_out_vis)
-            ax[1].set_title("Prediction", fontsize=TITLE_SIZE)
-            ax[1].axis('off')
-            ax[2].imshow(gt_vis)
-            ax[2].set_title("GT", fontsize=TITLE_SIZE)
-            ax[2].axis('off')
-            plt.savefig(f"{eval_epoch_dir}/{step}.png")
-            plt.close()
+            # visualizing samples from every batch
+            for batch_idx in range(image_data_eval.shape[0]):
+
+                labels_out = torch.argmax(torch.Tensor(mask_predictions[batch_idx]), dim=0)  # last sample from batch
+                labels_out_vis = semantics.labels_to_colors(labels_out.cpu().numpy().astype('uint8'))
+                labels_out_vis = cv2.resize(labels_out_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
+                gt_vis = torch.argmax(torch.Tensor(gt[batch_idx]), dim=0)  # last sample from batch
+                gt_vis = semantics.labels_to_colors(gt_vis.cpu().numpy().astype('uint8'))
+                gt_vis = cv2.resize(gt_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
+                bg_mask_vis = cv2.resize(bg_mask[batch_idx][0].cpu().numpy().astype('uint8'), (1024,1024), interpolation=cv2.INTER_NEAREST)  # last sample from batch
+                image_data_vis = image_data_eval.cpu().numpy()[batch_idx] # last sample from batch
+                image_data_vis = (image_data_vis - image_data_vis.min()) / (image_data_vis.max() - image_data_vis.min())
+                image_data_vis = np.transpose(image_data_vis,(1,2,0))
+
+                # plot eval results
+                TITLE_SIZE = 30
+                if bg_mask_given:
+                    fig, ax = plt.subplots(1,4, figsize=(40,10))
+                    ax[0].imshow(image_data_vis)
+                    ax[0].set_title("Input Image", fontsize=TITLE_SIZE)
+                    ax[0].axis('off')
+                    ax[1].imshow(bg_mask_vis, cmap='gray')
+                    ax[1].set_title("Mask", fontsize=TITLE_SIZE)
+                    ax[1].axis('off')
+                    ax[2].imshow(labels_out_vis)
+                    ax[2].set_title("Prediction", fontsize=TITLE_SIZE)
+                    ax[2].axis('off')
+                    ax[3].imshow(gt_vis)
+                    ax[3].set_title("GT", fontsize=TITLE_SIZE)
+                    ax[3].axis('off')
+                    plt.savefig(f"{eval_epoch_dir}/{step}_{batch_idx}.png")
+                    plt.close()
+                else:
+                    fig, ax = plt.subplots(1,3, figsize=(30,10))
+                    ax[0].imshow(image_data_vis)
+                    ax[0].set_title("Input Image", fontsize=TITLE_SIZE)
+                    ax[0].axis('off')
+                    ax[1].imshow(labels_out_vis)
+                    ax[1].set_title("Prediction", fontsize=TITLE_SIZE)
+                    ax[1].axis('off')
+                    ax[2].imshow(gt_vis)
+                    ax[2].set_title("GT", fontsize=TITLE_SIZE)
+                    ax[2].axis('off')
+                    plt.savefig(f"{eval_epoch_dir}/{step}_{batch_idx}.png")
+                    plt.close()
             
             # compute eval loss
             eval_loss += dice_loss(mask_predictions, gt.to(device)).item()

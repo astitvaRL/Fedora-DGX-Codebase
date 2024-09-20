@@ -11,7 +11,7 @@ import torchvision
 from torchvision import transforms
 
 class RandomAug:
-    def __init__(self, target_size=(1024,1024), crop_size=(512,512), crop_probability=0.3, fliph_probability=0.7, flipv_probability=0.0, rotate_probability=0.5, rotate_max_angle=30, color_jitter_probability=0.3):
+    def __init__(self, target_size=(1024,1024), crop_size=(512,512), crop_probability=0.3, fliph_probability=0.7, flipv_probability=0.0, rotate_probability=0.5, rotate_max_angle=30, color_jitter_probability=0.5):
         self.target_size = target_size
         self.crop_size = crop_size
         self.crop_probability = crop_probability

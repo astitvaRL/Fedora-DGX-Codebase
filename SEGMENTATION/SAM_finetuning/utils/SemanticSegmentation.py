@@ -38,15 +38,16 @@ import cv2
 '''
 
 class SemanticSegmentationCoarse():
-    def __init__(self, labels_definition_path, num_classes=8):
+    def __init__(self, labels_definition_path, num_classes=6):
         self.num_classes = num_classes
         self.data = None
         with open(labels_definition_path) as json_file:
             self.data = json.load(json_file)
         self.data['label_name_to_id']['Unlabeled'] = 26 # handling id 255
-        self.remap = {0:0, 1:1, 2:2, 3:2, 4:2, 5:2, 6:2, 13:2, 17:2, 18:2, 22:2, 23:2, 7:3, 8:4, 9:3, 10:3, 11:4, 12:2, 14:1, 15:4, 16:3, 19:3, 20:5, 21:4, 24:1, 25:6, 26:7}
+        self.remap = {0:0, 1:1, 2:2, 3:2, 4:2, 5:2, 6:2, 13:2, 17:2, 18:2, 22:2, 23:2, 7:3, 8:4, 9:3, 10:3, 11:4, 12:2, 14:1, 15:4, 16:3, 19:3, 20:2, 21:4, 24:1, 25:5, 26:0}
         self.reverse_remap = {value: key for key, value in self.remap.items()}
-        assert self.num_classes == 8 #highest remapped id+1
+        self.reverse_remap[0] = 0 # background should not be remapped
+        assert self.num_classes == 6 #highest remapped id+1
         self.color_dict = {}
         for label_name in self.data['label_name_to_color']:
             self.color_dict[int(self.data['label_name_to_id'][label_name])] = self.data['label_name_to_color'][label_name]
@@ -80,7 +81,7 @@ class SemanticSegmentationCoarse():
         labels = np.zeros_like(r)
         for classname in self.data['label_name_to_color']:
             ref_classname = classname + '' # copy precaution
-            if classname in ['Head_Region','Eyebrows','Mouth','Pupils','Other_Facial_Accessory_','Nose','Teeth','Eyes', 'Ears','Tongue']:
+            if classname in ['Head_Region','Other_Head_accessory_', 'Hair','Eyebrows','Mouth','Pupils','Other_Facial_Accessory_','Nose','Teeth','Eyes', 'Ears','Tongue']:
                 ref_classname = 'Head_Region'
             elif classname in ['Lower_leg', 'Upper_leg', 'Feer']:
                 ref_classname = 'Lower_leg'
@@ -103,6 +104,9 @@ class SemanticSegmentationCoarse():
         labels = labels.reshape(w,h)
         return labels
 
+##########################################################################################################
+##########################################################################################################
+##########################################################################################################
 
 class SemanticSegmentation():
     def __init__(self, labels_definition_path, num_classes=18):

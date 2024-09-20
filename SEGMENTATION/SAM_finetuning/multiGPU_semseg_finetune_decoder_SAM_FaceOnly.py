@@ -53,7 +53,7 @@ if __name__ == '__main__':
     cache_available = False # save dataset cache after first epoch
     resize_labels = False # False if already resized
     resume_training = False
-    visualize_train_input = True
+    visualize_train_input = False
     ignore_background = False
     bbox_given = False
     bg_mask_given = True
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     init_checkpoint = join(sam_original_ckpt_path)
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
-        epoch_start = 3 # change this
+        epoch_start = 0 # change this
         resume_ckpt = join(ckpt_dir, 'semseg_DecoderOnly_FaceOnly_REAL7k/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 

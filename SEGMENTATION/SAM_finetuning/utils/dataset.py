@@ -140,18 +140,21 @@ class DrawingsDatasetFace(Dataset):
         if not self.cache_available: 
             # populate cache entry during first-time access
             gt2D = cv2.imread(join(self.data_root, self.label_id_dir_name, self.files[index]))
+            assert gt2D.shape[0]==1024 and gt2D.shape[1]==1024
             gt2D = cv2.cvtColor(gt2D, cv2.COLOR_BGR2RGB)
             gt2D_labels = self.semantics.colors_to_labels(gt2D)
             face_binmask = gt2D_labels>0
             Xs = np.where(face_binmask>0)[0]
             Ys = np.where(face_binmask>0)[1]
-            gt2D_labels_cropped = gt2D_labels[Xs.min():Xs.max(),Ys.min():Ys.max()] # crop to face (single channel)
-            print(f"gt2D_labels_cropped shape: {gt2D_labels_cropped.shape}")
-            if gt2D_labels_cropped.shape[0]==0 or gt2D_labels_cropped.shape[1]==0:
+            if len(Xs)==0 or len(Ys)==0:
                 face_present = False
-                gt2D_labels = cv2.resize(gt2D_labels, (1024,1024), interpolation=cv2.INTER_NEAREST) # resize original image
-            else:
-                gt2D_labels = cv2.resize(gt2D_labels_cropped, (1024,1024), interpolation=cv2.INTER_NEAREST) # resize cropped image
+            if face_present:
+                gt2D_labels_cropped = gt2D_labels[Xs.min():Xs.max(),Ys.min():Ys.max()] # crop to face (single channel)
+                if gt2D_labels_cropped.shape[0]==0 or gt2D_labels_cropped.shape[1]==0 or face_binmask.sum()==0:
+                    face_present = False
+                    gt2D_labels = cv2.resize(gt2D_labels, (1024,1024), interpolation=cv2.INTER_NEAREST) # resize original image
+                else:
+                    gt2D_labels = cv2.resize(gt2D_labels_cropped, (1024,1024), interpolation=cv2.INTER_NEAREST) # resize cropped image
             gt2D_labels = torch.tensor(gt2D_labels[None, :,:]).float()
             self.cache[index][3:,:,:] = gt2D_labels
 
@@ -159,11 +162,11 @@ class DrawingsDatasetFace(Dataset):
         if not self.cache_available: 
             image_name = f"{self.files[index].split('_')[0]}.png"
             image = cv2.imread(join(self.data_root, self.image_dir_name, image_name))
-            if face_present:
-                image = image[Xs.min():Xs.max(),Ys.min():Ys.max(),:] # crop to face (multi-channel)
-            print(f"image shape: {image.shape}, {gt2D_labels.shape}")
-            image = cv2.resize(image, (1024,1024), interpolation=cv2.INTER_LINEAR)
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            image = cv2.resize(image, (1024,1024), interpolation=cv2.INTER_LINEAR) # face bbox is computed for 1024x1024
+            if face_present:
+                image_cropped = image[Xs.min():Xs.max(),Ys.min():Ys.max(),:] # crop to face (multi-channel)
+                image = cv2.resize(image_cropped, (1024,1024), interpolation=cv2.INTER_LINEAR) # uncropped GT labels are already 1024x1024
             sam_transform = ResizeLongestSide(self.sam_model.image_encoder.img_size)
             resize_img = sam_transform.apply_image(image)
             resize_img_tensor = torch.as_tensor(resize_img.transpose(2, 0, 1)).to(self.device)
@@ -171,7 +174,6 @@ class DrawingsDatasetFace(Dataset):
             input_image_tensor = input_image_tensor.squeeze(0)
             self.cache[index][:3,:,:] = input_image_tensor
 
-        
         # binary mask   
         binmask = gt2D_labels.squeeze(0)>0
         binmask = np.uint8(binmask)
