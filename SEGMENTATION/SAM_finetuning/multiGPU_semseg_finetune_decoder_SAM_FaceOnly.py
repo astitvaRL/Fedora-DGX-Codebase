@@ -46,6 +46,7 @@ if __name__ == '__main__':
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
     os.makedirs(join(model_save_path, 'eval'), exist_ok=True)
+    os.makedirs(join(model_save_path, 'all_ckpts'), exist_ok=True)
     os.makedirs(join(data_root, label_id_dir_name), exist_ok=True)
     train_input_visualization_dir = join(data_root, 'TMP_INPUT_VIS')
     
@@ -136,18 +137,23 @@ if __name__ == '__main__':
     best_loss = 1e10
     best_eval_loss = 1e10
 
-    # Set up the optimizer, losses, hyperparameters
-    optimizer = torch.optim.Adam(mask_decoder.parameters(), lr=1e-5, weight_decay=0)
-    dice_loss = monai.losses.DiceCELoss(sigmoid=True, squared_pred=True, reduction='mean')
-    focal_loss = monai.losses.FocalLoss(reduction='mean', gamma=2.0)
-
-   # Freeze all layers of image encoder
+    # Freeze all layers of image encoder
     for param in image_encoder.parameters():
         param.requires_grad = False
 
     ## verify
     # for name, param in image_encoder.named_parameters():
     #     print(name, param.requires_grad)
+
+    # Set up the optimizer
+    optimizer = torch.optim.Adam(mask_decoder.parameters(), lr=1e-5, weight_decay=0)
+
+    # Set up the losses
+    dice_loss = monai.losses.DiceCELoss(sigmoid=True, squared_pred=True, reduction='mean')
+    focal_loss = monai.losses.FocalLoss(reduction='mean', gamma=2.0)
+
+    # define differntiable non-learnable upsampling layer
+    upsample = torch.nn.Upsample(scale_factor=4, mode='nearest')
 
     # augmentations
     input_size = (1024, 1024)
@@ -160,7 +166,7 @@ if __name__ == '__main__':
         epoch_loss = 0
         # TRAINING
         for step, (image_data_cpu, gt, bg_mask, bbox) in enumerate(tqdm(train_dataloader, "Training")):
-            # not loading precomputed embeddings during training
+            
             image_data = image_data_cpu.to(device)
             gt = gt.to(device)
             bg_mask = bg_mask.to(device)
@@ -169,8 +175,8 @@ if __name__ == '__main__':
             image_data, gt, bg_mask, _ = randomaug.apply_augmentation(image_data, gt, bg_mask)
             image_data = randomaug.apply_color_jitter(image_data, gt)
 
-            # resize gt and mask to 256x256
-            gt = F.resize(gt, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes image size 256x256
+            # resize gt and bg_mask
+            gt = F.resize(gt, 1024, torchvision.transforms.InterpolationMode.NEAREST) # prediction will be umsampled to 1024x1024
             bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes mask size 256x256
 
             ################################################################################################
@@ -219,17 +225,15 @@ if __name__ == '__main__':
             bbox[:,1] = 0
             bbox[:,2] = 256
             bbox[:,3] = 256
-            bbox = bbox.to(device) 
-
+            bbox = bbox.to(device)
+            
+            # not computing gradients for image encoder and prompt encoder
             with torch.no_grad():           
-
                 sparse_embeddings, dense_embeddings, image_pe = prompt_encoder(
                     points=None,
                     boxes=bbox[:, None, :] if bbox_given else None,
                     masks=bg_mask if bg_mask_given else None,
                 )
-
-                # predict image embedding
                 image_data = F.resize(image_data, 1024, torchvision.transforms.InterpolationMode.BILINEAR) # encoder takes image size 1024x1024
                 embedding = image_encoder(image_data)
                 
@@ -242,12 +246,16 @@ if __name__ == '__main__':
                 dense_prompt_embeddings=dense_embeddings, # (B, 256, 64, 64)
                 multimask_output=True,
             )
+            
+            #upsample mask predictions
+            mask_predictions = upsample(mask_predictions)
 
             # Optional, doesn't help much if mask is already being passed as prompt
-            if ignore_background: 
+            if ignore_background and bg_mask_given:  
                 mask_predictions = mask_predictions*bg_mask
                 gt = gt*bg_mask
-            loss = 0.8*dice_loss(mask_predictions, gt) + 0.2*focal_loss(mask_predictions, gt)
+                
+            loss = 0.7*dice_loss(mask_predictions, gt) + 0.3*focal_loss(mask_predictions, gt)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -265,7 +273,7 @@ if __name__ == '__main__':
         if epoch%save_frequency==0:
             print(f'TRAIN EPOCH: {epoch}, Loss: {epoch_loss}')
             # save the latest model checkpoint
-            torch.save(sam_model.state_dict(), join(model_save_path, 'model_latest.pth'))
+            torch.save(sam_model.state_dict(), join(model_save_path, f'all_ckpts/model_{epoch}.pth'))
             labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0) # last sample from randomized current batch
             plt.imshow(semantics.labels_to_colors(labels_out.cpu().numpy().astype('uint8')))
             plt.savefig(join(model_save_path, f"train_seg_vis/{epoch}.png"))
@@ -279,22 +287,22 @@ if __name__ == '__main__':
             # reset metrics for latest epoch
             eval_loss = 0
             for step, (image_data_eval, gt, bg_mask, bbox) in enumerate(tqdm(test_dataloader,"EVAL")):
-            # loading precomputed embeddings during training
                 eval_epoch_dir = join(model_save_path, f"eval/{epoch}")
                 os.makedirs(eval_epoch_dir, exist_ok=True)
-                # not computing gradients for image encoder, prompt encoder and mask decoder during evaluation
+                # move input to device
+                image_data_eval = image_data_eval.to(device)
+                gt = gt.to(device)
+                bg_mask = bg_mask.to(device)
+                bbox = bbox.to(device)            
+                # not computing any gradients during evaluation
                 with torch.no_grad():
-                    # resize gt to 256x256
-                    gt = F.resize(gt, 256, torchvision.transforms.InterpolationMode.NEAREST)
+                    gt = F.resize(gt, 1024, torchvision.transforms.InterpolationMode.NEAREST)
                     gt = torch.nn.functional.one_hot(gt.squeeze(1),num_classes)
                     B,_, H, W = gt.shape
                     gt = torch.permute(gt,(0,3,1,2))
-                    # resize bg_mask to 256x256
                     bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST)
-                    bg_mask = bg_mask.to(device)
                     # resizing by a factor of 4 (1024-->256)
                     bbox = bbox//4 
-                    bbox = bbox.to(device)            
                     # prompt encoding
                     sparse_embeddings, dense_embeddings, image_pe = prompt_encoder(
                         points=None,
@@ -302,7 +310,6 @@ if __name__ == '__main__':
                         masks=bg_mask if bg_mask_given else None,
                     )
                     # image embedding estimation
-                    image_data_eval = image_data_eval.to(device)
                     image_data_eval = F.resize(image_data_eval, 1024, torchvision.transforms.InterpolationMode.BILINEAR) # encoder takes image size 1024x1024
                     embedding = image_encoder(image_data_eval)
                     # segmentation prediction
@@ -313,6 +320,15 @@ if __name__ == '__main__':
                         dense_prompt_embeddings=dense_embeddings, # (B, 256, 64, 64)
                         multimask_output=True,
                     )
+                    #upsample mask predictions
+                    mask_predictions = upsample(mask_predictions)
+                    if bg_mask_given: 
+                        # excluding background from loss computation
+                        bg_mask = F.resize(bg_mask, 1024, torchvision.transforms.InterpolationMode.NEAREST)
+                        gt = gt*bg_mask
+                        mask_predictions = mask_predictions*bg_mask
+                    # compute eval loss
+                    eval_loss += dice_loss(mask_predictions, gt.to(device)).item()
                     # visualizing last sample from every batch
                     labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0)  # last sample from batch
                     labels_out_vis = semantics.labels_to_colors(labels_out.cpu().numpy().astype('uint8'))
@@ -341,9 +357,6 @@ if __name__ == '__main__':
                     ax[3].axis('off')
                     plt.savefig(f"{eval_epoch_dir}/{step}.png")
                     plt.close()
-                    
-                    # compute eval loss
-                    eval_loss += dice_loss(mask_predictions, gt.to(device)).item()
             # logging eval loss and metrics
             eval_loss /= (step+1)
             print(f'EVAL EPOCH: {epoch}, Loss: {eval_loss}')

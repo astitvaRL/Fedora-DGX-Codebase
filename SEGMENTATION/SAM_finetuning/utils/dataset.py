@@ -13,7 +13,7 @@ from scipy.spatial import cKDTree
 join = os.path.join
 
 from segment_anything.utils.transforms import ResizeLongestSide
-from .SemanticSegmentation import SemanticSegmentation, SemanticSegmentationFace, SemanticSegmentationCoarse
+from .SemanticSegmentation import SemanticSegmentationNoFace, SemanticSegmentationFace, SemanticSegmentationCoarse
 
 
 ###########################################################################################################################################
@@ -25,7 +25,7 @@ class DrawingsDataset(Dataset):
     def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda'):
         self.sam_model = sam_model
         self.num_classes = 18
-        self.semantics = SemanticSegmentation(labels_definition_path=labels_definition_file_path, num_classes=self.num_classes)
+        self.semantics = SemanticSegmentationNoFace(labels_definition_path=labels_definition_file_path, num_classes=self.num_classes)
         self.compute_bbox=False # slower data loading if True
         self.mode = mode
         self.cache_available=False

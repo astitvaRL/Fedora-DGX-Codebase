@@ -13,13 +13,14 @@ from torchvision import transforms
 import monai
 import json
 from monai.networks import one_hot
+import kornia
 
 from segment_anything_parallel import SamPredictor, sam_model_registry
 from segment_anything_parallel.utils.transforms import ResizeLongestSide
 
 from utils.dataset import DrawingsDataset
 from utils.SurfaceDice import compute_dice_coefficient
-from utils.SemanticSegmentation import SemanticSegmentation
+from utils.SemanticSegmentation import SemanticSegmentationBinary
 from utils.augment import RandomAug
 
 join = os.path.join
@@ -37,11 +38,11 @@ if __name__ == '__main__':
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
     image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
     label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
-    cache_dir = join(data_root, 'dataset_caches/cache_REAL7k')
+    cache_dir = join(data_root, 'dataset_caches/cache_Coarse_REAL7k')
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'semseg_EncDec_NoFace_REAL7k' # finetuned checkpoint will be saved here
+    task_name = 'ANIMSEG_EncDec_Binary_REAL7k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -53,11 +54,11 @@ if __name__ == '__main__':
     # training choice
     cache_available = True # save dataset cache after first epoch
     resize_labels = False # False if already resized
-    resume_training = True
+    resume_training = False
     visualize_train_input = False
     ignore_background = False
     bbox_given = False
-    bg_mask_given = True
+    bg_mask_given = False
     
     if visualize_train_input:
         os.makedirs(train_input_visualization_dir, exist_ok=True)
@@ -67,15 +68,15 @@ if __name__ == '__main__':
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
         epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, 'semseg_DecoderOnly_NoFace_REAL7k/model_eval_best.pth')
+        resume_ckpt = join(ckpt_dir, 'ANIMSEG_EncDec_Binary_REAL7k/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
     device_ids = [i for i in range(torch.cuda.device_count())]
 
     # semantic segmentation definition
-    num_classes = 18 
-    semantics = SemanticSegmentation(labels_definition_file_path, num_classes=num_classes)
+    num_classes = 2
+    semantics = SemanticSegmentationBinary(labels_definition_file_path, num_classes=num_classes)
 
     # prepare SAM model
     model_type = 'vit_b'
@@ -102,7 +103,7 @@ if __name__ == '__main__':
     # create dataset
     train_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
     test_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
-    
+
     # set semantic definition
     train_dataset.num_classes = num_classes
     test_dataset.num_classes = num_classes
@@ -136,7 +137,6 @@ if __name__ == '__main__':
     eval_loss_log = []
     best_loss = 1e10
     best_eval_loss = 1e10
-    
 
     # PARTIAL FREEZING OF ENCODER
     encoder_params = []
@@ -155,7 +155,6 @@ if __name__ == '__main__':
     # verify
     for name, param in sam_model.image_encoder.named_parameters():
         print(name, param.requires_grad)
-
 
     # Set up the optimizer
     encdec_params = encoder_params + list(sam_model.mask_decoder.parameters())
@@ -227,7 +226,8 @@ if __name__ == '__main__':
             ################################################################################################
 
 
-            # convert gt to one hot encoding
+            # convert gt to binary one hot encoding
+            gt[gt>0] = 1
             gt = gt.long().squeeze(1)
             gt = torch.nn.functional.one_hot(gt,num_classes)
             B,_, H, W = gt.shape
@@ -269,8 +269,11 @@ if __name__ == '__main__':
             if ignore_background and bg_mask_given:  
                 mask_predictions = mask_predictions*bg_mask
                 gt = gt*bg_mask
-                
+
+            # compute train loss
             loss = 0.7*dice_loss(mask_predictions, gt) + 0.3*focal_loss(mask_predictions, gt)
+
+            # update step
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -311,6 +314,7 @@ if __name__ == '__main__':
                 # not computing any gradients during evaluation
                 with torch.no_grad():
                     gt = F.resize(gt, 1024, torchvision.transforms.InterpolationMode.NEAREST)
+                    gt[gt>0] = 1
                     gt = torch.nn.functional.one_hot(gt.squeeze(1),num_classes)
                     B,_, H, W = gt.shape
                     gt = torch.permute(gt,(0,3,1,2))
@@ -356,19 +360,19 @@ if __name__ == '__main__':
                     image_data_vis = np.transpose(image_data_vis,(1,2,0))
                     # plot eval results
                     TITLE_SIZE = 30
-                    fig, ax = plt.subplots(1,4, figsize=(40,10))
+                    fig, ax = plt.subplots(1,3, figsize=(30,10))
                     ax[0].imshow(image_data_vis)
                     ax[0].set_title("Input Image", fontsize=TITLE_SIZE)
                     ax[0].axis('off')
-                    ax[1].imshow(bg_mask_vis, cmap='gray')
-                    ax[1].set_title("Mask", fontsize=TITLE_SIZE)
+                    # ax[1].imshow(bg_mask_vis, cmap='gray')
+                    # ax[1].set_title("Mask", fontsize=TITLE_SIZE)
+                    # ax[1].axis('off')
+                    ax[1].imshow(labels_out_vis)
+                    ax[1].set_title("Prediction", fontsize=TITLE_SIZE)
                     ax[1].axis('off')
-                    ax[2].imshow(labels_out_vis)
-                    ax[2].set_title("Prediction", fontsize=TITLE_SIZE)
+                    ax[2].imshow(gt_vis)
+                    ax[2].set_title("GT", fontsize=TITLE_SIZE)
                     ax[2].axis('off')
-                    ax[3].imshow(gt_vis)
-                    ax[3].set_title("GT", fontsize=TITLE_SIZE)
-                    ax[3].axis('off')
                     plt.savefig(f"{eval_epoch_dir}/{step}.png")
                     plt.close()
             # logging eval loss and metrics
