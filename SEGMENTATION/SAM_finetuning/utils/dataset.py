@@ -207,3 +207,61 @@ class DrawingsDatasetFace(Dataset):
 ###########################################################################################################################################
 ### ----------------------------------------------------------------------------------------------------------------------------------- ###
 ###########################################################################################################################################
+
+
+
+###########################################################################################################################################
+### ----------------------------------------------------------------------------------------------------------------------------------- ###
+###########################################################################################################################################
+
+# dataset definition for only face
+class DrawingsDatasetInference(Dataset): 
+    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, device='cuda'):
+        self.sam_model = sam_model
+        self.num_classes = 11
+        self.semantics = SemanticSegmentationFace(labels_definition_path=labels_definition_file_path, num_classes=self.num_classes)
+        self.cache_available=False
+        self.cache = None
+        self.device = device
+        self.data_root = data_root
+        self.image_dir_name = img_dir_name
+        self.files = sorted(os.listdir(join(self.data_root, self.image_dir_name)))
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, index):
+        input_image_tensor = self.cache[index]
+        if not self.cache_available: 
+            image_name = f"{self.files[index]}"
+            image = cv2.imread(join(self.data_root, self.image_dir_name, image_name))
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            image = cv2.resize(image, (1024,1024), interpolation=cv2.INTER_LINEAR) # face bbox is computed for 1024x1024
+            sam_transform = ResizeLongestSide(self.sam_model.image_encoder.img_size)
+            resize_img = sam_transform.apply_image(image)
+            resize_img_tensor = torch.as_tensor(resize_img.transpose(2, 0, 1)).to(self.device)
+            input_image_tensor = self.sam_model.preprocess(resize_img_tensor[None,:,:,:]) # (1, 3, 1024, 1024)
+            input_image_tensor = input_image_tensor.squeeze(0)
+            self.cache[index] = input_image_tensor
+        return input_image_tensor
+
+    def init_cache(self):
+        print(f"Initializing inference cache...")
+        cache_length = len(self.files) # number of samples you want to cache
+        data_dims = (3, 1024, 1024) # shape of data (not including batch)
+        shared_array_base = mp.Array(ctypes.c_float, cache_length * data_dims[0] * data_dims[1] * data_dims[2])
+        shared_array = np.ctypeslib.as_array(shared_array_base.get_obj())
+        shared_array = shared_array.reshape(cache_length, *data_dims)
+        self.cache = torch.from_numpy(shared_array)
+        self.cache *=0
+        print(f"Inference dataset : {len(self.files)} --> {self.files[0]} -- {self.files[-1]}")
+    
+    def save_cache(self, path):
+        torch.save(self.cache, path)
+
+    def load_cache(self, path):
+        self.cache = torch.load(path)
+
+###########################################################################################################################################
+### ----------------------------------------------------------------------------------------------------------------------------------- ###
+###########################################################################################################################################
