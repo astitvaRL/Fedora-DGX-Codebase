@@ -12,6 +12,7 @@ from torchvision import transforms
 import monai
 import json
 from monai.networks import one_hot
+import shutil
 
 from utils.SemanticSegmentation import SemanticSegmentationAll
 
@@ -23,43 +24,30 @@ if __name__ == '__main__':
     # set paths
     data_root = '/mnt/users_scratch/astitva/DATA/'
     image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
-    label_id_dir_name = 'AD_SegMaps/labels_2k_1024'
+    label_id_dir_name = 'AD_SegMaps/labels_7k'
     syn_image_dir_name = 'AD_SegMaps/drawings_synth_20k'
-    save_dir = join(data_root, 'SYN_VIS')
+    save_dir = join(data_root, 'MANIFOLD/animated_drawings_images_prior_april22/unlabelled_images/')
     os.makedirs(save_dir, exist_ok=True)
 
-    TITLE_SIZE = 30
-    NUM_SYN = 6
-    label_names = sorted(os.listdir(join(data_root, label_id_dir_name)))[:10]
-    for label_name in tqdm(label_names):
-        label_path = join(data_root, label_id_dir_name, label_name)
-        img_name = label_name.split('_')[0] + '.png'
-        img_path = join(data_root, image_dir_name, img_name)
-        image = cv2.imread(img_path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = cv2.resize(image, (1024, 1024))
-        label = cv2.imread(label_path)
-        label = cv2.cvtColor(label, cv2.COLOR_BGR2RGB)
-        fig, ax = plt.subplots(1,NUM_SYN+2, figsize=((NUM_SYN+2)*10,10))
-        ax[0].imshow(image)
-        ax[0].set_title("Original Image", fontsize=TITLE_SIZE)
-        ax[0].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
-        ax[0].tick_params(axis='y', which='both', bottom=False, top=False, labelbottom=False)
-        ax[1].imshow(label, cmap='gray')
-        ax[1].set_title("Semantic Map", fontsize=TITLE_SIZE)
-        ax[1].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
-        ax[1].tick_params(axis='y', which='both', bottom=False, top=False, labelbottom=False)
-        for i in range(NUM_SYN):
-            syn_image_name = label_name[:-8] + f'{i}.png'
-            syn_image_path = join(data_root, syn_image_dir_name, syn_image_name)
-            syn_image = cv2.imread(syn_image_path)
-            syn_image = cv2.cvtColor(syn_image, cv2.COLOR_BGR2RGB)
-            syn_image = cv2.resize(syn_image, (1024, 1024))
-            ax[i+2].imshow(syn_image)
-            ax[i+2].set_title(f"Synthetic Image {i+1}", fontsize=TITLE_SIZE)
-            # ax[i+2].axis('off')
-            ax[i+2].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
-            ax[i+2].tick_params(axis='y', which='both', bottom=False, top=False, labelbottom=False)
+    label_names_dict = {}
+    label_names = sorted(os.listdir(join(data_root, label_id_dir_name)))
+    for name in tqdm(label_names):
+        key = name.split('_')[0]
+        label_names_dict[key] = True
 
-        plt.savefig(join(save_dir, f'{label_name[:-8]}.png'))
-        plt.close()
+    LABELLED_COUNT = 0
+    UNLABELLED_COUNT = 0
+    img_names = sorted(os.listdir(join(data_root, image_dir_name)))
+    for name in tqdm(img_names):
+        key = name.split('.')[0]
+        try:
+            if label_names_dict[key]:
+                LABELLED_COUNT += 1
+                continue
+        except:
+            UNLABELLED_COUNT += 1
+            shutil.copyfile(join(data_root, image_dir_name, name), join(save_dir, name))
+    
+
+    print(f'LABELLED_COUNT: {LABELLED_COUNT}')
+    print(f'UNLABELLED_COUNT: {UNLABELLED_COUNT}')
