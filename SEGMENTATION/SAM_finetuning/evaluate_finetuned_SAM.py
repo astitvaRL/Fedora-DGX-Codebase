@@ -41,13 +41,13 @@ if __name__ == '__main__':
     label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
-    cache_dir = join(data_root, 'dataset_caches/cache_Coarse_REAL7k')
+    cache_dir = join(data_root, 'dataset_caches/cache_REAL7k')
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
 
     # EXPERIMENT CONFIG
-    task_name = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
+    task_name = 'ANIMSEG_E2E_NoFace_NoBinmask_REAL7k'
     all_ckpts_dir = 'all_ckpts'
     out_dir = 'eval_post_training'
     load_best_eval_ckpt = True
@@ -59,9 +59,9 @@ if __name__ == '__main__':
     ignore_background = False
     bbox_given = False
     bg_mask_given = False
-    visualize_heatmap = True
+    visualize_heatmap = False
     refine_masks = False
-    num_classes = 6
+    num_classes = 18
     model_type = 'vit_b'
 
     # for facial details only

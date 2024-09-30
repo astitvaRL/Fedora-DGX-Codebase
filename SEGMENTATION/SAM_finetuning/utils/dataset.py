@@ -216,7 +216,7 @@ class DrawingsDatasetFace(Dataset):
 
 # dataset definition for only face
 class DrawingsDatasetInference(Dataset): 
-    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, device='cuda'):
+    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, max_num_samples, device='cuda'):
         self.sam_model = sam_model
         self.num_classes = 11
         self.semantics = SemanticSegmentationFace(labels_definition_path=labels_definition_file_path, num_classes=self.num_classes)
@@ -225,7 +225,8 @@ class DrawingsDatasetInference(Dataset):
         self.device = device
         self.data_root = data_root
         self.image_dir_name = img_dir_name
-        self.files = sorted(os.listdir(join(self.data_root, self.image_dir_name)))
+        self.max_num_samples = max_num_samples
+        self.files = sorted(os.listdir(join(self.data_root, self.image_dir_name)))[:self.max_num_samples]
 
     def __len__(self):
         return len(self.files)
