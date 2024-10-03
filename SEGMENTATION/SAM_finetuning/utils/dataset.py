@@ -22,7 +22,7 @@ from .SemanticSegmentation import SemanticSegmentationNoFace, SemanticSegmentati
 
 # dataset definition for only body (no facial details)
 class DrawingsDataset(Dataset): 
-    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda'):
+    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', num_test_samples=100):
         self.sam_model = sam_model
         self.num_classes = 18
         self.semantics = SemanticSegmentationNoFace(labels_definition_path=labels_definition_file_path, num_classes=self.num_classes)
@@ -34,7 +34,7 @@ class DrawingsDataset(Dataset):
         self.data_root = data_root
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
-        self.num_test_samples = 100
+        self.num_test_samples = num_test_samples
         self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.num_test_samples]
         if self.mode == 'test':
             self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.num_test_samples:]
@@ -273,7 +273,7 @@ class DrawingsDatasetInference(Dataset):
 
 # dataset definition for only body (no facial details) coarse-to-fine
 class DrawingsDatasetC2F(Dataset): 
-    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda'):
+    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', num_test_samples=100):
         self.sam_model = sam_model
         self.num_classes_coarse = 6
         self.num_classes = 18
@@ -287,7 +287,7 @@ class DrawingsDatasetC2F(Dataset):
         self.data_root = data_root
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
-        self.num_test_samples = 100
+        self.num_test_samples = num_test_samples
         self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.num_test_samples]
         if self.mode == 'test':
             self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.num_test_samples:]
@@ -334,6 +334,10 @@ class DrawingsDatasetC2F(Dataset):
             Xs = np.where(binmask>0)[0]
             Ys = np.where(binmask>0)[1]
             bbox = np.array([min(Ys),min(Xs),max(Ys),max(Xs)])
+
+        if self.semantics_coarse.exclude_neck:
+            neck_mask = gt2D_labels_coarse==5
+            gt2D_labels_coarse[neck_mask] = 4 #merge with torso
 
         # convert image, gt, mask, bounding box to torch tensor
         return input_image_tensor, gt2D_labels_coarse.long(), gt2D_labels_fine.long(), torch.tensor(binmask[None, :,:]).float(), torch.from_numpy(bbox).float()

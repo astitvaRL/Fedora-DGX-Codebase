@@ -38,22 +38,22 @@ if __name__ == '__main__':
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
     # image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
-    image_dir_name = 'MANIFOLD/Stimuli_HighRes'
-    label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
-    cache_dir = join(data_root, 'dataset_caches/cache_C2F_REAL7k')
+    image_dir_name = 'MANIFOLD/EVAL400'
+    label_id_dir_name = 'AD_SegMaps/labels_EVAL400' 
+    cache_dir = join(data_root, 'dataset_caches/cache_C2F_EVAL400')
     os.makedirs(cache_dir, exist_ok=True)
 
     # EXPERIMENT CONFIG
     task_name = 'ANIMSEG_E2E_C2F_REAL7k'
     task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
     all_ckpts_dir = 'all_ckpts'
-    out_dir = 'eval_train_samples'
-    mode = 'train'
+    out_dir = 'eval_real_400'
+    mode = 'test'
     load_best_eval_ckpt = True
     epoch = 500
     epoch_coarse = 500
     encoder_original = False
-    cache_available = True 
+    cache_available = False 
     ignore_background = False
     bbox_given = False
     coarse_mask_given = False
@@ -122,7 +122,7 @@ if __name__ == '__main__':
 
 
     # create dataset
-    test_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode=mode)
+    test_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode=mode, num_test_samples=0)
 
     # define semantics
     semantics_coarse = SemanticSegmentationCoarse(labels_definition_file_path, num_classes=num_classes_coarse)
@@ -136,9 +136,13 @@ if __name__ == '__main__':
     label_to_id = semantics_fine.data['label_name_to_id']
     id_to_label = {i:j for j,i in label_to_id.items()}
 
-    print("Preloading Caches...")
-    test_dataset.cache_available = True
-    test_dataset.load_cache(cache_path)
+    if cache_available:
+        print("Preloading Caches...")
+        test_dataset.cache_available = True
+        test_dataset.load_cache(cache_path)
+    else:
+        test_dataset.init_cache()
+
     
     print(f"EVAL CACHE READY! --- Cache Size:", test_dataset.cache.shape)
 
@@ -367,3 +371,7 @@ if __name__ == '__main__':
     print(f'Mean-Accuracy: {mAcc}')
     print(f'Classwise Mean-IoU: {classwise_mIoU}')
     print(f'Total Mean-IoU: {mIoU}')
+
+    # save cache if not already saved
+    if not(cache_available):
+        test_dataset.save_cache(cache_path)

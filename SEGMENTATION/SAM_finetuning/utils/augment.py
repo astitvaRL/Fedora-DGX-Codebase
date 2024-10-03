@@ -11,7 +11,7 @@ import torchvision
 from torchvision import transforms
 
 class RandomAug:
-    def __init__(self, target_size=(1024,1024), crop_size=(512,512), crop_probability=0.3, fliph_probability=0.7, flipv_probability=0.0, rotate_probability=0.5, rotate_max_angle=30, color_jitter_probability=0.5):
+    def __init__(self, target_size=(1024,1024), crop_size=(512,512), crop_probability=0.3, fliph_probability=0.7, flipv_probability=0.0, rotate_probability=0.5, rotate_max_angle=30, color_jitter_probability=0.5, noise_probability=0.4):
         self.target_size = target_size
         self.crop_size = crop_size
         self.crop_probability = crop_probability
@@ -20,6 +20,7 @@ class RandomAug:
         self.rotate_probability = rotate_probability
         self.rotate_max_angle = rotate_max_angle
         self.color_jitter_probability = color_jitter_probability
+        self.noise_probability = noise_probability
         self.crop = torchvision.transforms.RandomCrop(self.crop_size)
         self.fliph = torchvision.transforms.RandomHorizontalFlip(p=self.fliph_probability)
         self.flipv = torchvision.transforms.RandomVerticalFlip(p=self.flipv_probability)
@@ -72,3 +73,12 @@ class RandomAug:
                 jittered = transforms.Lambda(lambda x: self.color_jitter(x))(image)
                 image[mask] = jittered[mask]
         return image
+
+    def apply_noise(self, segmap, num_classes):
+        if np.random.uniform(0,1)<self.noise_probability:
+            segmap = segmap.long().squeeze(1)
+            segmap = torch.nn.functional.one_hot(segmap,num_classes).float()
+            noise = torch.randn_like(segmap) * np.random.uniform(0.2,0.6)
+            segmap += noise
+            segmap = torch.argmax(segmap,dim=-1).unsqueeze(1).float()
+        return segmap

@@ -42,7 +42,7 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'ANIMSEG_E2E_C2F_REAL7k' # finetuned checkpoint will be saved here
+    task_name = 'ANIMSEG_E2E_C2F_REAL7k_noisy' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     train_input_visualization_dir = join(data_root, 'TMP_C2F_INPUT_VIS')
     
     # training choice
-    cache_available = True # save dataset cache after first epoch
+    cache_available = True # if False, save dataset cache after first epoch
     resize_labels = False # False if already resized
     resume_training = True
     visualize_train_input = False
@@ -67,17 +67,17 @@ if __name__ == '__main__':
     init_checkpoint = join(sam_original_ckpt_path)
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
-        epoch_start = 3 # change this
-        resume_ckpt = join(ckpt_dir, 'ANIMSEG_E2E_C2F_REAL7k/model_eval_best.pth')
+        epoch_start = 0 # change this
+        resume_ckpt = join(ckpt_dir, 'ANIMSEG_E2E_Cneck2F_REAL7k/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
     device_ids = [i for i in range(torch.cuda.device_count())]
 
     # semantic segmentation definition
-    num_classes_coarse = 6
+    num_classes_coarse = 5
     num_classes = 18
-    semantics_coarse = SemanticSegmentationCoarse(labels_definition_file_path, num_classes=num_classes_coarse)
+    semantics_coarse = SemanticSegmentationCoarse(labels_definition_file_path, num_classes=num_classes_coarse, exclude_neck=True)
     semantics = SemanticSegmentationNoFace(labels_definition_file_path, num_classes=num_classes)
 
     # prepare SAM model
@@ -107,6 +107,8 @@ if __name__ == '__main__':
     test_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
 
     # set semantic definition
+    train_dataset.num_classes_coarse = num_classes_coarse
+    test_dataset.num_classes_coarse = num_classes_coarse
     train_dataset.num_classes = num_classes
     test_dataset.num_classes = num_classes
     train_dataset.semantics_coarse = semantics_coarse
@@ -176,6 +178,7 @@ if __name__ == '__main__':
             gt = input_augmented[:,4:5,:,:]
             bg_mask = input_augmented[:,5:,:,:] 
             image_data = randomaug.apply_color_jitter(image_data, gt)
+            coarse_mask = randomaug.apply_noise(coarse_mask, num_classes_coarse)
 
             # resize coarse_mask, gt and bg_mask
             gt = F.resize(gt, 1024, torchvision.transforms.InterpolationMode.NEAREST) # prediction will be umsampled to 1024x1024
@@ -346,7 +349,7 @@ if __name__ == '__main__':
                         gt = gt*bg_mask
                         mask_predictions = mask_predictions*bg_mask
                     # compute eval loss
-                    eval_loss += dice_loss(mask_predictions, gt.to(device)).item()
+                    eval_loss += 0.7*dice_loss(mask_predictions, gt).item() + 0.3*focal_loss(mask_predictions, gt).item()
                     # visualizing last sample from every batch
                     labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0)  # last sample from batch
                     labels_out_vis = semantics.labels_to_colors(labels_out.cpu().numpy().astype('uint8'))

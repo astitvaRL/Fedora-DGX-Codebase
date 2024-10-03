@@ -38,17 +38,23 @@ import cv2
 '''
 
 class SemanticSegmentationCoarse():
-    def __init__(self, labels_definition_path, num_classes=6):
+    def __init__(self, labels_definition_path, num_classes=6, exclude_neck=False):
         self.num_classes = num_classes
+        self.exclude_neck = exclude_neck
         self.data = None
         with open(labels_definition_path) as json_file:
             self.data = json.load(json_file)
         self.data['label_name_to_id']['Unlabeled'] = 26 # handling id 255
         self.class_names = ['Background', 'Legs', 'Head_Region', 'Hands', 'Torso', 'Neck']
         self.remap = {0:0, 1:1, 2:2, 3:2, 4:2, 5:2, 6:2, 13:2, 17:2, 18:2, 22:2, 23:2, 7:3, 8:4, 9:3, 10:3, 11:4, 12:2, 14:1, 15:4, 16:3, 19:3, 20:2, 21:4, 24:1, 25:5, 26:0}
+        if self.exclude_neck:
+            self.remap = {0:0, 1:1, 2:2, 3:2, 4:2, 5:2, 6:2, 13:2, 17:2, 18:2, 22:2, 23:2, 7:3, 8:4, 9:3, 10:3, 11:4, 12:2, 14:1, 15:4, 16:3, 19:3, 20:2, 21:4, 24:1, 25:4, 26:0}
         self.reverse_remap = {value: key for key, value in self.remap.items()}
         self.reverse_remap[0] = 0 # background should not be remapped
-        assert self.num_classes == 6 #highest remapped id+1
+        if self.exclude_neck:
+            assert self.num_classes == 5
+        else: 
+            assert self.num_classes == 6  #highest remapped id+1
         self.color_dict = {}
         for label_name in self.data['label_name_to_color']:
             self.color_dict[int(self.data['label_name_to_id'][label_name])] = self.data['label_name_to_color'][label_name]
@@ -69,6 +75,8 @@ class SemanticSegmentationCoarse():
     def labels_to_colors(self, img):
         w,h = img.shape[:2]
         img_rgb = np.zeros((w,h,3)).astype('uint8')
+        if self.exclude_neck:
+            img[img==5] = 4 # merge with torso
         for label_id in np.unique(img):
             img_rgb[img==label_id] = self.color_dict[self.reverse_remap[label_id]]
         return img_rgb
@@ -89,6 +97,8 @@ class SemanticSegmentationCoarse():
             elif classname in ['Hand', 'Lower_arm', 'Fingers', 'Hand_accessory','Upper_arm']:
                 ref_classname = 'Hand'
             elif classname in ['Lower_Torso', 'Upper_Torso', 'Skirt', 'Other_Body_accessory']:
+                ref_classname = 'Lower_Torso'
+            elif classname in ['Neck'] and self.exclude_neck:
                 ref_classname = 'Lower_Torso'
             elif classname in ['Unlabeled', 'Conflicted', 'CONFLICT']: # handling id 255
                 ref_classname = 'BACKGROUND' # just for coarse segmentation

@@ -24,30 +24,20 @@ if __name__ == '__main__':
     # set paths
     data_root = '/mnt/users_scratch/astitva/DATA/'
     image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
-    label_id_dir_name = 'AD_SegMaps/labels_7k'
-    syn_image_dir_name = 'AD_SegMaps/drawings_synth_20k'
-    save_dir = join(data_root, 'MANIFOLD/animated_drawings_images_prior_april22/unlabelled_images/')
-    os.makedirs(save_dir, exist_ok=True)
+    save_image_dir = join(data_root, 'MANIFOLD/EVAL400')
+    label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
+    save_label_dir = join(data_root, 'AD_SegMaps/labels_EVAL400')
 
-    label_names_dict = {}
-    label_names = sorted(os.listdir(join(data_root, label_id_dir_name)))
-    for name in tqdm(label_names):
-        key = name.split('_')[0]
-        label_names_dict[key] = True
-
-    LABELLED_COUNT = 0
-    UNLABELLED_COUNT = 0
+    count = 0
     img_names = sorted(os.listdir(join(data_root, image_dir_name)))
-    for name in tqdm(img_names):
-        key = name.split('.')[0]
-        try:
-            if label_names_dict[key]:
-                LABELLED_COUNT += 1
-                continue
-        except:
-            UNLABELLED_COUNT += 1
-            shutil.copyfile(join(data_root, image_dir_name, name), join(save_dir, name))
-    
-
-    print(f'LABELLED_COUNT: {LABELLED_COUNT}')
-    print(f'UNLABELLED_COUNT: {UNLABELLED_COUNT}')
+    label_names = sorted(os.listdir(join(data_root, label_id_dir_name)))[-100:]
+    for name in tqdm(label_names):
+        imgname = name.split('_')[0] + '.png'
+        imgpath = join(data_root, image_dir_name, imgname)
+        save_imagepath = join(save_image_dir, imgname)
+        if not os.path.exists(save_imagepath):
+            print(save_imagepath)
+            count += 1
+            # shutil.copyfile(imgpath, join(save_image_dir, imgname))
+            # shutil.copyfile(join(data_root, label_id_dir_name, name), join(save_label_dir, name))
+    print(count)

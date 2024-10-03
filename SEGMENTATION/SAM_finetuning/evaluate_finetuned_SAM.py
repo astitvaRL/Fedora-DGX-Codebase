@@ -36,9 +36,11 @@ if __name__ == '__main__':
     labels_definition_file_path = 'label_definition.json'
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
-    image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
+    # image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
+    image_dir_name = 'MANIFOLD/EVAL400'
     # image_dir_name = 'AD_SegMaps/drawings_synth_20k'
-    label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
+    # label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
+    label_id_dir_name = 'AD_SegMaps/labels_EVAL400' 
     embed_dir_name = f"{image_dir_name}_embeddings" # precomputed image embeddings will be saved here if not saved already
     embedding_dir_path = join(data_root, embed_dir_name)
     cache_dir = join(data_root, 'dataset_caches/cache_REAL7k')
@@ -55,7 +57,8 @@ if __name__ == '__main__':
     encoder_original = False
     face_only = False
     coarse = True
-    cache_available = True 
+    cache_available = False 
+    num_test_samples = 0
     ignore_background = False
     bbox_given = False
     bg_mask_given = False
@@ -104,7 +107,7 @@ if __name__ == '__main__':
 
     # create dataset
     # train_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
-    test_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
+    test_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test', num_test_samples=num_test_samples)
     if face_only:
         test_dataset = DrawingsDatasetFace(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
 
@@ -126,11 +129,15 @@ if __name__ == '__main__':
     label_to_id = semantics.data['label_name_to_id']
     id_to_label = {i:j for j,i in label_to_id.items()}
 
-    print("Preloading Caches...")
-    # train_dataset.cache_available = True
-    # train_dataset.load_cache(train_cache_path)
-    test_dataset.cache_available = True
-    test_dataset.load_cache(test_cache_path)
+    if cache_available:
+        print("Preloading Caches...")
+        # train_dataset.cache_available = True
+        # train_dataset.load_cache(train_cache_path)
+        test_dataset.cache_available = True
+        test_dataset.load_cache(test_cache_path)
+    else:
+        # train_dataset.init_cache()
+        test_dataset.init_cache()
     
     # print(f"EVAL CACHE READY! ---", train_dataset.cache.shape)
     print(f"EVAL CACHE READY! --- Cache Size:", test_dataset.cache.shape)
