@@ -24,6 +24,8 @@ from segment_anything_parallel_fine_infer.utils.transforms import ResizeLongestS
 from utils.dataset import DrawingsDataset, DrawingsDatasetC2F
 from utils.SurfaceDice import compute_dice_coefficient
 from utils.SemanticSegmentation import SemanticSegmentationNoFace, SemanticSegmentationCoarse
+from utils.augment import RandomAug
+
 join = os.path.join
 
 
@@ -44,10 +46,10 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
 
     # EXPERIMENT CONFIG
-    task_name = 'ANIMSEG_E2E_C2F_REAL7k'
+    task_name = 'ANIMSEG_E2E_C2F_REAL7k_noisy'
     task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
     all_ckpts_dir = 'all_ckpts'
-    out_dir = 'eval_real_400'
+    out_dir = 'eval_real_400_noisy_noGTprior'
     mode = 'test'
     load_best_eval_ckpt = True
     epoch = 500
@@ -58,11 +60,14 @@ if __name__ == '__main__':
     bbox_given = False
     coarse_mask_given = False
     visualize_coarse = True
+    coarse_includes_neck = True
+    add_noise_to_coarse = False
     bg_mask_given = False
     visualize_heatmap = False
     refine_masks = False
     num_classes = 18
-    num_classes_coarse = 6
+    num_classes_coarse = 6 # coarse network also includes 'Neck' class which will be merged to torso before feeding to fine network if required
+    exclude_neck_from_coarse = True
     model_type = 'vit_b'
 
     # set dataset cache path
@@ -125,7 +130,7 @@ if __name__ == '__main__':
     test_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode=mode, num_test_samples=0)
 
     # define semantics
-    semantics_coarse = SemanticSegmentationCoarse(labels_definition_file_path, num_classes=num_classes_coarse)
+    semantics_coarse = SemanticSegmentationCoarse(labels_definition_file_path, num_classes=(num_classes_coarse-1) if exclude_neck_from_coarse else num_classes_coarse, exclude_neck=exclude_neck_from_coarse)
     semantics_fine = SemanticSegmentationNoFace(labels_definition_file_path, num_classes=num_classes)
     
     # train_dataset.semantics = semantics
@@ -158,6 +163,11 @@ if __name__ == '__main__':
     # define differntiable non-learnable upsampling layer
     upsample = torch.nn.Upsample(scale_factor=4, mode='nearest')
 
+    # augmentations
+    input_size = (1024, 1024)
+    crop_size = (800, 800)
+    randomaug = RandomAug(target_size=input_size, crop_size=crop_size)
+
     if not load_best_eval_ckpt:
         print(f'EVAL at Epoch-{epoch}')
     else:
@@ -185,6 +195,9 @@ if __name__ == '__main__':
             gt = torch.nn.functional.one_hot(gt.squeeze(1),num_classes)
             B,_, H, W = gt.shape
             gt = torch.permute(gt,(0,3,1,2))
+            if coarse_mask_given and add_noise_to_coarse:
+                coarse_mask = randomaug.apply_noise(coarse_mask, num_classes_coarse)
+                coarse_mask = coarse_mask.long()
             # resize coarse mask to 256x256
             coarse_mask = F.resize(coarse_mask, 256, torchvision.transforms.InterpolationMode.NEAREST)
             coarse_mask = torch.nn.functional.one_hot(coarse_mask.squeeze(1),num_classes_coarse)
@@ -209,7 +222,9 @@ if __name__ == '__main__':
                 )
                 #coarse mask prior
                 coarse_mask = torch.argmax(mask_predictions_coarse, dim=1)
-                coarse_mask = torch.nn.functional.one_hot(coarse_mask,num_classes_coarse)
+                if exclude_neck_from_coarse:
+                    coarse_mask[coarse_mask==5] = 4 # merging neck with torso
+                coarse_mask = torch.nn.functional.one_hot(coarse_mask,(num_classes_coarse-1) if exclude_neck_from_coarse else num_classes_coarse)
                 coarse_mask = torch.permute(coarse_mask,(0,3,1,2))
 
             # resize bg_mask to 256x256
@@ -301,7 +316,13 @@ if __name__ == '__main__':
                     ax[0].set_title("Input Image", fontsize=TITLE_SIZE)
                     ax[0].axis('off')
                     ax[1].imshow(coarse_mask_vis, cmap='gray')
-                    ax[1].set_title("Prediction (Coarse)", fontsize=TITLE_SIZE)
+                    if coarse_mask_given:
+                        if add_noise_to_coarse:
+                            ax[1].set_title("Noisy Coarse Prior (GT)", fontsize=TITLE_SIZE)
+                        else:
+                            ax[1].set_title("Coarse Prior (GT)", fontsize=TITLE_SIZE)
+                    else:
+                        ax[1].set_title("Prediction (Coarse)", fontsize=TITLE_SIZE)
                     ax[1].axis('off')
                     ax[2].imshow(labels_out_vis)
                     ax[2].set_title("Prediction (Fine)", fontsize=TITLE_SIZE)
