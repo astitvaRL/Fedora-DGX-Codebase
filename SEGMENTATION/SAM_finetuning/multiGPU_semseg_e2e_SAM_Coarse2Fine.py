@@ -106,12 +106,16 @@ if __name__ == '__main__':
     train_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
     test_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
 
-    # set semantic definition
+    # set semantic definitions for training dataset
     train_dataset.num_classes_coarse = num_classes_coarse
-    test_dataset.num_classes_coarse = num_classes_coarse
     train_dataset.num_classes = num_classes
-    test_dataset.num_classes = num_classes
     train_dataset.semantics_coarse = semantics_coarse
+    train_dataset.semantics = semantics
+
+    # set semantic definitions for testing dataset
+    test_dataset.num_classes_coarse = num_classes_coarse
+    test_dataset.num_classes = num_classes
+    test_dataset.semantics_coarse = semantics_coarse
     test_dataset.semantics = semantics
 
     cache_start = time.time()
@@ -349,7 +353,7 @@ if __name__ == '__main__':
                         gt = gt*bg_mask
                         mask_predictions = mask_predictions*bg_mask
                     # compute eval loss
-                    eval_loss += 0.7*dice_loss(mask_predictions, gt).item() + 0.3*focal_loss(mask_predictions, gt).item()
+                    eval_loss += 0.7*dice_loss(mask_predictions, gt).item()
                     # visualizing last sample from every batch
                     labels_out = torch.argmax(torch.Tensor(mask_predictions[-1]), dim=0)  # last sample from batch
                     labels_out_vis = semantics.labels_to_colors(labels_out.cpu().numpy().astype('uint8'))
