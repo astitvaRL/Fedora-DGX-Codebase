@@ -42,7 +42,7 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'ANIMSEG_E2E_FaceOnly_REAL7k' # finetuned checkpoint will be saved here
+    task_name = 'ANIMSEG_E2E_FaceOnly_REAL7k_with_face_prior' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -54,11 +54,11 @@ if __name__ == '__main__':
     # training choice
     cache_available = True # save dataset cache after first epoch
     resize_labels = False # False if already resized
-    resume_training = False
+    resume_training = True
     visualize_train_input = False
     ignore_background = False
     bbox_given = False
-    bg_mask_given = False
+    bg_mask_given = True
     
     if visualize_train_input:
         os.makedirs(train_input_visualization_dir, exist_ok=True)
@@ -172,7 +172,7 @@ if __name__ == '__main__':
 
             # resize gt and bg_mask
             gt = F.resize(gt, 1024, torchvision.transforms.InterpolationMode.NEAREST) # prediction will be umsampled to 1024x1024
-            bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes mask size 256x256
+            bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # prompt encoder takes mask size 256x256
 
             ################################################################################################
             ######### ------- plt visualizations after resizing  (last sample from batch) -------- #########
@@ -221,7 +221,6 @@ if __name__ == '__main__':
             bbox[:,2] = 256
             bbox[:,3] = 256
             bbox = bbox.to(device)
-            
             # computing gradients for prompt encoder
             sparse_embeddings, dense_embeddings, image_pe = prompt_encoder(
                 points=None,

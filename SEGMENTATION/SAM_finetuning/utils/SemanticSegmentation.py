@@ -128,6 +128,7 @@ class SemanticSegmentationNoFace():
         self.data['label_name_to_id']['Unlabeled'] = 26 # handling id 255
         self.remap = {0:0, 1:1, 2:2, 3:2, 4:2, 5:2, 6:2, 13:2, 17:2, 18:2, 22:2, 23:2, 7:3, 8:4, 9:5, 10:6, 11:7, 12:8, 14:9, 15:10, 16:11, 19:12, 20:13, 21:14, 24:15, 25:16, 26:17}
         self.reverse_remap = {value: key for key, value in self.remap.items()}
+        self.reverse_remap[2] = 6 # head prior should not be remapped
         assert self.num_classes == 18 #highest remapped id+1
         self.color_dict = {}
         for label_name in self.data['label_name_to_color']:
@@ -253,6 +254,7 @@ class SemanticSegmentationFace():
         self.data['label_name_to_id']['Unlabeled'] = 26 # handling id 255
         self.remap = {0:0, 1:0, 2:1, 3:2, 4:3, 5:4, 6:5, 13:6, 17:7, 18:8, 22:9, 23:10, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0, 14:0, 15:0, 16:0, 19:0, 20:0, 21:0, 24:0, 25:0, 26:0}
         self.reverse_remap = {value: key for key, value in self.remap.items()}
+        self.reverse_remap[0] = 0 # background should not be remapped
         assert self.num_classes == 11 #highest remapped id+1
         self.color_dict = {}
         for label_name in self.data['label_name_to_color']:

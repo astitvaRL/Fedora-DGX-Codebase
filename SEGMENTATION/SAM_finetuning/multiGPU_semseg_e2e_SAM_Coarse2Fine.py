@@ -42,7 +42,7 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'ANIMSEG_E2E_C2F_REAL7k_noisy' # finetuned checkpoint will be saved here
+    task_name = 'ANIMSEG_E2E_C2F_REAL7k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -59,6 +59,7 @@ if __name__ == '__main__':
     ignore_background = False
     bbox_given = False
     bg_mask_given = False
+    apply_noise_coarse = False
     
     if visualize_train_input:
         os.makedirs(train_input_visualization_dir, exist_ok=True)
@@ -182,7 +183,8 @@ if __name__ == '__main__':
             gt = input_augmented[:,4:5,:,:]
             bg_mask = input_augmented[:,5:,:,:] 
             image_data = randomaug.apply_color_jitter(image_data, gt)
-            coarse_mask = randomaug.apply_noise(coarse_mask, num_classes_coarse)
+            if apply_noise_coarse:
+                coarse_mask = randomaug.apply_noise(coarse_mask, num_classes_coarse)
 
             # resize coarse_mask, gt and bg_mask
             gt = F.resize(gt, 1024, torchvision.transforms.InterpolationMode.NEAREST) # prediction will be umsampled to 1024x1024

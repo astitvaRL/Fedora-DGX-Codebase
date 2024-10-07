@@ -48,11 +48,12 @@ if __name__ == '__main__':
 
     # EXPERIMENT CONFIG
     task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
-    task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k_noisy'
-    task_name_face = 'ANIMSEG_E2E_FaceOnly_REAL7k'
+    task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k'
+    task_name_face = 'ANIMSEG_E2E_FaceOnly_REAL7k_with_face_prior'
     all_ckpts_dir = 'all_ckpts'
     out_dir = 'eval_real_400_ALL'
     mode = 'test'
+    BATCH_SIZE = 1
     load_best_eval_ckpt = True
     epoch = 500
     epoch_coarse = 500
@@ -166,7 +167,8 @@ if __name__ == '__main__':
     print(f"EVAL CACHE READY! --- Cache Size:", test_dataset.cache.shape)
 
     # create dataloader
-    test_dataloader = DataLoader(test_dataset, batch_size=1, num_workers=0, shuffle=False, drop_last=False)
+    assert BATCH_SIZE==1
+    test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=False, drop_last=False)
 
     # Set up the metrics
     dice_loss = monai.losses.DiceCELoss(sigmoid=True, squared_pred=True, reduction='mean')
@@ -197,7 +199,9 @@ if __name__ == '__main__':
     eval_loss = 0
     mAcc = 0
     classwise_mIoU = [0]*num_classes_all
+    valid_face_detected = False # flag to check if face is detected in the image
     for step, (image_data_eval, gt_coarse, gt_fine, gt_face, gt_all) in enumerate(tqdm(test_dataloader,"EVAL")):
+        valid_face_detected = False # reset flag for each image
         image_data_eval = image_data_eval.to(device)
         gt_coarse = gt_coarse.to(device)
         gt_fine = gt_fine.to(device)
@@ -249,19 +253,20 @@ if __name__ == '__main__':
             )
             image_data_eval = F.resize(image_data_eval, 1024, torchvision.transforms.InterpolationMode.BILINEAR) # encoder takes image size 1024x1024
             embedding = image_encoder(image_data_eval)
-            mask_predictions, _ = mask_decoder(
+            mask_predictions_fine, _ = mask_decoder(
                 image_embeddings=embedding.to(device), # (B, 256, 64, 64)
                 image_pe=image_pe, # (1, 256, 64, 64)
                 sparse_prompt_embeddings=sparse_embeddings, # (B, 2, 256)
                 dense_prompt_embeddings=dense_embeddings, # (B, 256, 64, 64)
                 multimask_output=True,
             )
-            mask_predictions = upsample(mask_predictions)
+            mask_predictions_fine = upsample(mask_predictions_fine)
 
             # extract face region
-            face_binmask = torch.argmax(mask_predictions, dim=1)
+            face_binmask = torch.argmax(mask_predictions_fine, dim=1)
             face_binmask = face_binmask.squeeze(0)
             face_binmask[face_binmask!=2] = 0 # '2' is the label-id of face in fine segmap definiton
+            face_binmask[face_binmask==2] = 1
             if face_binmask.sum().item()>0: # no face detected
                 Xs = torch.where(face_binmask>0)[0]
                 Ys = torch.where(face_binmask>0)[1]
@@ -269,11 +274,15 @@ if __name__ == '__main__':
                 _,_,fw,fh = image_data_eval_face.shape
                 if fw==0 or fh==0: # invalid prediction
                     continue
+                valid_face_detected = True
+                face_binmask = face_binmask[Xs.min():Xs.max(),Ys.min():Ys.max()]
+                face_prior = F.resize(face_binmask.unsqueeze(0), (256,256), torchvision.transforms.InterpolationMode.NEAREST).float()
+                face_prior = face_prior.unsqueeze(0)
                 # predict facial details
                 sparse_embeddings_face, dense_embeddings_face, image_pe_face = prompt_encoder_face(
                 points=None,
                 boxes=None,
-                masks=None,
+                masks=face_prior,
                 )
                 image_data_eval_face = F.resize(image_data_eval_face, (1024,1024), torchvision.transforms.InterpolationMode.BILINEAR) # encoder takes image size 1024x1024
                 embedding_face = image_encoder_face(image_data_eval_face)
@@ -286,11 +295,12 @@ if __name__ == '__main__':
                 )
                 mask_predictions_face = upsample(mask_predictions_face)
 
+
             # # compute eval loss
-            # eval_loss += dice_loss(mask_predictions_face, gt_face).item()
+            # eval_loss += dice_loss(mask_predictions_fine, gt_face).item()
 
             # # convert mask predictions to one-hot
-            # pred_labels = torch.argmax(mask_predictions, dim=1)
+            # pred_labels = torch.argmax(mask_predictions_fine, dim=1)
             # pred_one_hot = torch.nn.functional.one_hot(pred_labels,num_classes_fine)
             # pred_one_hot = torch.permute(pred_one_hot,(0,3,1,2))
 
@@ -298,7 +308,7 @@ if __name__ == '__main__':
             # batch_accuracy = accuracy(pred_one_hot, gt_fine).mean().item()
             # mAcc += batch_accuracy
             # # compute batch IoU
-            # for class_idx in range(1, mask_predictions.shape[1]):
+            # for class_idx in range(1, mask_predictions_fine.shape[1]):
             #     batch_IoU = monai.metrics.compute_iou(pred_one_hot[:,class_idx,:,:].unsqueeze(1), gt_fine[:,class_idx,:,:].unsqueeze(1), include_background=False, ignore_empty=False)
             #     sum_notnans = torch.nan_to_num(batch_IoU, nan=0.0).sum()
             #     count_notnans = torch.isfinite(batch_IoU).sum()
@@ -313,7 +323,7 @@ if __name__ == '__main__':
                 image_data_vis = 255*((image_data_vis - image_data_vis.min()) / (image_data_vis.max() - image_data_vis.min()))
                 image_data_vis = np.transpose(image_data_vis,(1,2,0))
                 image_data_vis = image_data_vis.astype('uint8')
-                labels_out = torch.argmax(torch.Tensor(mask_predictions[batch_idx]), dim=0)  # last sample from batch
+                labels_out = torch.argmax(torch.Tensor(mask_predictions_fine[batch_idx]), dim=0)  # last sample from batch
                 labels_out_refined = torch.clone(labels_out)
                 if refine_masks:
                     for label in torch.unique(labels_out_refined):
@@ -324,9 +334,20 @@ if __name__ == '__main__':
                     labels_out_refined_vis = semantics_fine.labels_to_colors(labels_out_refined.cpu().numpy().astype('uint8'))
                     labels_out_refined_vis = cv2.resize(labels_out_refined_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
                 labels_out_vis = semantics_fine.labels_to_colors(labels_out.cpu().numpy().astype('uint8'))
+
+                if valid_face_detected:
+                    labels_out_face = torch.argmax(torch.Tensor(mask_predictions_face[batch_idx]), dim=0)  # last sample from batch
+                    labels_out_face_vis = semantics_face.labels_to_colors(labels_out_face.cpu().numpy().astype('uint8'))
+                    facial_details = cv2.resize(labels_out_face_vis, (fh,fw), interpolation=cv2.INTER_NEAREST)
+                    canvas = np.zeros((1024,1024,3)).astype('uint8')
+                    canvas[Xs.min():Xs.max(),Ys.min():Ys.max(),:] = facial_details
+                    face_mask = canvas.sum(axis=2)>0
+                    labels_out_vis[face_mask] = [0,0,0]
+                    labels_out_vis += canvas
+
                 labels_out_vis = cv2.resize(labels_out_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
-                gt_vis = torch.argmax(torch.Tensor(gt_fine[batch_idx]), dim=0)  # last sample from batch
-                gt_vis = semantics_fine.labels_to_colors(gt_vis.cpu().numpy().astype('uint8'))
+                gt_vis = torch.argmax(torch.Tensor(gt_all[batch_idx]), dim=0)  # last sample from batch
+                gt_vis = semantics_all.labels_to_colors(gt_vis.cpu().numpy().astype('uint8'))
                 gt_vis = cv2.resize(gt_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
                 coarse_mask_labels = torch.argmax(coarse_mask[batch_idx], dim=0)
                 coarse_mask_vis = cv2.resize(coarse_mask_labels.cpu().numpy().astype('uint8'), (1024,1024), interpolation=cv2.INTER_NEAREST)
