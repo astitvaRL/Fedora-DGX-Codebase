@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     # EXPERIMENT CONFIG
     task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
-    task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k'
+    task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k_IgnoreBG'
     task_name_face = 'ANIMSEG_E2E_FaceOnly_REAL7k_with_face_prior'
     all_ckpts_dir = 'all_ckpts'
     out_dir = 'eval_real_400_ALL'
@@ -59,8 +59,7 @@ if __name__ == '__main__':
     epoch_coarse = 500
     epoch_face = 500
     encoder_original = False
-    cache_available = False 
-    ignore_background = False
+    cache_available = True 
     bbox_given = False
     visualize_coarse = True
     coarse_includes_neck = True
@@ -262,6 +261,11 @@ if __name__ == '__main__':
             )
             mask_predictions_fine = upsample(mask_predictions_fine)
 
+            # masking the background
+            bg = 1 - coarse_mask[:,0,:,:].unsqueeze(1)
+            bg = upsample(bg.float())
+            mask_predictions_fine = mask_predictions_fine * bg
+
             # extract face region
             face_binmask = torch.argmax(mask_predictions_fine, dim=1)
             face_binmask = face_binmask.squeeze(0)
@@ -433,8 +437,4 @@ if __name__ == '__main__':
     # print(f'Eval Loss: {eval_loss}')
     # print(f'Mean-Accuracy: {mAcc}')
     # print(f'Classwise Mean-IoU: {classwise_mIoU}')
-    # print(f'Total Mean-IoU: {mIoU}')
-
-    # save cache if not already saved
-    if not(cache_available):
-        test_dataset.save_cache(cache_path)
+    # print(f'Total 

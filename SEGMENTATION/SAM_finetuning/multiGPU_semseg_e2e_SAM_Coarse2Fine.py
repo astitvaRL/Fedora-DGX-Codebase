@@ -42,7 +42,7 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'ANIMSEG_E2E_C2F_REAL7k' # finetuned checkpoint will be saved here
+    task_name = 'ANIMSEG_E2E_C2F_REAL7k_IgnoreBG' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     resize_labels = False # False if already resized
     resume_training = True
     visualize_train_input = False
-    ignore_background = False
+    ignore_background = True
     bbox_given = False
     bg_mask_given = False
     apply_noise_coarse = False
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
         epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, 'ANIMSEG_E2E_Cneck2F_REAL7k/model_eval_best.pth')
+        resume_ckpt = join(ckpt_dir, 'ANIMSEG_E2E_Cneck2F_REAL7k/all_ckpts/model_100.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
@@ -271,9 +271,12 @@ if __name__ == '__main__':
             mask_predictions = upsample(mask_predictions)
 
             # Optional, doesn't help much if mask is already being passed as prompt
-            if ignore_background and bg_mask_given:  
-                mask_predictions = mask_predictions*bg_mask
-                gt = gt*bg_mask
+            if ignore_background:
+                bg = coarse_mask[:,0,:,:].unsqueeze(1)
+                bg = 1-bg
+                bg = upsample(bg.float())
+                mask_predictions = mask_predictions*bg
+                gt = gt*bg
 
             # compute train loss
             loss = 0.7*dice_loss(mask_predictions, gt) + 0.3*focal_loss(mask_predictions, gt)
@@ -349,11 +352,13 @@ if __name__ == '__main__':
                     )
                     #upsample mask predictions
                     mask_predictions = upsample(mask_predictions)
-                    if bg_mask_given: 
+                    if ignore_background: 
                         # excluding background from loss computation
-                        bg_mask = F.resize(bg_mask, 1024, torchvision.transforms.InterpolationMode.NEAREST)
-                        gt = gt*bg_mask
-                        mask_predictions = mask_predictions*bg_mask
+                        bg = coarse_mask[:,0,:,:].unsqueeze(1)
+                        bg = 1-bg
+                        bg = upsample(bg.float())
+                        mask_predictions = mask_predictions*bg
+                        gt = gt*bg
                     # compute eval loss
                     eval_loss += 0.7*dice_loss(mask_predictions, gt).item()
                     # visualizing last sample from every batch
