@@ -51,7 +51,7 @@ if __name__ == '__main__':
     task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k_IgnoreBG'
     task_name_face = 'ANIMSEG_E2E_FaceOnly_REAL7k_with_face_prior'
     all_ckpts_dir = 'all_ckpts'
-    out_dir = 'eval_real_400_ALL'
+    out_dir = 'eval_real_400_ALL_IgnoreBG'
     mode = 'test'
     BATCH_SIZE = 1
     load_best_eval_ckpt = True
@@ -300,24 +300,24 @@ if __name__ == '__main__':
                 mask_predictions_face = upsample(mask_predictions_face)
 
 
-            # # compute eval loss
-            # eval_loss += dice_loss(mask_predictions_fine, gt_face).item()
+            # compute eval loss
+            eval_loss += dice_loss(mask_predictions_fine, gt_fine).item()
 
-            # # convert mask predictions to one-hot
-            # pred_labels = torch.argmax(mask_predictions_fine, dim=1)
-            # pred_one_hot = torch.nn.functional.one_hot(pred_labels,num_classes_fine)
-            # pred_one_hot = torch.permute(pred_one_hot,(0,3,1,2))
+            # convert mask predictions to one-hot
+            pred_labels = torch.argmax(mask_predictions_fine, dim=1)
+            pred_one_hot = torch.nn.functional.one_hot(pred_labels,num_classes_fine)
+            pred_one_hot = torch.permute(pred_one_hot,(0,3,1,2))
 
-            # #compute accuracy
-            # batch_accuracy = accuracy(pred_one_hot, gt_fine).mean().item()
-            # mAcc += batch_accuracy
-            # # compute batch IoU
-            # for class_idx in range(1, mask_predictions_fine.shape[1]):
-            #     batch_IoU = monai.metrics.compute_iou(pred_one_hot[:,class_idx,:,:].unsqueeze(1), gt_fine[:,class_idx,:,:].unsqueeze(1), include_background=False, ignore_empty=False)
-            #     sum_notnans = torch.nan_to_num(batch_IoU, nan=0.0).sum()
-            #     count_notnans = torch.isfinite(batch_IoU).sum()
-            #     batch_mean_IoU = sum_notnans / count_notnans
-            #     classwise_mIoU[class_idx] += batch_mean_IoU.item()
+            #compute accuracy
+            batch_accuracy = accuracy(pred_one_hot, gt_fine).mean().item()
+            mAcc += batch_accuracy
+            # compute batch IoU
+            for class_idx in range(1, mask_predictions_fine.shape[1]):
+                batch_IoU = monai.metrics.compute_iou(pred_one_hot[:,class_idx,:,:].unsqueeze(1), gt_fine[:,class_idx,:,:].unsqueeze(1), include_background=True, ignore_empty=False)
+                sum_notnans = torch.nan_to_num(batch_IoU, nan=0.0).sum()
+                count_notnans = torch.isfinite(batch_IoU).sum()
+                batch_mean_IoU = sum_notnans / count_notnans
+                classwise_mIoU[class_idx] += batch_mean_IoU.item()
             
 
 
@@ -427,14 +427,14 @@ if __name__ == '__main__':
                     plt.savefig(f"{eval_epoch_dir}/{step}_{batch_idx}_heatmap.png")
                     plt.close()
                     
-    # # logging metrics
-    # eval_loss /= (step+1)
-    # mAcc /= (step+1)
-    # classwise_mIoU = np.array(classwise_mIoU)/(step+1)
-    # mIoU = classwise_mIoU.sum()/(num_classes_fine-1)
+    # logging metrics
+    eval_loss /= (step+1)
+    mAcc /= (step+1)
+    classwise_mIoU = np.array(classwise_mIoU)/(step+1)
+    mIoU = classwise_mIoU.sum()/(num_classes_fine-1)
 
-    # print(f'EVAL-->{step} steps')
-    # print(f'Eval Loss: {eval_loss}')
-    # print(f'Mean-Accuracy: {mAcc}')
-    # print(f'Classwise Mean-IoU: {classwise_mIoU}')
-    # print(f'Total 
+    print(f'EVAL-->{step} steps')
+    print(f'Eval Loss: {eval_loss}')
+    print(f'Mean-Accuracy: {mAcc}')
+    print(f'Classwise Mean-IoU: {classwise_mIoU}')
+    print(f'Total Mean-IoU: {mIoU}')
