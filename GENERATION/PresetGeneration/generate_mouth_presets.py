@@ -41,7 +41,9 @@ inpainting_model = SimpleLama()
 semantics = SemanticSegmentationAll(labels_definition_file_path)
 
 # load labels
-labels = sorted(os.listdir(join(data_root, label_id_dir_name)))
+start = 6000
+end = -1
+labels = sorted(os.listdir(join(data_root, label_id_dir_name)))[start:]
 
 # iterate over images
 for label_name in tqdm(labels):
