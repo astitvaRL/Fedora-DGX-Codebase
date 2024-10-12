@@ -100,4 +100,4 @@ def tps_warp_preset(label_id, preset_image, type='mouth', shape_id='5'):
         preset_warped = cv2.drawContours(preset_warped, contours, -1, color=(255, 255, 255), thickness=cv2.FILLED)
         shape_mask = preset_warped[:,:,0] == 255
 
-        return shape_mask, warped, unwarped
+        return shape_mask, label_binary, warped, unwarped

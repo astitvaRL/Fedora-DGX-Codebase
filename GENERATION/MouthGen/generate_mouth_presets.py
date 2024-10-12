@@ -29,8 +29,7 @@ preset_dir = './presets'
 preset_type = 'mouth'
 preset_prompts = ['with an open mouth', 'with mouth wide open',  'frowning', 'with tongue out', 'with vampire teeth']
 shape_ids = ['0','1','2','3','5']
-output_dir = join('output')
-os.makedirs(output_dir, exist_ok=True)
+output_root = 'output'
 
 # load stylization model
 control_stylization = ControllableStylization()
@@ -44,11 +43,14 @@ semantics = SemanticSegmentationAll(labels_definition_file_path)
 # load labels
 labels = sorted(os.listdir(join(data_root, label_id_dir_name)))
 
-# load preset
-preset_image = cv2.imread(join(preset_dir, preset_type, f'{shape_id}.png'),-1)
-preset_image = cv2.resize(preset_image, (1024,1024), interpolation=cv2.INTER_NEAREST)
-
+# iterate over images
 for label_name in tqdm(labels):
+
+    # create output directory
+    output_dir = join(output_root, label_name.split('_')[0])
+    os.makedirs(output_dir, exist_ok=True)
+
+    # load images
     img_name = f"{label_name.split('_')[0]}.png"
     img_full = cv2.imread(join(data_root, image_dir_name, img_name))
     img_full = cv2.resize(img_full, (1024,1024))
@@ -71,41 +73,53 @@ for label_name in tqdm(labels):
     if y_min<0: y_min = 0
     if x_max>1024: x_max = 1024
     if y_max>1024: y_max = 1024
-    img = img_full[x_min:x_max, y_min:y_max]
+    img_cropped = img_full[x_min:x_max, y_min:y_max]
     label_id = label_id[x_min:x_max, y_min:y_max]
     img_base = np.array(img_base)[x_min:x_max, y_min:y_max]
-    img = cv2.resize(img, (1024,1024))
+    img_cropped = cv2.resize(img_cropped, (1024,1024))
     img_base = cv2.resize(img_base, (1024,1024))
     label_id = cv2.resize(label_id, (1024,1024), interpolation=cv2.INTER_NEAREST)
+
+    # save original image
+    Image.fromarray(img_cropped).save(join(output_dir, f'{label_name.split("_")[0]}_original.png'))
     
-    # get preset shape
-    tps_output = tps_warp_preset(label_id=label_id, type='mouth', shape_id='5', preset_image=preset_image)
-    if tps_output==-1:
-        print('Skipping...')
-        continue
-    shape_mask = tps_output[0]
-    original_mouth_mask = tps_output[1]
-
-    # place preset shape over inpainted image
-    cond_image = img_base.copy()
-    cond_image[shape_mask] = np.array([0,0,0])
-
-    # stylization
+    # define reference prompt and style
     ref_prompt = "face of a cartoon character"
     style_prompt = "hand drawn"
-    target_prompt = f"face of a cartoon character {preset_prompt}"
-    ref_img = img.copy() # giving entire image as reference for better style context
-    generated, conditioning = control_stylization.generate(ref_img, cond_image, ref_prompt, style_prompt, target_prompt)
-    img_base_np = np.array(img_base)
-    generated = np.array(generated)
-    blurred_mask = cv2.blur(shape_mask.astype('float32'), (7,7))
-    blurred_mask = np.repeat(blurred_mask[..., np.newaxis], 3, axis=2)
-    img_base_np = img_base_np * (1-blurred_mask) + generated * blurred_mask
-    img_base_np = img_base_np.astype('uint8')
-    
 
-    # save images
-    Image.fromarray(img_base_np).save(join(output_dir, f'{label_name.split("_")[0]}_{preset_type}_{shape_id}.png')) # generated image
-    # img_base.save(join(output_dir, f'{label_name.split("_")[0]}_inpainted.png') ) # inpainted image
-    # conditioning.save(join(output_dir, f'{label_name.split("_")[0]}_{preset_type}_{shape_id}_canny.png')) # canny image
-    # cv2.imwrite(join(output_dir, f'{label_name.split("_")[0]}.png'), img) # original image
+    # iterate over presets
+    for preset_idx in tqdm(range(len(preset_prompts))):
+        # load preset
+        shape_id = shape_ids[preset_idx]
+        preset_image = cv2.imread(join(preset_dir, preset_type, f'{shape_id}.png'),-1)
+        preset_image = cv2.resize(preset_image, (1024,1024), interpolation=cv2.INTER_NEAREST)
+        
+        # get preset shape
+        tps_output = tps_warp_preset(label_id=label_id, type='mouth', shape_id='5', preset_image=preset_image)
+        if tps_output==-1:
+            print('Skipping...')
+            continue
+        shape_mask = tps_output[0]
+        original_mouth_mask = tps_output[1]
+
+        # place preset shape over inpainted image
+        cond_image = img_base.copy()
+        cond_image[shape_mask] = np.array([0,0,0])
+
+        # stylization
+        target_prompt = f"face of a cartoon character {preset_prompts[preset_idx]}"
+        ref_img = img_cropped.copy()
+        generated, conditioning = control_stylization.generate(ref_img, cond_image, ref_prompt, style_prompt, target_prompt)
+        img_base_np = np.array(img_base)
+        generated = np.array(generated)
+        blurred_mask = cv2.blur(shape_mask.astype('float32'), (7,7))
+        blurred_mask = np.repeat(blurred_mask[..., np.newaxis], 3, axis=2)
+        img_base_np = img_base_np * (1-blurred_mask) + generated * blurred_mask
+        img_base_np = img_base_np.astype('uint8')
+        
+        # save images
+        Image.fromarray(img_base_np).save(join(output_dir, f'{label_name.split("_")[0]}_{preset_type}_{shape_id}.png')) # generated image
+
+    # invalidate the reference latent
+    control_stylization.reference_latent = None
+    control_stylization.inversion_callback = None

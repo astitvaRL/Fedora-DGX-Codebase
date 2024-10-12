@@ -14,6 +14,8 @@ from .external.ControlStyleAligned import inversion, pipeline_calls, sa_handler
 class ControllableStylization:
     def __init__(self, device=torch.device('cuda:0')):
         self.device = device
+        self.reference_latent = None
+        self.inversion_callback = None
         self.controlnet = ControlNetModel.from_pretrained(
             "diffusers/controlnet-canny-sdxl-1.0",
             variant="fp16",
@@ -40,36 +42,42 @@ class ControllableStylization:
                                             adain_queries=True,
                                             adain_keys=True,
                                             adain_values=False,
-                                            shared_score_shift=np.log(4),
-                                            shared_score_scale=1.0,
+                                            shared_score_shift=np.log(3),
+                                            shared_score_scale=1.5,
                                             )
         # create handler
         self.handler = sa_handler.Handler(self.pipeline)
         self.handler.register(self.sa_args, )
 
-    
-
-    def generate(self, reference_image, condition_image, reference_prompt, style_prompt, target_prompt, preprocessor='canny', num_inference_steps=50, guidance_scale=7.5):
+    def generate(self, reference_image, condition_image, reference_prompt, style_prompt, target_prompt, preprocessor='canny', num_inference_steps=25, guidance_scale=7.5):
         assert reference_image.shape[0] == 1024 and reference_image.shape[1] == 1024
         reference_prompt = f"{reference_prompt}, {style_prompt}."
         target_prompt = f"{target_prompt}, {style_prompt}."
-        canny_image = cv2.Canny(condition_image, 5, 50)
+        canny_image = cv2.Canny(condition_image, 10, 40)
         canny_image = canny_image[:, :, None]
         canny_image = np.concatenate([canny_image, canny_image, canny_image], axis=2)
         canny_image = Image.fromarray(canny_image).resize((1024, 1024), 0)
         num_images_per_prompt = 1
         latents = torch.randn(1+num_images_per_prompt, 4, 128, 128, dtype=self.pipeline.unet.dtype,).to(self.device) 
+        
         # run inversion
-        x0 = reference_image
-        zts = inversion.ddim_inversion(self.pipeline, x0, reference_prompt, num_inference_steps, 2)
-        zT, inversion_callback = inversion.make_inversion_callback(zts, offset=5)
-        latents[0] = zT
+        if self.reference_latent is None or self.inversion_callback is None:
+            print('Running inversion...')
+            x0 = reference_image
+            zts = inversion.ddim_inversion(self.pipeline, x0, reference_prompt, num_inference_steps, 2)
+            zT, inversion_callback = inversion.make_inversion_callback(zts, offset=5)
+            latents[0] = zT
+            self.reference_latent = zT
+            self.inversion_callback = inversion_callback
+        else:
+            latents[0] = self.reference_latent
         # run pipeline
+        print('Generating with style...')
         images = self.pipeline([reference_prompt, target_prompt],
                 latents=latents,
                 image=canny_image,
                 controlnet_conditioning_scale=0.99,
-                callback_on_step_end=inversion_callback,
+                callback_on_step_end=self.inversion_callback,
                 num_inference_steps=num_inference_steps,
                 guidance_scale=10).images
         generated = images[-1]
