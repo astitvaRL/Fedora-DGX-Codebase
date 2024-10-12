@@ -105,9 +105,9 @@ for label_name in tqdm(labels):
         # get preset shape
         tps_output = None
         if preset_class=='mouth':
-            tps_output = tps_warp_preset_mouth(label_id=label_id, type=preset_class, shape_id=shape_id, preset_image=preset_image)
+            tps_output = tps_warp_preset_mouth(label_id=label_id, type=preset_class, preset_image=preset_image)
         elif preset_class=='eyes':
-            tps_output = tps_warp_preset_eyes(label_id=label_id, type=preset_class, shape_id=shape_id, preset_image=preset_image)
+            tps_output = tps_warp_preset_eyes(label_id=label_id, type=preset_class, preset_image=preset_image)
         if tps_output==-1 or tps_output is None:
             print('Skipping...')
             continue
