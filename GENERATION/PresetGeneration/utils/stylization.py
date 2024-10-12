@@ -42,7 +42,7 @@ class ControllableStylization:
                                             adain_queries=True,
                                             adain_keys=True,
                                             adain_values=False,
-                                            shared_score_shift=np.log(3),
+                                            shared_score_shift=np.log(4),
                                             shared_score_scale=1.5,
                                             )
         # create handler
@@ -59,7 +59,7 @@ class ControllableStylization:
         canny_image = Image.fromarray(canny_image).resize((1024, 1024), 0)
         num_images_per_prompt = 1
         latents = torch.randn(1+num_images_per_prompt, 4, 128, 128, dtype=self.pipeline.unet.dtype,).to(self.device) 
-        
+        breakpoint()
         # run inversion
         if self.reference_latent is None or self.inversion_callback is None:
             print('Running inversion...')
@@ -76,7 +76,7 @@ class ControllableStylization:
         images = self.pipeline([reference_prompt, target_prompt],
                 latents=latents,
                 image=canny_image,
-                controlnet_conditioning_scale=0.99,
+                controlnet_conditioning_scale=0.85,
                 callback_on_step_end=self.inversion_callback,
                 num_inference_steps=num_inference_steps,
                 guidance_scale=10).images

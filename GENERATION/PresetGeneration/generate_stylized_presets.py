@@ -15,8 +15,9 @@ from tqdm import tqdm
 from simple_lama_inpainting import SimpleLama
 
 from utils.SemanticSegmentation import SemanticSegmentationAll
-from utils.shape import tps_warp_preset
+from utils.shape import tps_warp_preset_mouth, tps_warp_preset_eyes
 from utils.stylization import ControllableStylization
+from utils.preset_config import PresetConfig
 
 join = os.path.join
 
@@ -26,10 +27,11 @@ labels_definition_file_path = './label_definition.json'
 image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
 label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
 preset_dir = './presets'
-preset_type = 'mouth'
-preset_prompts = ['with an open mouth', 'with mouth wide open',  'frowning', 'with tongue out', 'with vampire teeth']
-shape_ids = ['0','1','2','3','5']
-output_root = 'output'
+preset_class = 'eyes'
+preset_config = PresetConfig(preset_class)
+preset_prompts = preset_config.config['prompts']
+shape_ids = preset_config.config['shape_ids']
+output_root = 'output_eyes'
 
 # load stylization model
 control_stylization = ControllableStylization()
@@ -62,13 +64,17 @@ for label_name in tqdm(labels):
     label_id = semantics.colors_to_labels(label_full)
     #inpainting
     kernel = np.ones((5,5),np.uint8)
-    inpainting_mask =  (label_id == 3) | (label_id == 23) | (label_id == 17)
+    inpainting_mask =  label_id==0 # default background
+    if preset_class=='mouth':
+        inpainting_mask =  (label_id == 3) | (label_id == 23) | (label_id == 17)
+    elif preset_class=='eyes':
+        inpainting_mask =  (label_id == 4) | (label_id == 22)
     inpainting_mask = cv2.dilate(255*inpainting_mask.astype('uint8'), kernel, iterations=3)
     img_base = inpainting_model(Image.fromarray(img_full.copy()), inpainting_mask)
     # extract face region
     face_region = label_id==6
     Xs, Ys = np.where(face_region)
-    padding = 10
+    padding = 50
     x_min, x_max = np.min(Xs)-padding, np.max(Xs)+padding
     y_min, y_max = np.min(Ys)-padding, np.max(Ys)+padding
     if x_min<0: x_min = 0
@@ -93,16 +99,22 @@ for label_name in tqdm(labels):
     for preset_idx in tqdm(range(len(preset_prompts))):
         # load preset
         shape_id = shape_ids[preset_idx]
-        preset_image = cv2.imread(join(preset_dir, preset_type, f'{shape_id}.png'),-1)
+        preset_image = cv2.imread(join(preset_dir, preset_class, f'{shape_id}.png'),-1)
         preset_image = cv2.resize(preset_image, (1024,1024), interpolation=cv2.INTER_NEAREST)
         
         # get preset shape
-        tps_output = tps_warp_preset(label_id=label_id, type='mouth', shape_id='5', preset_image=preset_image)
-        if tps_output==-1:
+        tps_output = None
+        if preset_class=='mouth':
+            tps_output = tps_warp_preset_mouth(label_id=label_id, type=preset_class, shape_id=shape_id, preset_image=preset_image)
+        elif preset_class=='eyes':
+            tps_output = tps_warp_preset_eyes(label_id=label_id, type=preset_class, shape_id=shape_id, preset_image=preset_image)
+        if tps_output==-1 or tps_output is None:
             print('Skipping...')
             continue
         shape_mask = tps_output[0]
         original_mouth_mask = tps_output[1]
+
+        breakpoint()
 
         # place preset shape over inpainted image
         cond_image = img_base.copy()
@@ -120,7 +132,7 @@ for label_name in tqdm(labels):
         img_base_np = img_base_np.astype('uint8')
         
         # save images
-        Image.fromarray(img_base_np).save(join(output_dir, f'{label_name.split("_")[0]}_{preset_type}_{shape_id}.png')) # generated image
+        Image.fromarray(img_base_np).save(join(output_dir, f'{label_name.split("_")[0]}_{preset_class}_{shape_id}.png')) # generated image
 
     # invalidate the reference latent
     control_stylization.reference_latent = None

@@ -5,7 +5,7 @@ from scipy.spatial import cKDTree
 import cv2
 import skimage as ski
 
-def tps_warp_preset_mouth(label_id, preset_image, type='mouth', shape_id='5'):
+def tps_warp_preset(label_id, preset_image, type='mouth', shape_id='5'):
 
     #preset should have 4 channels, last channel is the alpha mask
     assert preset_image.shape[2]==4
@@ -91,12 +91,12 @@ def tps_warp_preset_mouth(label_id, preset_image, type='mouth', shape_id='5'):
         tps_inv = ski.transform.ThinPlateSplineTransform()
         tps_inv.estimate(src_pts, dst_pts)
         unwarped = ski.transform.warp(preset, tps_inv, order=1)
-        roi_mask = unwarped[:,:,3]==1
-        roi_mask = roi_mask.astype('uint8')
+        mouth_mask = unwarped[:,:,3]==1
+        mouth_mask = mouth_mask.astype('uint8')
 
         # fill holes in mouth mask
         preset_warped = np.zeros((1024,1024,3)).astype('uint8')
-        contours, _ = cv2.findContours(roi_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        contours, _ = cv2.findContours(mouth_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         preset_warped = cv2.drawContours(preset_warped, contours, -1, color=(255, 255, 255), thickness=cv2.FILLED)
         shape_mask = preset_warped[:,:,0] == 255
 
