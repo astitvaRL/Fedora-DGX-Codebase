@@ -91,7 +91,7 @@ def tps_warp_preset_mouth(label_id, preset_image, type='mouth'):
         tps_inv = ski.transform.ThinPlateSplineTransform()
         tps_inv.estimate(src_pts, dst_pts)
         unwarped = ski.transform.warp(preset.astype('float32'), tps_inv, order=1)
-        roi_mask = unwarped[:,:,3]==1
+        roi_mask = unwarped[:,:,3]==255
         roi_mask = roi_mask.astype('uint8')
 
         # fill holes in roi mask
