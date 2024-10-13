@@ -114,8 +114,6 @@ for label_name in tqdm(labels):
         shape_mask = tps_output[0]
         original_mouth_mask = tps_output[1]
 
-        breakpoint()
-
         # place preset shape over inpainted image
         cond_image = img_base.copy()
         cond_image[shape_mask] = np.array([0,0,0])

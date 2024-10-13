@@ -90,7 +90,7 @@ def tps_warp_preset_mouth(label_id, preset_image, type='mouth'):
         preset = cv2.resize(preset,(1024,1024),cv2.INTER_NEAREST)
         tps_inv = ski.transform.ThinPlateSplineTransform()
         tps_inv.estimate(src_pts, dst_pts)
-        unwarped = ski.transform.warp(preset, tps_inv, order=1)
+        unwarped = ski.transform.warp(preset.astype('float32'), tps_inv, order=1)
         roi_mask = unwarped[:,:,3]==1
         roi_mask = roi_mask.astype('uint8')
 
@@ -181,17 +181,17 @@ def tps_warp_single_eye(label_binary, preset_image):
         preset = cv2.resize(preset,(1024,1024),cv2.INTER_NEAREST)
         tps_inv = ski.transform.ThinPlateSplineTransform()
         tps_inv.estimate(src_pts, dst_pts)
-        unwarped = ski.transform.warp(preset, tps_inv, order=1)
-        roi_mask = unwarped[:,:,3]==1
-        roi_mask = roi_mask.astype('uint8')
+        unwarped = ski.transform.warp(preset.astype('float32'), tps_inv, order=1)
+        roi_mask = unwarped[:,:,3]==255
+        # roi_mask = roi_mask.astype('uint8')
 
-        # fill holes in roi mask
-        preset_warped = np.zeros((1024,1024,3)).astype('uint8')
-        contours, _ = cv2.findContours(roi_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        preset_warped = cv2.drawContours(preset_warped, contours, -1, color=(255, 255, 255), thickness=cv2.FILLED)
-        shape_mask = preset_warped[:,:,0] == 255
+        # # fill holes in roi mask
+        # preset_warped = np.zeros((1024,1024,3)).astype('uint8')
+        # contours, _ = cv2.findContours(roi_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        # preset_warped = cv2.drawContours(preset_warped, contours, -1, color=(255, 255, 255), thickness=cv2.FILLED)
+        # shape_mask = preset_warped[:,:,0] == 255
 
-        return shape_mask, label_binary, warped, unwarped
+        return roi_mask, label_binary, warped, unwarped
 
 
 
@@ -219,4 +219,7 @@ def tps_warp_preset_eyes(label_id, preset_image, type='eyes'):
 
     left_shape_mask = tps_warp_single_eye(left_mask, preset_image)[0]
     right_shape_mask = tps_warp_single_eye(right_mask, preset_image)[0]
-    breakpoint()
+    
+    shape_mask = left_shape_mask | right_shape_mask
+
+    return shape_mask, label_binary, left_shape_mask, right_shape_mask

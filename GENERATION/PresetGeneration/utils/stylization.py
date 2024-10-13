@@ -53,13 +53,12 @@ class ControllableStylization:
         assert reference_image.shape[0] == 1024 and reference_image.shape[1] == 1024
         reference_prompt = f"{reference_prompt}, {style_prompt}."
         target_prompt = f"{target_prompt}, {style_prompt}."
-        canny_image = cv2.Canny(condition_image, 10, 40)
+        canny_image = cv2.Canny(condition_image, 5, 11)
         canny_image = canny_image[:, :, None]
         canny_image = np.concatenate([canny_image, canny_image, canny_image], axis=2)
         canny_image = Image.fromarray(canny_image).resize((1024, 1024), 0)
         num_images_per_prompt = 1
         latents = torch.randn(1+num_images_per_prompt, 4, 128, 128, dtype=self.pipeline.unet.dtype,).to(self.device) 
-        breakpoint()
         # run inversion
         if self.reference_latent is None or self.inversion_callback is None:
             print('Running inversion...')
