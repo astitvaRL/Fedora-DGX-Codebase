@@ -74,7 +74,7 @@ for label_name in tqdm(labels):
     # extract face region
     face_region = label_id==6
     Xs, Ys = np.where(face_region)
-    padding = 50
+    padding = 10
     x_min, x_max = np.min(Xs)-padding, np.max(Xs)+padding
     y_min, y_max = np.min(Ys)-padding, np.max(Ys)+padding
     if x_min<0: x_min = 0

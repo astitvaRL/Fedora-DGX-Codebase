@@ -42,8 +42,8 @@ class ControllableStylization:
                                             adain_queries=True,
                                             adain_keys=True,
                                             adain_values=False,
-                                            shared_score_shift=np.log(4),
-                                            shared_score_scale=1.5,
+                                            shared_score_shift=np.log(2),
+                                            shared_score_scale=1.0,
                                             )
         # create handler
         self.handler = sa_handler.Handler(self.pipeline)
