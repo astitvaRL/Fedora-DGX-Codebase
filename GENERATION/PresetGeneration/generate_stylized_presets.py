@@ -28,6 +28,8 @@ image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
 label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
 preset_dir = './presets'
 preset_class = 'mouth' # DONT FORGET TO CHANGE CANNY THRESHOLDS ACCORDINGLY IN THE STYLIZATION SCRIPT
+
+# prest configuration
 preset_config = PresetConfig(preset_class)
 preset_prompts = preset_config.config['prompts']
 shape_ids = preset_config.config['shape_ids']
@@ -45,7 +47,7 @@ semantics = SemanticSegmentationAll(labels_definition_file_path)
 # load labels
 start = 6000
 end = -1
-labels = sorted(os.listdir(join(data_root, label_id_dir_name)))
+labels = sorted(os.listdir(join(data_root, label_id_dir_name)))[start:]
 
 # iterate over images
 for label_name in tqdm(labels):
