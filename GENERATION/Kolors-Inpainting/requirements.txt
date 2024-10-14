@@ -1,6 +1,0 @@
-accelerate==0.27.2
-diffusers==0.28.2
-invisible_watermark==0.2.0
-# torch==2.2.0
-transformers==4.42.4
-sentencepiece==0.1.99
