@@ -41,17 +41,20 @@ preset_prompts = preset_config.config['prompts']
 shape_ids = preset_config.config['shape_ids']
 
 for folder in tqdm(folders):
-    subdir = join(output_root, folder)
-    files = sorted(os.listdir(subdir))
-    fig, ax = plt.subplots(1,6, figsize=(60,10))
+    folder_path = join(output_root, folder)
+    files = sorted(os.listdir(folder_path))
+    if len(files) < 2:
+        continue
+    fig, ax = plt.subplots(1,len(shape_ids)+1, figsize=((len(shape_ids)+1)*10,10))
     fig.tight_layout()
-    ax[0].imshow(Image.open(join(subdir, files[-1])))
-    # ax[0].set_title('Original Image', fontsize=35)
+    filename = f'{folder}_original.png'
+    ax[0].imshow(Image.open(join(folder_path, filename)))
     ax[0].axis('off')
-    for idx in range(len(files)-1):
-        ax[idx+1].imshow(Image.open(join(subdir, files[idx])))
+    for idx in range(len(shape_ids)):
+        filename = f'{folder}_{preset_class}_{shape_ids[idx]}.png'
+        ax[idx+1].imshow(Image.open(join(folder_path, filename)))
         # ax[idx+1].set_title(preset_prompts[idx], fontsize=35)
         ax[idx+1].axis('off')
-    save_name = (subdir.split('/')[-1]).split('_')[0] + '.png'
+    save_name = (folder_path.split('/')[-1]).split('_')[0] + '.png'
     plt.savefig(join(visualize_dir, save_name))
     plt.close()

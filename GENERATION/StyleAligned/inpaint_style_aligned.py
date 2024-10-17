@@ -21,9 +21,11 @@ import sa_handler
 import torch
 from diffusers import (
     AutoencoderKL,
+    AutoPipelineForInpainting,
     ControlNetModel,
     DDIMScheduler,
     StableDiffusionXLControlNetPipeline,
+    StableDiffusionXLInpaintPipeline,
     StableDiffusionXLPipeline,
 )
 from diffusers.utils import load_image
@@ -54,9 +56,9 @@ scheduler = DDIMScheduler(
     set_alpha_to_one=False,
 )
 
-pipeline = StableDiffusionXLControlNetPipeline.from_pretrained(
+pipeline = StableDiffusionXLInpaintPipeline.from_pretrained(
     "stabilityai/stable-diffusion-xl-base-1.0",
-    controlnet=controlnet,
+    # controlnet=controlnet,
     vae=vae,
     variant="fp16",
     use_safetensors=True,
@@ -90,29 +92,15 @@ handler.register(
 )
 
 
-# ref_image = load_image("./example_image/002.png")
-ref_image = load_image(
-    "https://images.pexels.com/photos/821748/pexels-photo-821748.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
-)
-ref_style = "photoreal"
-ref_prompt = f"digital photo of face of a man, {ref_style}."
-num_inference_steps = 50
+ref_image = load_image("./example_image/002.png")
+ref_style = "hand drawn"
+ref_prompt = f"2D character, {ref_style}."
+num_inference_steps = 25
 image_inversion = True
 num_images_per_prompt = 1
 
-# cond_image_path = "./example_image/mouth/2.png"
-cond_image_path = "https://d3kjluh73b9h9o.cloudfront.net/original/4X/3/b/0/3b023b5c26d0a7d440549743b78fbfa32f0c82ab.jpeg"
+cond_image_path = "./example_image/mouth/2.jpg"
 cond_image = load_image(cond_image_path)
-# depth
-depth_image = pipeline_calls.get_depth_map(
-    cond_image, feature_processor, depth_estimator
-)
-# canny
-canny_image = cv2.Canny(np.asarray(cond_image).astype("uint8"), 5, 45)
-canny_image = canny_image[:, :, None]
-canny_image = np.concatenate([canny_image, canny_image, canny_image], axis=2)
-canny_image = Image.fromarray(canny_image).resize((1024, 1024), 0)
-
 
 # initialize random latents
 # g_cpu = torch.Generator(device='cpu')
@@ -133,10 +121,9 @@ if image_inversion:
     zT, inversion_callback = inversion.make_inversion_callback(zts, offset=5)
     latents[0] = zT
 
-# target_prompt = f"a sad frowning mouth, animation preset, {ref_style}."
-target_prompt = f"digital photo of face of a man, {ref_style}."
+target_prompt = f"a sad frowning mouth, animation preset, {ref_style}."
 control_strength = 0.99
-guidance = 15
+guidance = 10
 while True:
     breakpoint()
     print("Generating...")
@@ -153,8 +140,7 @@ while True:
         controlnet_conditioning_scale=control_strength,
         callback_on_step_end=inversion_callback,
         num_inference_steps=num_inference_steps,
-        guidance_scale=10,
+        guidance_scale=guidance,
     ).images
 
-    # images[1].resize(cond_image.size).save(f"{cond_image_path[:-4]}_stylized.png")
-    images[1].resize(cond_image.size).save(f"latest_stylized.png")
+    images[1].resize(cond_image.size).save(f"{cond_image_path[:-4]}_stylized.png")

@@ -1,188 +1,225 @@
 import os
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.spatial import cKDTree
+
 import cv2
+import matplotlib.pyplot as plt
+import numpy as np
 import skimage as ski
+from scipy.spatial import cKDTree
 
-def tps_warp_preset_mouth(label_id, preset_image, type='mouth'):
 
-    #preset should have 4 channels, last channel is the alpha mask
-    assert preset_image.shape[2]==4
+def tps_warp_preset_mouth(label_id, preset_image, type="mouth", return_metadata=False):
+
+    metadata = {}
+
+    # preset should have 4 channels, last channel is the alpha mask
+    assert preset_image.shape[2] == 4
 
     # label to binary mask
     label_binary = (label_id == 3) | (label_id == 23) | (label_id == 17)
-    label_binary = label_binary.astype('uint8')
-    if label_binary.sum()==0:
-        print('No mouth region')
+    label_binary = label_binary.astype("uint8")
+    if label_binary.sum() == 0:
+        print("No mouth region")
         return -1
 
     # find end points
-    XY = np.argwhere(label_binary>0)
-    Xs = XY[:,1]
-    Ys = XY[:,0]
+    XY = np.argwhere(label_binary > 0)
+    Xs = XY[:, 1]
+    Ys = XY[:, 0]
     pleft_idx = np.argmin(Xs)
     pright_idx = np.argmax(Xs)
     xl, yl = Xs[pleft_idx], Ys[pleft_idx]
     xr, yr = Xs[pright_idx], Ys[pright_idx]
-    
+
     # Find the roi boundary
-    contours, _ = cv2.findContours(label_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    contour = contours[0]
-    
+    contours, _ = cv2.findContours(
+        label_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+    )
+    contour = contours[0]  # first value from tuple contains all contours
+
     # open the roi boundary curve from end points
     contour_img = np.zeros_like(label_binary)
     for points in contour:
         x = points[0][1]
         y = points[0][0]
-        contour_img[x,y]=1
+        contour_img[x, y] = 1
     delete_radius = 5
-    for i in range(xl-delete_radius,xl+delete_radius):
-        for j in range(yl-delete_radius,yl+delete_radius):
-            contour_img[j,i] = 0
-    for i in range(xr-delete_radius,xr+delete_radius):
-        for j in range(yr-delete_radius,yr+delete_radius):
-            contour_img[j,i] = 0
-    
+    for i in range(xl - delete_radius, xl + delete_radius):
+        for j in range(yl - delete_radius, yl + delete_radius):
+            contour_img[j, i] = 0
+    for i in range(xr - delete_radius, xr + delete_radius):
+        for j in range(yr - delete_radius, yr + delete_radius):
+            contour_img[j, i] = 0
+
     # estimate disconnected contours
-    contours, _ = cv2.findContours(contour_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    if len(contours)!=2:
-        print('Complex mouth shape')
+    contours, _ = cv2.findContours(
+        contour_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+    )
+    if len(contours) != 2:
+        print("Complex mouth shape")
         return -1
-    
+
     # find bottom/top contour
     bottom_idx = -1
     max_y = -1
     for idx, cntr in enumerate(contours):
-        cntr = cntr.reshape(-1,2)
-        if np.max(cntr[:,1]) > max_y:
-            max_y = np.max(cntr[:,1])
+        cntr = cntr.reshape(-1, 2)
+        if np.max(cntr[:, 1]) > max_y:
+            max_y = np.max(cntr[:, 1])
             bottom_idx = idx
     if bottom_idx == -1:
-        print('No bottom contour')
+        print("No bottom contour")
         return -1
-    top_idx = abs(1-bottom_idx)
-    if len(contours)>1:
+    top_idx = abs(1 - bottom_idx)
+    if len(contours) > 1:
         # salient points estimation
-        upper_line = contours[top_idx].reshape(-1,2)
-        upper_median = np.median(upper_line, axis=0).astype('int32')
+        upper_line = contours[top_idx].reshape(-1, 2)
+        upper_median = np.median(upper_line, axis=0).astype("int32")
         tree_upper = cKDTree(upper_line)
         nndist, nnidx = tree_upper.query(upper_median)
         upper_contour_mid = upper_line[nnidx]
-        lower_line = contours[bottom_idx].reshape(-1,2)
-        lower_median = np.median(lower_line, axis=0).astype('int32')
+        lower_line = contours[bottom_idx].reshape(-1, 2)
+        lower_median = np.median(lower_line, axis=0).astype("int32")
         tree_lower = cKDTree(lower_line)
         nndist, nnidx = tree_lower.query(lower_median)
         lower_contour_mid = lower_line[nnidx]
-    
+
         # TPS-based warping
         # ratio = (np.abs(upper_contour_mid - lower_contour_mid)[1]) / np.abs(xl-xr)
         # offset = 512*ratio
-        offset = min(np.square(upper_contour_mid - lower_contour_mid)[1],100)
-        src_pts = np.array([[xl,yl], upper_contour_mid, lower_contour_mid, [xr,yr]]).astype(np.float32)
-        dst_pts = np.array([[0,512],[512,510],[512,512+offset],[1023,512]]).astype(np.float32)
+        offset = min(np.square(upper_contour_mid - lower_contour_mid)[1], 100)
+        src_pts = np.array(
+            [[xl, yl], upper_contour_mid, lower_contour_mid, [xr, yr]]
+        ).astype(np.float32)
+        dst_pts = np.array(
+            # [[0, 512], [512, 510], [512, 512 + offset], [1023, 512]]
+            [[0, 512], [512, 510], [512, 800], [1023, 512]]
+        ).astype(np.float32)
         tps = ski.transform.ThinPlateSplineTransform()
         tps.estimate(dst_pts, src_pts)
         warped = ski.transform.warp(label_binary, tps, order=0)
-        warped[warped>0] = 255
+        warped[warped > 0] = 255
 
         preset = preset_image.copy()
-        preset = cv2.resize(preset,(1024,1024),cv2.INTER_NEAREST)
+        preset = cv2.resize(preset, (1024, 1024), cv2.INTER_NEAREST)
         tps_inv = ski.transform.ThinPlateSplineTransform()
         tps_inv.estimate(src_pts, dst_pts)
-        unwarped = ski.transform.warp(preset.astype('float32'), tps_inv, order=1)
-        roi_mask = unwarped[:,:,3]==255
-        roi_mask = roi_mask.astype('uint8')
+        unwarped = ski.transform.warp(preset.astype("float32"), tps_inv, order=1)
+        roi_mask = unwarped[:, :, 3] == 255
+        roi_mask = roi_mask.astype("uint8")
 
         # fill holes in roi mask
-        preset_warped = np.zeros((1024,1024,3)).astype('uint8')
-        contours, _ = cv2.findContours(roi_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        preset_warped = cv2.drawContours(preset_warped, contours, -1, color=(255, 255, 255), thickness=cv2.FILLED)
-        shape_mask = preset_warped[:,:,0] == 255
+        preset_warped = np.zeros((1024, 1024, 3)).astype("uint8")
+        preset_contours, _ = cv2.findContours(
+            roi_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+        )
+        preset_warped = cv2.drawContours(
+            preset_warped,
+            preset_contours,
+            -1,
+            color=(255, 255, 255),
+            thickness=cv2.FILLED,
+        )
+        shape_mask = preset_warped[:, :, 0] == 255
 
-        return shape_mask, label_binary, warped, unwarped
+        if return_metadata:
+            metadata["top_contour"] = contours[top_idx]
+            metadata["bottom_contour"] = contours[bottom_idx]
+            metadata["left_end"] = [xl, yl]
+            metadata["right_end"] = [xr, yr]
+            metadata["upper_contour_mid"] = upper_contour_mid
+            metadata["lower_contour_mid"] = lower_contour_mid
+            metadata["tps"] = tps
+            metadata["tps_inv"] = tps_inv
+            metadata["preset_warped"] = preset_warped
 
-
-
+        return shape_mask, label_binary, warped, unwarped, metadata
 
 
 def tps_warp_single_eye(label_binary, preset_image):
 
     # find end points
-    XY = np.argwhere(label_binary>0)
-    Xs = XY[:,1]
-    Ys = XY[:,0]
+    XY = np.argwhere(label_binary > 0)
+    Xs = XY[:, 1]
+    Ys = XY[:, 0]
     pleft_idx = np.argmin(Xs)
     pright_idx = np.argmax(Xs)
     xl, yl = Xs[pleft_idx], Ys[pleft_idx]
     xr, yr = Xs[pright_idx], Ys[pright_idx]
-    
+
     # Find the roi boundary
-    contours, _ = cv2.findContours(label_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    contours, _ = cv2.findContours(
+        label_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+    )
     contour = contours[0]
-    
+
     # open the roi boundary curve from end points
     contour_img = np.zeros_like(label_binary)
     for points in contour:
         x = points[0][1]
         y = points[0][0]
-        contour_img[x,y]=1
+        contour_img[x, y] = 1
     delete_radius = 5
-    for i in range(xl-delete_radius,xl+delete_radius):
-        for j in range(yl-delete_radius,yl+delete_radius):
-            contour_img[j,i] = 0
-    for i in range(xr-delete_radius,xr+delete_radius):
-        for j in range(yr-delete_radius,yr+delete_radius):
-            contour_img[j,i] = 0
-    
+    for i in range(xl - delete_radius, xl + delete_radius):
+        for j in range(yl - delete_radius, yl + delete_radius):
+            contour_img[j, i] = 0
+    for i in range(xr - delete_radius, xr + delete_radius):
+        for j in range(yr - delete_radius, yr + delete_radius):
+            contour_img[j, i] = 0
+
     # estimate disconnected contours
-    contours, _ = cv2.findContours(contour_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    if len(contours)!=2:
-        print('Complex mouth shape')
+    contours, _ = cv2.findContours(
+        contour_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+    )
+    if len(contours) != 2:
+        print("Complex mouth shape")
         return -1
-    
+
     # find bottom/top contour
     bottom_idx = -1
     max_y = -1
     for idx, cntr in enumerate(contours):
-        cntr = cntr.reshape(-1,2)
-        if np.max(cntr[:,1]) > max_y:
-            max_y = np.max(cntr[:,1])
+        cntr = cntr.reshape(-1, 2)
+        if np.max(cntr[:, 1]) > max_y:
+            max_y = np.max(cntr[:, 1])
             bottom_idx = idx
     if bottom_idx == -1:
-        print('No bottom contour')
+        print("No bottom contour")
         return -1
-    top_idx = abs(1-bottom_idx)
-    if len(contours)>1:
+    top_idx = abs(1 - bottom_idx)
+    if len(contours) > 1:
         # salient points estimation
-        upper_line = contours[top_idx].reshape(-1,2)
-        upper_median = np.median(upper_line, axis=0).astype('int32')
+        upper_line = contours[top_idx].reshape(-1, 2)
+        upper_median = np.median(upper_line, axis=0).astype("int32")
         tree_upper = cKDTree(upper_line)
         nndist, nnidx = tree_upper.query(upper_median)
         upper_contour_mid = upper_line[nnidx]
-        lower_line = contours[bottom_idx].reshape(-1,2)
-        lower_median = np.median(lower_line, axis=0).astype('int32')
+        lower_line = contours[bottom_idx].reshape(-1, 2)
+        lower_median = np.median(lower_line, axis=0).astype("int32")
         tree_lower = cKDTree(lower_line)
         nndist, nnidx = tree_lower.query(lower_median)
         lower_contour_mid = lower_line[nnidx]
-    
+
         # TPS-based warping
         # ratio = (np.abs(upper_contour_mid - lower_contour_mid)[1]) / np.abs(xl-xr)
         # offset = 512*ratio
         # offset = min(np.square(upper_contour_mid - lower_contour_mid)[1],100)
-        src_pts = np.array([[xl,yl], upper_contour_mid, lower_contour_mid, [xr,yr]]).astype(np.float32)
-        dst_pts = np.array([[0,512],[512,180],[512,900],[1023,512]]).astype(np.float32)
+        src_pts = np.array(
+            [[xl, yl], upper_contour_mid, lower_contour_mid, [xr, yr]]
+        ).astype(np.float32)
+        dst_pts = np.array([[0, 512], [512, 180], [512, 900], [1023, 512]]).astype(
+            np.float32
+        )
         tps = ski.transform.ThinPlateSplineTransform()
         tps.estimate(dst_pts, src_pts)
         warped = ski.transform.warp(label_binary, tps, order=0)
-        warped[warped>0] = 255
+        warped[warped > 0] = 255
 
         preset = preset_image.copy()
-        preset = cv2.resize(preset,(1024,1024),cv2.INTER_NEAREST)
+        preset = cv2.resize(preset, (1024, 1024), cv2.INTER_NEAREST)
         tps_inv = ski.transform.ThinPlateSplineTransform()
         tps_inv.estimate(src_pts, dst_pts)
-        unwarped = ski.transform.warp(preset.astype('float32'), tps_inv, order=1)
-        roi_mask = unwarped[:,:,3]==255
+        unwarped = ski.transform.warp(preset.astype("float32"), tps_inv, order=1)
+        roi_mask = unwarped[:, :, 3] == 255
         # roi_mask = roi_mask.astype('uint8')
 
         # # fill holes in roi mask
@@ -194,32 +231,30 @@ def tps_warp_single_eye(label_binary, preset_image):
         return roi_mask, label_binary, warped, unwarped
 
 
+def tps_warp_preset_eyes(label_id, preset_image, type="eyes"):
 
-
-def tps_warp_preset_eyes(label_id, preset_image, type='eyes'):
-
-    #preset should have 4 channels, last channel is the alpha mask
-    assert preset_image.shape[2]==4
+    # preset should have 4 channels, last channel is the alpha mask
+    assert preset_image.shape[2] == 4
 
     # label to binary mask
     label_binary = (label_id == 4) | (label_id == 22)
-    label_binary = label_binary.astype('uint8')
-    if label_binary.sum()==0:
-        print('No eyes')
+    label_binary = label_binary.astype("uint8")
+    if label_binary.sum() == 0:
+        print("No eyes")
         return -1
 
     # extract left/right eyes
     num_comps, comps_im = cv2.connectedComponents(label_binary)
-    if num_comps!=3:
-        print('Complex eye shape!')
+    if num_comps != 3:
+        print("Complex eye shape!")
         return -1
 
-    left_mask = (comps_im==1).astype('uint8')
-    right_mask = (comps_im==2).astype('uint8')
+    left_mask = (comps_im == 1).astype("uint8")
+    right_mask = (comps_im == 2).astype("uint8")
 
     left_shape_mask = tps_warp_single_eye(left_mask, preset_image)[0]
     right_shape_mask = tps_warp_single_eye(right_mask, preset_image)[0]
-    
+
     shape_mask = left_shape_mask | right_shape_mask
 
     return shape_mask, label_binary, left_shape_mask, right_shape_mask
