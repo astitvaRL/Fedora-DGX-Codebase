@@ -11,13 +11,14 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 from PIL import Image
+import segmentation_refinement as segref
 
 from simple_lama_inpainting import SimpleLama
 from tqdm import tqdm
+from utils.deform import tps_warp_box_mouth, tps_warp_preset_eyes, tps_warp_preset_mouth
 from utils.preset_config import PresetConfig
 
 from utils.SemanticSegmentation import SemanticSegmentationAll
-from utils.shape import tps_warp_preset_eyes, tps_warp_preset_mouth
 from utils.stylization import ControllableStylization
 
 join = os.path.join
@@ -34,7 +35,7 @@ preset_class = "mouth_talk"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CA
 preset_config = PresetConfig(preset_class)
 preset_prompts = preset_config.config["prompts"]
 shape_ids = preset_config.config["shape_ids"]
-output_root = f"output_{preset_class}"
+output_root = f"OUTPUT/output_{preset_class}"
 
 # load stylization model
 control_stylization = ControllableStylization()
@@ -44,6 +45,9 @@ inpainting_model = SimpleLama()
 
 # load semantic definitions
 semantics = SemanticSegmentationAll(labels_definition_file_path)
+
+# load refiner
+refiner = segref.Refiner(device='cuda:0') # device can also be 'cpu'
 
 # load labels
 start = 0
@@ -81,7 +85,7 @@ for label_name in tqdm(labels):
     # extract face region
     face_region = label_id == 6
     Xs, Ys = np.where(face_region)
-    padding = 10
+    padding = 50
     x_min, x_max = np.min(Xs) - padding, np.max(Xs) + padding
     y_min, y_max = np.min(Ys) - padding, np.max(Ys) + padding
     if x_min < 0:
@@ -120,45 +124,54 @@ for label_name in tqdm(labels):
         # get preset shape
         tps_output = None
         if preset_class == "mouth" or preset_class == "mouth_talk":
-            tps_output = tps_warp_preset_mouth(
+            tps_output = tps_warp_box_mouth(
+                image=img_cropped,
                 label_id=label_id,
-                type=preset_class,
-                preset_image=preset_image,
-                return_metadata=True,
+                label_type=preset_class,
+                preset_shape=preset_image,
+                shape_id=shape_id
             )
         elif preset_class == "eyes":
             tps_output = tps_warp_preset_eyes(
-                label_id=label_id, type=preset_class, preset_image=preset_image
+                label_id=label_id, label_type=preset_class, preset_shape=preset_image
             )
         if tps_output == -1 or tps_output is None:
             print("Skipping...")
             continue
-        shape_mask = tps_output[0]
-        original_mouth_mask = tps_output[1]
+
+        deformed, _, mouth_pose = tps_output
+        deformed_mask = deformed[:, :, 3] == 255
+
+        # refined_binmask = refiner.refine(deformed[:,:,:3].astype('uint8'), deformed_mask.astype('uint8')*255, fast=False, L=900)
 
         # place preset shape over inpainted image
-        cond_image = img_base.copy()
-        cond_image[shape_mask] = np.array([0, 0, 0])
+        img_base_np = np.array(img_base)
+        cond_image = img_base_np.copy().astype("float32")
+        cond_image[deformed_mask] = deformed[:, :, :3][deformed_mask]
+        cond_image = cond_image.astype('uint8')
 
         # stylization
         target_prompt = f"face of a cartoon character {preset_prompts[preset_idx]}"
+
         ref_img = img_cropped.copy()
-        generated, conditioning = control_stylization.generate(
-            ref_img, cond_image, ref_prompt, style_prompt, target_prompt, "depth"
-        )
-        img_base_np = np.array(img_base)
-        generated = np.array(generated)
-        blurred_mask = cv2.blur(shape_mask.astype("float32"), (7, 7))
-        blurred_mask = np.repeat(blurred_mask[..., np.newaxis], 3, axis=2)
-        img_base_np = img_base_np * (1 - blurred_mask) + generated * blurred_mask
-        img_base_np = img_base_np.astype("uint8")
+        # generated, conditioning = control_stylization.generate(
+        #     ref_img, cond_image, ref_prompt, style_prompt, target_prompt, "canny"
+        # )
+        # generated = np.array(generated)
+        # deformed_mask_im = np.repeat(deformed_mask[..., np.newaxis], 3, axis=2)
+        # deformed_mask_im = deformed_mask_im.astype("float32")
+        # deformed_mask_im = cv2.blur(deformed_mask_im, (3, 3))
+        # final_image = img_base_np * (1 - deformed_mask_im) + generated * deformed_mask_im
+        # final_image = final_image.astype("uint8")
+
+        final_image = cond_image.astype("uint8")
 
         # save images
-        Image.fromarray(img_base_np).save(
+        Image.fromarray(final_image).save(
             join(
-                output_dir, f'{label_name.split("_")[0]}_{preset_class}_{shape_id}.png'
+                output_dir, f'{label_name.split("_")[0]}_{preset_class}_pose{mouth_pose}_{shape_id}.png'
             )
-        )  # generated image
+        )
 
     # invalidate the reference latent
     control_stylization.reference_latent = None

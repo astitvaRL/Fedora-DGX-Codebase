@@ -15,12 +15,13 @@ class PresetConfig:
             self.config["shape_ids"] = ["0", "1", "2", "3", "5"]
 
         if self.config["class_name"] == "mouth_talk":
-            self.config["num_shapes"] = 7
+            self.config["num_shapes"] = 3
             self.config["prompts"] = [
-                "with mouth wide open",
-                "with the tongue touching upper lip",
+                "with a big open mouth with teeth and tongue",
+                "with a line-drawing of mouth",
+                "with a small round mouth",
             ]
-            self.config["shape_ids"] = ["1", "6"]
+            self.config["shape_ids"] = ["0", "1", "2"]
 
         if self.config["class_name"] == "eyes":
             self.config["num_shapes"] = 12
