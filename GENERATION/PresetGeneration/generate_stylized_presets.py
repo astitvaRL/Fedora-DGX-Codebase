@@ -9,9 +9,9 @@ os.environ["TRANSFORMERS_CACHE"] = os.environ["CACHE_DIR"]
 
 import cv2
 import numpy as np
+import segmentation_refinement as segref
 from matplotlib import pyplot as plt
 from PIL import Image
-import segmentation_refinement as segref
 
 from simple_lama_inpainting import SimpleLama
 from tqdm import tqdm
@@ -47,7 +47,7 @@ inpainting_model = SimpleLama()
 semantics = SemanticSegmentationAll(labels_definition_file_path)
 
 # load refiner
-refiner = segref.Refiner(device='cuda:0') # device can also be 'cpu'
+refiner = segref.Refiner(device="cuda:0")  # device can also be 'cpu'
 
 # load labels
 start = 0
@@ -56,19 +56,21 @@ labels = sorted(os.listdir(join(data_root, label_id_dir_name)))[start:end]
 
 # iterate over images
 for label_name in tqdm(labels):
-    # label_name = "sample.png"
-    # img_name = "sample_img.png"
+    label_name = "sample.png"
+    img_name = "sample_img.png"
 
     # create output directory
     output_dir = join(output_root, label_name.split("_")[0])
     os.makedirs(output_dir, exist_ok=True)
 
     # load images
-    img_name = f"{label_name.split('_')[0]}.png"
-    img_full = cv2.imread(join(data_root, image_dir_name, img_name))
+    # img_name = f"{label_name.split('_')[0]}.png"
+    # img_full = cv2.imread(join(data_root, image_dir_name, img_name))
+    img_full = cv2.imread(img_name)
     img_full = cv2.resize(img_full, (1024, 1024))
     img_full = cv2.cvtColor(img_full, cv2.COLOR_BGR2RGB)
-    label_full = cv2.imread(join(data_root, label_id_dir_name, label_name))
+    # label_full = cv2.imread(join(data_root, label_id_dir_name, label_name))
+    label_full = cv2.imread(label_name)
     label_full = cv2.cvtColor(label_full, cv2.COLOR_BGR2RGB)
     label_id = semantics.colors_to_labels(label_full)
     # inpainting
@@ -129,7 +131,7 @@ for label_name in tqdm(labels):
                 label_id=label_id,
                 label_type=preset_class,
                 preset_shape=preset_image,
-                shape_id=shape_id
+                shape_id=shape_id,
             )
         elif preset_class == "eyes":
             tps_output = tps_warp_preset_eyes(
@@ -148,7 +150,7 @@ for label_name in tqdm(labels):
         img_base_np = np.array(img_base)
         cond_image = img_base_np.copy().astype("float32")
         cond_image[deformed_mask] = deformed[:, :, :3][deformed_mask]
-        cond_image = cond_image.astype('uint8')
+        cond_image = cond_image.astype("uint8")
 
         # stylization
         target_prompt = f"face of a cartoon character {preset_prompts[preset_idx]}"
@@ -169,7 +171,8 @@ for label_name in tqdm(labels):
         # save images
         Image.fromarray(final_image).save(
             join(
-                output_dir, f'{label_name.split("_")[0]}_{preset_class}_pose{mouth_pose}_{shape_id}.png'
+                output_dir,
+                f'{label_name.split("_")[0]}_{preset_class}_pose{mouth_pose}_{shape_id}.png',
             )
         )
 

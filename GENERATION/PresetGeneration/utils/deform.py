@@ -80,6 +80,7 @@ def get_salient_points(mask):
         return [xl, yl], [xr, yr], upper_contour_mid, lower_contour_mid
     return -1
 
+
 def get_deformation_params(label_type, shape_id, label_binary):
     mouth_pose = None
     contours, _ = cv2.findContours(
@@ -95,20 +96,28 @@ def get_deformation_params(label_type, shape_id, label_binary):
         w_len = np.abs(anchor_pts[0][0] - anchor_pts[1][0])
         h_len = np.abs(anchor_pts[2][1] - anchor_pts[3][1])
         len_ratio = None
-        if w_len==0 or h_len==0: len_ratio = 0
-        else: len_ratio = h_len / w_len
+        if w_len == 0 or h_len == 0:
+            len_ratio = 0
+        else:
+            len_ratio = h_len / w_len
 
-        if len_ratio<0.3: mouth_pose = 0
-        elif len_ratio<0.4: mouth_pose = 1
-        elif len_ratio<2.0: mouth_pose = 2
-        elif len_ratio<3.0: mouth_pose = 3
-        else: mouth_pose = 4
+        if len_ratio < 0.3:
+            mouth_pose = 0
+        elif len_ratio < 0.4:
+            mouth_pose = 1
+        elif len_ratio < 2.0:
+            mouth_pose = 2
+        elif len_ratio < 3.0:
+            mouth_pose = 3
+        else:
+            mouth_pose = 4
 
-        scale_h = scale_w = 8
-        h_offset = (w_len - h_len)/scale_h
-        w_offset = (h_len - w_len)/scale_w
+        scale_h = 4
+        scale_w = 25
+        h_offset = (w_len - h_len) / scale_h
+        w_offset = (h_len - w_len) / scale_w
         print("h_offset: ", h_offset, "w_offset: ", w_offset)
-        
+
         src_pts = np.concatenate([box_pts, anchor_pts])
         deformed_box_pts = box_pts.copy()
         deformed_box_pts[0][0] -= w_offset
@@ -118,7 +127,10 @@ def get_deformation_params(label_type, shape_id, label_binary):
         deformed_box_pts[2][1] += h_offset
         deformed_box_pts[3][1] += h_offset
         deformed_anchor_pts = anchor_pts.copy()
-        deformed_anchor_pts[-1][1] += h_offset*2
+        deformed_anchor_pts[-1][1] += h_offset * 2
+        deformed_anchor_pts[1][0] -= w_offset
+        deformed_anchor_pts[0][0] += w_offset
+
         target_pts = np.concatenate([deformed_box_pts, deformed_anchor_pts])
         if src_pts.shape[0] != 8 or target_pts.shape[0] != 8:
             print("TPS estimation failed")
@@ -127,7 +139,7 @@ def get_deformation_params(label_type, shape_id, label_binary):
         tps.estimate(target_pts, src_pts)
         return tps, src_pts, target_pts, mouth_pose
     return -1
-            
+
 
 def tps_warp_box_mouth(
     image, label_id, preset_shape, label_type="mouth", shape_id=None
@@ -146,8 +158,10 @@ def tps_warp_box_mouth(
     transparency[label_binary > 0] = 255
     alpha_image = np.concatenate([alpha_image, transparency], axis=-1)
 
-    deformation_params = get_deformation_params(label_type=label_type, shape_id=shape_id, label_binary=label_binary)
-    if deformation_params==-1:
+    deformation_params = get_deformation_params(
+        label_type=label_type, shape_id=shape_id, label_binary=label_binary
+    )
+    if deformation_params == -1:
         print("TPS estimation failed")
         return -1
 
@@ -157,21 +171,22 @@ def tps_warp_box_mouth(
     except ValueError:
         print("TPS deformation failed")
         return -1
-        
-    return  deformed, label_binary, mouth_pose
 
-#===================================================================================================
-#===================================================================================================
-#===================================================================================================
+    return deformed, label_binary, mouth_pose
 
 
+# ===================================================================================================
+# ===================================================================================================
+# ===================================================================================================
 
-#===================================================================================================
-#===================================================================================================
-#===================================================================================================
+
+# ===================================================================================================
+# ===================================================================================================
+# ===================================================================================================
+
 
 def tps_warp_preset_mouth(
-    image, label_id, preset_shape, label_type="mouth",return_metadata=False
+    image, label_id, preset_shape, label_type="mouth", return_metadata=False
 ):
 
     metadata = {}
