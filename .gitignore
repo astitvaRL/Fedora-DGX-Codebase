@@ -4,3 +4,6 @@
 .watchman*
 .nfs*
 .fuse*
+.bin*
+.safetensors*
+GENERATION/PromptGeneration/llama
