@@ -35,7 +35,7 @@ if __name__ == '__main__':
     labels_definition_file_path = 'label_definition.json'
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
-    image_dir_name = 'IN_THE_WILD'
+    image_dir_name = 'LIP/Testing_images/Testing_images/testing_images'
     # image_dir_name = 'MANIFOLD/Stimuli_HighRes'
     cache_dir = join(data_root, 'dataset_caches/cache_IN_THE_WILD')
     # cache_dir = join(data_root, 'dataset_caches/cache_Infer_REAL300')
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     # EXPERIMENT CONFIG
     task_name = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
     all_ckpts_dir = 'all_ckpts'
-    out_dir = 'inference_humans'
+    out_dir = 'inference_LIP'
     load_best_eval_ckpt = True
     epoch = 250
     encoder_original = False
