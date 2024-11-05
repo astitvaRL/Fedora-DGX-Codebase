@@ -27,7 +27,7 @@ join = os.path.join
 data_root = "/mnt/users_scratch/astitva/DATA/"
 labels_definition_file_path = "./label_definition.json"
 image_dir_name = "MANIFOLD/animated_drawings_images_prior_april22/cropped_image"
-label_id_dir_name = "AD_SegMaps/labels_7k_1024"
+label_id_dir_name = "AD_SegMaps/labels_7k_mouth_type1_1024"
 preset_dir = "./presets"
 preset_class = "mouth_talk"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CANNY THRESHOLDS ACCORDINGLY IN THE SHAPE & STYLIZATION SCRIPTS
 
@@ -50,27 +50,27 @@ semantics = SemanticSegmentationAll(labels_definition_file_path)
 refiner = segref.Refiner(device="cuda:0")  # device can also be 'cpu'
 
 # load labels
-start = 0
+start = 10
 end = -1
 labels = sorted(os.listdir(join(data_root, label_id_dir_name)))[start:end]
 
 # iterate over images
 for label_name in tqdm(labels):
-    label_name = "sample.png"
-    img_name = "sample_img.png"
+    # label_name = "sample.png"
+    # img_name = "sample_img.png"
 
     # create output directory
     output_dir = join(output_root, label_name.split("_")[0])
     os.makedirs(output_dir, exist_ok=True)
 
     # load images
-    # img_name = f"{label_name.split('_')[0]}.png"
-    # img_full = cv2.imread(join(data_root, image_dir_name, img_name))
-    img_full = cv2.imread(img_name)
+    img_name = f"{label_name.split('_')[0]}.png"
+    img_full = cv2.imread(join(data_root, image_dir_name, img_name))
+    # img_full = cv2.imread(img_name)
     img_full = cv2.resize(img_full, (1024, 1024))
     img_full = cv2.cvtColor(img_full, cv2.COLOR_BGR2RGB)
-    # label_full = cv2.imread(join(data_root, label_id_dir_name, label_name))
-    label_full = cv2.imread(label_name)
+    label_full = cv2.imread(join(data_root, label_id_dir_name, label_name))
+    # label_full = cv2.imread(label_name)
     label_full = cv2.cvtColor(label_full, cv2.COLOR_BGR2RGB)
     label_id = semantics.colors_to_labels(label_full)
     # inpainting
@@ -87,7 +87,7 @@ for label_name in tqdm(labels):
     # extract face region
     face_region = label_id == 6
     Xs, Ys = np.where(face_region)
-    padding = 50
+    padding = 10
     x_min, x_max = np.min(Xs) - padding, np.max(Xs) + padding
     y_min, y_max = np.min(Ys) - padding, np.max(Ys) + padding
     if x_min < 0:
@@ -148,31 +148,52 @@ for label_name in tqdm(labels):
 
         # place preset shape over inpainted image
         img_base_np = np.array(img_base)
-        cond_image = img_base_np.copy().astype("float32")
-        cond_image[deformed_mask] = deformed[:, :, :3][deformed_mask]
-        cond_image = cond_image.astype("uint8")
+        # cond_image = img_base_np.copy().astype("float32")
 
+        cond_mask = inpainting_mask[x_min:x_max, y_min:y_max]
+        cond_mask = cv2.resize(cond_mask, (1024,1024), cv2.INTER_NEAREST)
+        label_id_cropped = label_id.copy()
+        label_id_cropped[cond_mask==255] = 6
+
+        #smoth deformed mask boundaries
+        deformed_mask = cv2.GaussianBlur(deformed_mask.astype('uint8')*255, (53,53), 0)
+        deformed_mask = deformed_mask>0
+
+        # prepare conditioning image
+        label_id_cropped[deformed_mask] = 3
+        cond_image = semantics.labels_to_colors(label_id_cropped)
+        cond_image[cond_image.sum(2)==0] = [255,255,255]
+        # cond_image[deformed_mask] = deformed[:, :, :3][deformed_mask]
+        cond_image = cond_image.astype("uint8")
+        
         # stylization
         target_prompt = f"face of a cartoon character {preset_prompts[preset_idx]}"
 
+        # ref_img = deformed[:,:,:3]
+        # ref_img[deformed_mask==0] = 0
         ref_img = img_cropped.copy()
-        # generated, conditioning = control_stylization.generate(
-        #     ref_img, cond_image, ref_prompt, style_prompt, target_prompt, "canny"
-        # )
-        # generated = np.array(generated)
-        # deformed_mask_im = np.repeat(deformed_mask[..., np.newaxis], 3, axis=2)
-        # deformed_mask_im = deformed_mask_im.astype("float32")
-        # deformed_mask_im = cv2.blur(deformed_mask_im, (3, 3))
-        # final_image = img_base_np * (1 - deformed_mask_im) + generated * deformed_mask_im
-        # final_image = final_image.astype("uint8")
 
-        final_image = cond_image.astype("uint8")
+        generated, conditioning = control_stylization.generate(
+            ref_img, cond_image, ref_prompt, style_prompt, target_prompt, "canny"
+        )
+        generated = np.array(generated)
+        deformed_mask_im = np.repeat(deformed_mask[..., np.newaxis], 3, axis=2)
+        deformed_mask_im = deformed_mask_im.astype("float32")
+        deformed_mask_im = cv2.blur(deformed_mask_im, (3, 3))
+        final_image = img_base_np * (1 - deformed_mask_im) + generated * deformed_mask_im
+        final_image = final_image.astype("uint8")
 
         # save images
         Image.fromarray(final_image).save(
             join(
                 output_dir,
                 f'{label_name.split("_")[0]}_{preset_class}_pose{mouth_pose}_{shape_id}.png',
+            )
+        )
+        Image.fromarray(cond_image).save(
+            join(
+                output_dir,
+                f'{label_name.split("_")[0]}_{preset_class}_pose{mouth_pose}_{shape_id}_cond.png',
             )
         )
 

@@ -49,7 +49,7 @@ if __name__ == '__main__':
     task_name = 'ANIMSEG_E2E_C2F_REAL7k_noisy'
     task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
     all_ckpts_dir = 'all_ckpts'
-    out_dir = 'eval_real_400_noisy_noGTprior'
+    out_dir = 'eval_real_400'
     mode = 'test'
     load_best_eval_ckpt = True
     epoch = 500

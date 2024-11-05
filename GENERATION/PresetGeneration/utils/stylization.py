@@ -25,9 +25,10 @@ class ControllableStylization:
         self.reference_latent = None
         self.inversion_callback = None
         self.controlnet = ControlNetModel.from_pretrained(
-            "diffusers/controlnet-canny-sdxl-1.0",
-            variant="fp16",
-            use_safetensors=True,
+            # "diffusers/controlnet-canny-sdxl-1.0",
+            "/mnt/users_scratch/astitva/WORKSPACE/diffusers/examples/controlnet/animgseg_v2/checkpoint-11500/controlnet",
+            # variant="fp16",
+            # use_safetensors=True,
             torch_dtype=torch.float16,
         ).to(self.device)
         self.vae = AutoencoderKL.from_pretrained(
@@ -56,8 +57,8 @@ class ControllableStylization:
             share_attention=True,
             adain_queries=True,
             adain_keys=True,
-            adain_values=False,
-            shared_score_shift=np.log(8.0),
+            adain_values=True,
+            shared_score_shift=np.log(2.0),
             shared_score_scale=1.0,
         )
         self.depth_estimator = DPTForDepthEstimation.from_pretrained(

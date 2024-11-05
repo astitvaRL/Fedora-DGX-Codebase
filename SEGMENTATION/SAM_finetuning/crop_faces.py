@@ -26,11 +26,13 @@ if __name__ == '__main__':
 
     # set paths
     data_root = '/mnt/users_scratch/astitva/DATA/'
-    image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
-    label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
+    # image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
+    image_dir_name = '/mnt/users_scratch/astitva/DATA/MANIFOLD/EVAL400/'
+    # label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
+    label_id_dir_name = '/mnt/users_scratch/astitva/DATA/AD_SegMaps/labels_EVAL400/'
 
-    save_dir = join(data_root, 'MANIFOLD/animated_drawings_images_prior_april22/cropped_faces')
-    save_label_id_dir = join(data_root, 'AD_SegMaps/labelsID_cropped_faces_7k')
+    save_dir = join(data_root, 'MANIFOLD/EVAL_400_cropped_faces')
+    save_label_id_dir = join(data_root, 'AD_SegMaps/labels_cropped_faces_EVAL_400')
     os.makedirs(save_dir, exist_ok=True)
     os.makedirs(save_label_id_dir, exist_ok=True)
 
@@ -73,10 +75,15 @@ if __name__ == '__main__':
         img_cropped = img[x_min:x_max, y_min:y_max]
         img_cropped = cv2.resize(img_cropped, (1024, 1024))
         label_id = label_id[x_min:x_max, y_min:y_max]
+        gt2D_cropped = gt2D[x_min:x_max, y_min:y_max]
         label_id = cv2.resize(label_id, (1024, 1024), interpolation=cv2.INTER_NEAREST)
+        gt2D_cropped = cv2.resize(gt2D_cropped, (1024, 1024), interpolation=cv2.INTER_NEAREST)
+        gt2D_cropped = cv2.cvtColor(gt2D_cropped, cv2.COLOR_BGR2RGB)
+        gt2D_cropped[gt2D_cropped.sum(2)==0] = [255,255,255]
 
         save_imgpath = join(save_dir, name)
         save_labelpath = join(save_label_id_dir, name)
-        cv2.imwrite(save_imgpath, img_cropped)
-        cv2.imwrite(save_labelpath, label_id)
+        # cv2.imwrite(save_imgpath, img_cropped)
+        # cv2.imwrite(save_labelpath, label_id)
+        cv2.imwrite(save_labelpath, gt2D_cropped)
         
