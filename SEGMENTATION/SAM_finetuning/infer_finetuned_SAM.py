@@ -37,7 +37,7 @@ if __name__ == '__main__':
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
     image_dir_name = 'LIP/Testing_images/Testing_images/testing_images'
     # image_dir_name = 'MANIFOLD/Stimuli_HighRes'
-    cache_dir = join(data_root, 'dataset_caches/cache_IN_THE_WILD')
+    cache_dir = join(data_root, 'dataset_caches/cache_LIP')
     # cache_dir = join(data_root, 'dataset_caches/cache_Infer_REAL300')
     os.makedirs(cache_dir, exist_ok=True)
     inference_cache_path = join(cache_dir, 'inference_cache.pt')
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     mask_decoder = torch.nn.DataParallel(sam_model.mask_decoder, device_ids=device_ids)
 
     # create dataset
-    inference_dataset = DrawingsDatasetInference(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name)
+    inference_dataset = DrawingsDatasetInference(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, max_num_samples=100)
 
     # define semantics
     semantics = None
