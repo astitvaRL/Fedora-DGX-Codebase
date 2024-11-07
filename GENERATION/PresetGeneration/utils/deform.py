@@ -112,11 +112,15 @@ def get_deformation_params(label_type, shape_id, label_binary):
         else:
             mouth_pose = 4
 
-        scale_h = 6
-        scale_w = 25
-        h_offset = (w_len - h_len) / scale_h
-        w_offset = (h_len - w_len) / scale_w
-        # print("h_offset: ", h_offset, "w_offset: ", w_offset)
+        scale_h = 0.15
+        scale_w = 0.04
+        if shape_id=='1':
+            scale_h = 1
+            scale_w = 1
+
+        h_offset = (w_len - h_len) * scale_h
+        w_offset = (h_len - w_len) * scale_w
+        print("shape_id: ", shape_id, "h_offset: ", h_offset, "w_offset: ", w_offset)
 
         src_pts = np.concatenate([box_pts, anchor_pts])
         deformed_box_pts = box_pts.copy()
@@ -127,7 +131,7 @@ def get_deformation_params(label_type, shape_id, label_binary):
         deformed_box_pts[2][1] += h_offset
         deformed_box_pts[3][1] += h_offset
         deformed_anchor_pts = anchor_pts.copy()
-        deformed_anchor_pts[-1][1] += h_offset * 2
+        # deformed_anchor_pts[-1][1] += h_offset
         deformed_anchor_pts[1][0] -= w_offset
         deformed_anchor_pts[0][0] += w_offset
 

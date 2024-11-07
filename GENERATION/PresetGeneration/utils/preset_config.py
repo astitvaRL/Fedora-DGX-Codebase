@@ -17,7 +17,7 @@ class PresetConfig:
         if self.config["class_name"] == "mouth_talk":
             self.config["num_shapes"] = 3
             self.config["prompts"] = [
-                "with a big open mouth with teeth and tongue",
+                "with a big open mouth",
                 "with a line-drawing of mouth",
                 "with a small round mouth",
             ]

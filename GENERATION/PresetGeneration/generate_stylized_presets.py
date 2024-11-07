@@ -12,16 +12,21 @@ import numpy as np
 import segmentation_refinement as segref
 from matplotlib import pyplot as plt
 from PIL import Image
+from color_transfer import color_transfer
 
 from simple_lama_inpainting import SimpleLama
 from tqdm import tqdm
 from utils.deform import tps_warp_box_mouth, tps_warp_preset_eyes, tps_warp_preset_mouth
 from utils.preset_config import PresetConfig
 
+import sys
+sys.path.append('./utils/external/SAM/')
 from utils.SemanticSegmentation import SemanticSegmentationAll
+from utils.SegmentDrawings import SAM_face
 from utils.stylization import ControllableStylization
 
 join = os.path.join
+
 
 # set paths
 data_root = "/mnt/users_scratch/astitva/DATA/"
@@ -45,6 +50,9 @@ inpainting_model = SimpleLama()
 
 # load semantic definitions
 semantics = SemanticSegmentationAll(labels_definition_file_path)
+
+#load SAM model
+sam_face_model = SAM_face()
 
 # load refiner
 refiner = segref.Refiner(device="cuda:0")  # device can also be 'cpu'
@@ -85,7 +93,7 @@ for label_name in tqdm(labels):
     )
     img_base = inpainting_model(Image.fromarray(img_full.copy()), inpainting_mask)
     # extract face region
-    face_region = label_id == 6
+    face_region = (label_id == 2) | (label_id == 3) | (label_id == 4) | (label_id == 5) | (label_id == 6) | (label_id == 12) | (label_id == 13) | (label_id == 17) | (label_id == 18) | (label_id == 22) | (label_id == 23)
     Xs, Ys = np.where(face_region)
     padding = 10
     x_min, x_max = np.min(Xs) - padding, np.max(Xs) + padding
@@ -101,21 +109,23 @@ for label_name in tqdm(labels):
     img_cropped = img_full[x_min:x_max, y_min:y_max]
     label_id = label_id[x_min:x_max, y_min:y_max]
     img_base = np.array(img_base)[x_min:x_max, y_min:y_max]
+    face_region_cropped = face_region[x_min:x_max, y_min:y_max].astype('uint8')
     img_cropped = cv2.resize(img_cropped, (1024, 1024))
     img_base = cv2.resize(img_base, (1024, 1024))
     label_id = cv2.resize(label_id, (1024, 1024), interpolation=cv2.INTER_NEAREST)
+    face_region_cropped = cv2.resize(face_region_cropped, (1024, 1024), interpolation=cv2.INTER_NEAREST)
 
-    # save original image
-    Image.fromarray(img_cropped).save(
-        join(output_dir, f'{label_name.split("_")[0]}_original.png')
-    )
+    # # save original image
+    # Image.fromarray(img_cropped).save(
+    #     join(output_dir, f'{label_name.split("_")[0]}_original.png')
+    # )
 
     # define reference prompt and style
     ref_prompt = "face of a cartoon character"
     style_prompt = "hand drawn"
 
     # iterate over presets
-    for preset_idx in tqdm(range(len(preset_prompts))):
+    for preset_idx in tqdm(range(len(preset_prompts[:1]))):
         # load preset
         shape_id = shape_ids[preset_idx]
         preset_image = cv2.imread(join(preset_dir, preset_class, f"{shape_id}.png"), -1)
@@ -156,7 +166,8 @@ for label_name in tqdm(labels):
         label_id_cropped[cond_mask==255] = 6
 
         #smoth deformed mask boundaries
-        deformed_mask = cv2.GaussianBlur(deformed_mask.astype('uint8')*255, (53,53), 0)
+        blur_kernel = (53,53)
+        deformed_mask = cv2.GaussianBlur(deformed_mask.astype('uint8')*255, blur_kernel, 0)
         deformed_mask = deformed_mask>0
 
         # prepare conditioning image
@@ -169,33 +180,55 @@ for label_name in tqdm(labels):
         # stylization
         target_prompt = f"face of a cartoon character {preset_prompts[preset_idx]}"
 
-        # ref_img = deformed[:,:,:3]
-        # ref_img[deformed_mask==0] = 0
         ref_img = img_cropped.copy()
 
         generated, conditioning = control_stylization.generate(
             ref_img, cond_image, ref_prompt, style_prompt, target_prompt, "canny"
         )
         generated = np.array(generated)
-        deformed_mask_im = np.repeat(deformed_mask[..., np.newaxis], 3, axis=2)
-        deformed_mask_im = deformed_mask_im.astype("float32")
-        deformed_mask_im = cv2.blur(deformed_mask_im, (3, 3))
+        pred_segmap, pred_labels = sam_face_model.predict(generated, face_region_cropped)
+        deformed_mask = pred_labels==2
+        deformed_mask = cv2.dilate(deformed_mask.astype('uint8'), (23,23))
+        deformed_mask_im = refiner.refine(generated, deformed_mask*255, fast=False, L=900)
+        deformed_mask_im = np.repeat(deformed_mask_im[..., np.newaxis], 3, axis=2)
+        deformed_mask_im = cv2.blur(deformed_mask_im, (11, 11))
+        deformed_mask_im = deformed_mask_im.astype("float32")/255
         final_image = img_base_np * (1 - deformed_mask_im) + generated * deformed_mask_im
         final_image = final_image.astype("uint8")
 
+
+        # plot images
+        TITLE_SIZE = 35
+        fig, ax = plt.subplots(1,4, figsize=(40,10))
+        ax[0].imshow(ref_img)
+        ax[0].set_title("Input Image", fontsize=TITLE_SIZE)
+        ax[0].axis('off')
+        ax[1].imshow(cond_image)
+        ax[1].set_title("Modified Segmap (Mouth)", fontsize=TITLE_SIZE)
+        ax[1].axis('off')
+        ax[2].imshow(generated)
+        ax[2].set_title("Generated", fontsize=TITLE_SIZE)
+        ax[2].axis('off')
+        ax[3].imshow(final_image)
+        ax[3].set_title("Composited", fontsize=TITLE_SIZE)
+        ax[3].axis('off')
+        plt.savefig( join(output_dir,f'{label_name.split("_")[0]}_{preset_class}_pose{mouth_pose}_{shape_id}.png') )
+        plt.close()
+
         # save images
-        Image.fromarray(final_image).save(
-            join(
-                output_dir,
-                f'{label_name.split("_")[0]}_{preset_class}_pose{mouth_pose}_{shape_id}.png',
-            )
-        )
-        Image.fromarray(cond_image).save(
-            join(
-                output_dir,
-                f'{label_name.split("_")[0]}_{preset_class}_pose{mouth_pose}_{shape_id}_cond.png',
-            )
-        )
+        # Image.fromarray(final_image).save(
+        #     join(
+        #         output_dir,
+        #         f'{label_name.split("_")[0]}_{preset_class}_pose{mouth_pose}_{shape_id}.png',
+        #     )
+        # )
+        # Image.fromarray(condgenerated_adjusted_image).save(
+        #     join(
+        #         output_dir,
+        #         f'{label_name.split("_")[0]}_{preset_class}_pose{mouth_pose}_{shape_id}_gen.png',
+        #     )
+        # )
+
 
     # invalidate the reference latent
     control_stylization.reference_latent = None

@@ -58,7 +58,7 @@ class ControllableStylization:
             adain_queries=True,
             adain_keys=True,
             adain_values=True,
-            shared_score_shift=np.log(2.0),
+            shared_score_shift=np.log(8.0),
             shared_score_scale=1.0,
         )
         self.depth_estimator = DPTForDepthEstimation.from_pretrained(
