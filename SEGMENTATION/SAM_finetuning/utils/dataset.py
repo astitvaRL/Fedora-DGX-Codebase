@@ -397,7 +397,8 @@ class DrawingsDatasetC2FAll(Dataset):
         if not self.cache_available: 
             image_name = f"{self.files[index].split('_')[0]}.png"
             # populate cache entry during first-time access
-            image = cv2.imread(join(self.data_root, self.image_dir_name, image_name))
+            # image = cv2.imread(join(self.data_root, self.image_dir_name, image_name))
+            image = cv2.imread('2_textured.png')
             image = cv2.resize(image, (1024,1024), interpolation=cv2.INTER_LINEAR)
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             sam_transform = ResizeLongestSide(self.sam_model.image_encoder.img_size)
@@ -454,6 +455,55 @@ class DrawingsDatasetC2FAll(Dataset):
 
     def load_cache(self, path):
         self.cache = torch.load(path)
+
+###########################################################################################################################################
+### ----------------------------------------------------------------------------------------------------------------------------------- ###
+###########################################################################################################################################
+
+
+###########################################################################################################################################
+### ----------------------------------------------------------------------------------------------------------------------------------- ###
+###########################################################################################################################################
+
+
+# inference dataset definition for all classes, coarse-to-fine + face
+class DrawingsDatasetInferFull(Dataset): 
+    def __init__(self, sam_model, img_dir_name, label_id_dir_name=None, bg_color=[255,255,255], mode='test', device='cuda', num_test_samples=-1):
+        self.sam_model = sam_model
+        self.num_classes_coarse = 5
+        self.num_classes_fine = 18
+        self.num_classes_face = 11
+        self.num_classes_all = 27
+        self.bg_color = bg_color
+        self.mode = mode
+        self.device = device
+        self.image_dir_name = img_dir_name
+        self.label_id_dir_name = label_id_dir_name
+        self.num_test_samples = num_test_samples
+        self.files = sorted(os.listdir(self.image_dir_name))[:self.num_test_samples]
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, index):
+        image_name = self.files[index]
+        # populate cache entry during first-time access
+        image = cv2.imread(join(self.image_dir_name, image_name),-1)
+        if image.shape[-1]==4:
+            alpha = image[:,:,3]
+            image = image[:,:,:3]
+            image[alpha==0] = self.bg_color
+        image = cv2.resize(image, (1024,1024), interpolation=cv2.INTER_LINEAR)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image
+        sam_transform = ResizeLongestSide(self.sam_model.image_encoder.img_size)
+        resize_img = sam_transform.apply_image(image)
+        resize_img_tensor = torch.as_tensor(resize_img.transpose(2, 0, 1)).to(self.device)
+        input_image_tensor = self.sam_model.preprocess(resize_img_tensor[None,:,:,:]) # (1, 3, 1024, 1024)
+        input_image_tensor = input_image_tensor.squeeze(0)
+
+        # convert image to torch tensor
+        return input_image_tensor, image_name
 
 ###########################################################################################################################################
 ### ----------------------------------------------------------------------------------------------------------------------------------- ###

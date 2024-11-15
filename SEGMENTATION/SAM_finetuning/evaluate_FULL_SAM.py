@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     # EXPERIMENT CONFIG
     task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
-    task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k_IgnoreBG'
+    task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k'
     task_name_face = 'ANIMSEG_E2E_FaceOnly_REAL7k_with_face_prior'
     all_ckpts_dir = 'all_ckpts'
     out_dir = 'eval_real_400_ALL_IgnoreBG'
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     epoch_coarse = 500
     epoch_face = 500
     encoder_original = False
-    cache_available = True 
+    cache_available = False 
     bbox_given = False
     visualize_coarse = True
     coarse_includes_neck = True
@@ -191,7 +191,7 @@ if __name__ == '__main__':
     # output directory for EVAL
     eval_epoch_dir = join(model_load_path, f"{out_dir}/{epoch}")
     if load_best_eval_ckpt:
-        eval_epoch_dir = join(model_load_path, f"{out_dir}/best_eval")
+        eval_epoch_dir = join(model_load_path, f"{out_dir}/best_eval_SAMPLE")
     os.makedirs(eval_epoch_dir, exist_ok=True)
     print(f"EVAL results will be SAVED here --> {eval_epoch_dir}")
 
@@ -359,7 +359,8 @@ if __name__ == '__main__':
                 overlayed = cv2.addWeighted(image_data_vis, 0.5, labels_out_vis, 0.5, 0)
                 if refine_masks:
                     overlayed_refined = cv2.addWeighted(image_data_vis, 0.5, labels_out_refined_vis, 0.5, 0)
-                
+
+                breakpoint()    
                 # plot eval results
                 TITLE_SIZE = 35
                 if visualize_coarse:
