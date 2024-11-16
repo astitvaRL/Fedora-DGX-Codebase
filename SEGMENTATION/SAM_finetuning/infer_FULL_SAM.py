@@ -41,9 +41,12 @@ if __name__ == '__main__':
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
 
-    suffix =  '119'
-    inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/ToonLight/data_generation/3DBiCar_360_Renders/' + suffix
-    save_predcitions_dir_path = './PREDICTIONS/3BiCar_360_Renders/' + suffix + '/'
+    # suffix =  '119'
+    # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/ToonLight/data_generation/3DBiCar_360_Renders/' + suffix
+    # save_predcitions_dir_path = './PREDICTIONS/3BiCar_360_Renders/' + suffix + '/'
+
+    inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/dog_val_images'
+    save_predcitions_dir_path = './PREDICTIONS/Dog/val/'
 
     # EXPERIMENT CONFIG
     task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
@@ -168,7 +171,7 @@ if __name__ == '__main__':
     print(f"EVAL results will be SAVED here --> {eval_epoch_dir}")
 
     valid_face_detected = False # flag to check if face is detected in the image
-    for step, (image_data_eval, image_name_string) in enumerate(tqdm(test_dataloader,"EVAL")):
+    for step, (image_name_string, image_data_eval) in enumerate(tqdm(test_dataloader,"EVAL")):
         valid_face_detected = False # reset flag for each image
         image_data_eval = image_data_eval.to(device)
         # not computing gradients for image encoder, prompt encoder and mask decoder during evaluation

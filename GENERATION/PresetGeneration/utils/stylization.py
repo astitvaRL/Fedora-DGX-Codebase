@@ -58,7 +58,7 @@ class ControllableStylization:
             adain_queries=True,
             adain_keys=True,
             adain_values=True,
-            shared_score_shift=np.log(8.0),
+            shared_score_shift=np.log(4.0),
             shared_score_scale=1.0,
         )
         self.depth_estimator = DPTForDepthEstimation.from_pretrained(
@@ -80,16 +80,18 @@ class ControllableStylization:
         reference_prompt,
         style_prompt,
         target_prompt,
-        preprocessor="canny",
+        preprocessor=None,
         num_inference_steps=25,
-        guidance_scale=7.5,
+        guidance_scale=15,
     ):
         assert reference_image.shape[0] == 1024 and reference_image.shape[1] == 1024
+        assert condition_image.shape[0] == 1024 and condition_image.shape[1] == 1024
         reference_prompt = f"{reference_prompt}, {style_prompt}."
         target_prompt = f"{target_prompt}, {style_prompt}."
-
         proc_cond_image = None
-        if preprocessor == "canny":
+        if preprocessor == None:
+            proc_cond_image = Image.fromarray(condition_image)
+        elif preprocessor == "canny":
             canny_image = cv2.Canny(condition_image, 5, 45)
             canny_image = canny_image[:, :, None]
             canny_image = np.concatenate(
@@ -133,7 +135,7 @@ class ControllableStylization:
             controlnet_conditioning_scale=0.9,
             callback_on_step_end=self.inversion_callback,
             num_inference_steps=num_inference_steps,
-            guidance_scale=15,
+            guidance_scale=guidance_scale,
         ).images
         generated = images[-1]
         return generated, proc_cond_image

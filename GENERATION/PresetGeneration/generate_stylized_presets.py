@@ -27,7 +27,6 @@ from utils.stylization import ControllableStylization
 
 join = os.path.join
 
-
 # set paths
 data_root = "/mnt/users_scratch/astitva/DATA/"
 labels_definition_file_path = "./label_definition.json"
@@ -40,7 +39,7 @@ preset_class = "mouth_talk"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CA
 preset_config = PresetConfig(preset_class)
 preset_prompts = preset_config.config["prompts"]
 shape_ids = preset_config.config["shape_ids"]
-output_root = f"OUTPUT/output_{preset_class}"
+output_root = f"OUTPUT/output_{preset_class}_TRIAL"
 
 # load stylization model
 control_stylization = ControllableStylization()
@@ -64,21 +63,21 @@ labels = sorted(os.listdir(join(data_root, label_id_dir_name)))[start:end]
 
 # iterate over images
 for label_name in tqdm(labels):
-    # label_name = "sample.png"
-    # img_name = "sample_img.png"
+    label_name = "sample_seg.png"
+    img_name = "sample_bizzare.png"
 
     # create output directory
     output_dir = join(output_root, label_name.split("_")[0])
     os.makedirs(output_dir, exist_ok=True)
 
     # load images
-    img_name = f"{label_name.split('_')[0]}.png"
-    img_full = cv2.imread(join(data_root, image_dir_name, img_name))
-    # img_full = cv2.imread(img_name)
+    # img_name = f"{label_name.split('_')[0]}.png"
+    # img_full = cv2.imread(join(data_root, image_dir_name, img_name))
+    img_full = cv2.imread(img_name)
     img_full = cv2.resize(img_full, (1024, 1024))
     img_full = cv2.cvtColor(img_full, cv2.COLOR_BGR2RGB)
-    label_full = cv2.imread(join(data_root, label_id_dir_name, label_name))
-    # label_full = cv2.imread(label_name)
+    # label_full = cv2.imread(join(data_root, label_id_dir_name, label_name))
+    label_full = cv2.imread(label_name)
     label_full = cv2.cvtColor(label_full, cv2.COLOR_BGR2RGB)
     label_id = semantics.colors_to_labels(label_full)
     # inpainting
@@ -92,9 +91,13 @@ for label_name in tqdm(labels):
         255 * inpainting_mask.astype("uint8"), kernel, iterations=3
     )
     img_base = inpainting_model(Image.fromarray(img_full.copy()), inpainting_mask)
+    breakpoint()
     # extract face region
     face_region = (label_id == 2) | (label_id == 3) | (label_id == 4) | (label_id == 5) | (label_id == 6) | (label_id == 12) | (label_id == 13) | (label_id == 17) | (label_id == 18) | (label_id == 22) | (label_id == 23)
-    Xs, Ys = np.where(face_region)
+    # mouth_region = (label_id == 3) | (label_id == 17) | (label_id == 23)   
+    mouth_region = face_region.copy() 
+    # preset cropping window
+    Xs, Ys = np.where(mouth_region)
     padding = 10
     x_min, x_max = np.min(Xs) - padding, np.max(Xs) + padding
     y_min, y_max = np.min(Ys) - padding, np.max(Ys) + padding
@@ -108,12 +111,14 @@ for label_name in tqdm(labels):
         y_max = 1024
     img_cropped = img_full[x_min:x_max, y_min:y_max]
     label_id = label_id[x_min:x_max, y_min:y_max]
+    face_region_cropped = face_region[x_min:x_max, y_min:y_max]
     img_base = np.array(img_base)[x_min:x_max, y_min:y_max]
-    face_region_cropped = face_region[x_min:x_max, y_min:y_max].astype('uint8')
-    img_cropped = cv2.resize(img_cropped, (1024, 1024))
-    img_base = cv2.resize(img_base, (1024, 1024))
-    label_id = cv2.resize(label_id, (1024, 1024), interpolation=cv2.INTER_NEAREST)
-    face_region_cropped = cv2.resize(face_region_cropped, (1024, 1024), interpolation=cv2.INTER_NEAREST)
+    h_crop, w_crop, _ = img_cropped.shape
+
+   
+    # img_cropped = cv2.resize(img_cropped, (1024, 1024))
+    # img_base = cv2.resize(img_base, (1024, 1024))
+    # label_id = cv2.resize(label_id, (1024, 1024), interpolation=cv2.INTER_NEAREST)
 
     # # save original image
     # Image.fromarray(img_cropped).save(
@@ -121,11 +126,11 @@ for label_name in tqdm(labels):
     # )
 
     # define reference prompt and style
-    ref_prompt = "face of a cartoon character"
+    ref_prompt = "zoomed in mouth of a cartoon character"
     style_prompt = "hand drawn"
 
     # iterate over presets
-    for preset_idx in tqdm(range(len(preset_prompts[:1]))):
+    for preset_idx in tqdm(range(len(preset_prompts[:2]))):
         # load preset
         shape_id = shape_ids[preset_idx]
         preset_image = cv2.imread(join(preset_dir, preset_class, f"{shape_id}.png"), -1)
@@ -152,6 +157,14 @@ for label_name in tqdm(labels):
             continue
 
         deformed, _, mouth_pose = tps_output
+
+        # resize crops to 1024x1024
+        img_cropped = cv2.resize(img_cropped, (1024, 1024))
+        img_base = cv2.resize(img_base, (1024, 1024))
+        label_id = cv2.resize(label_id, (1024, 1024), interpolation=cv2.INTER_NEAREST)
+        deformed = cv2.resize(deformed, (1024, 1024), interpolation=cv2.INTER_NEAREST)
+        face_region_cropped = cv2.resize(face_region_cropped.astype('uint8'), (1024, 1024), interpolation=cv2.INTER_NEAREST)
+
         deformed_mask = deformed[:, :, 3] == 255
 
         # refined_binmask = refiner.refine(deformed[:,:,:3].astype('uint8'), deformed_mask.astype('uint8')*255, fast=False, L=900)
@@ -178,40 +191,77 @@ for label_name in tqdm(labels):
         cond_image = cond_image.astype("uint8")
         
         # stylization
-        target_prompt = f"face of a cartoon character {preset_prompts[preset_idx]}"
+        # target_prompt = f"zoomed in mouth of a cartoon character {preset_prompts[preset_idx]}"
+        target_prompt = f"a solid-color filled mouth of an animated handrawn character"
 
         ref_img = img_cropped.copy()
 
         generated, conditioning = control_stylization.generate(
-            ref_img, cond_image, ref_prompt, style_prompt, target_prompt, "canny"
+            ref_img, cond_image, ref_prompt, style_prompt, target_prompt
         )
         generated = np.array(generated)
-        pred_segmap, pred_labels = sam_face_model.predict(generated, face_region_cropped)
-        deformed_mask = pred_labels==2
-        deformed_mask = cv2.dilate(deformed_mask.astype('uint8'), (23,23))
-        deformed_mask_im = refiner.refine(generated, deformed_mask*255, fast=False, L=900)
+        # blur to match resolution of original image
+        generated = cv2.blur(generated, (5, 5))
+        
+        deformed_mask_im = None
+        predict_generated_mask = True
+        if predict_generated_mask:
+            pred_segmap, pred_labels = sam_face_model.predict(generated, face_region_cropped)
+            deformed_mask = (pred_labels==2) | (pred_labels==7) | (pred_labels==10)
+            deformed_mask_im = refiner.refine(generated, deformed_mask.astype('uint8')*255, fast=False, L=900)
+        else:
+            deformed_mask_im = cv2.dilate(deformed_mask.astype('uint8')*255, (23,23))
+            deformed_mask_im = refiner.refine(generated, deformed_mask_im, fast=False, L=900)
         deformed_mask_im = np.repeat(deformed_mask_im[..., np.newaxis], 3, axis=2)
-        deformed_mask_im = cv2.blur(deformed_mask_im, (11, 11))
+        deformed_mask_im = cv2.blur(deformed_mask_im, (51, 51))
         deformed_mask_im = deformed_mask_im.astype("float32")/255
         final_image = img_base_np * (1 - deformed_mask_im) + generated * deformed_mask_im
         final_image = final_image.astype("uint8")
 
+        # composite on full image
+        final_image_resized = cv2.resize(final_image, (w_crop, h_crop))
+        img_composited = img_full.copy()
+        img_composited[x_min:x_max, y_min:y_max] = final_image_resized
+
+
+        # face cropping window
+        face_padding = 80
+        face_Xs, face_Ys = np.where(face_region)
+        face_x_min, face_x_max = np.min(face_Xs) - face_padding, np.max(face_Xs) + face_padding
+        face_y_min, face_y_max = np.min(face_Ys) - face_padding, np.max(face_Ys) + face_padding
+        if face_x_min < 0:
+            face_x_min = 0
+        if face_y_min < 0:
+            face_y_min = 0
+        if face_x_max > 1024:
+            face_x_max = 1024
+        if face_y_max > 1024:
+            face_y_max = 1024
+
+        img_face = img_full[face_x_min:face_x_max, face_y_min:face_y_max]
+        img_composited_face = img_composited[face_x_min:face_x_max, face_y_min:face_y_max]
+        img_face = cv2.resize(img_face, (1024, 1024))
+        img_composited_face = cv2.resize(img_composited_face, (1024, 1024))
+        
 
         # plot images
         TITLE_SIZE = 35
-        fig, ax = plt.subplots(1,4, figsize=(40,10))
-        ax[0].imshow(ref_img)
-        ax[0].set_title("Input Image", fontsize=TITLE_SIZE)
+        fig, ax = plt.subplots(1,5, figsize=(50,10))
+        ax[0].imshow(img_face)
+        ax[0].set_title("Original Image", fontsize=TITLE_SIZE)
         ax[0].axis('off')
-        ax[1].imshow(cond_image)
-        ax[1].set_title("Modified Segmap (Mouth)", fontsize=TITLE_SIZE)
+        ax[1].imshow(ref_img)
+        ax[1].set_title("Reference Style Image (Cropped)", fontsize=TITLE_SIZE)
         ax[1].axis('off')
-        ax[2].imshow(generated)
-        ax[2].set_title("Generated", fontsize=TITLE_SIZE)
+        ax[2].imshow(deformed_mask_im)
+        ax[2].set_title("Modified Segmap (Mouth)", fontsize=TITLE_SIZE)
         ax[2].axis('off')
-        ax[3].imshow(final_image)
-        ax[3].set_title("Composited", fontsize=TITLE_SIZE)
+        ax[3].imshow(generated)
+        ax[3].set_title("Generated", fontsize=TITLE_SIZE)
         ax[3].axis('off')
+        ax[4].imshow(img_composited_face)
+        ax[4].set_title("Composited", fontsize=TITLE_SIZE)
+        ax[4].axis('off')
         plt.savefig( join(output_dir,f'{label_name.split("_")[0]}_{preset_class}_pose{mouth_pose}_{shape_id}.png') )
         plt.close()
 

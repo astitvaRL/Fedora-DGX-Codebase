@@ -81,8 +81,10 @@ def get_salient_points(mask):
     return -1
 
 
-def get_deformation_params(label_type, shape_id, label_binary):
+def get_deformation_params(label_type, shape_id, label_binary, face_extremes):
+    face_x_min, face_x_max, face_y_min, face_y_max = face_extremes
     mouth_pose = None
+    h_mask, w_mask = label_binary.shape
     contours, _ = cv2.findContours(
         label_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
     )
@@ -101,37 +103,56 @@ def get_deformation_params(label_type, shape_id, label_binary):
         else:
             len_ratio = h_len / w_len
 
-        if len_ratio < 0.3:
-            mouth_pose = 0
-        elif len_ratio < 0.4:
-            mouth_pose = 1
-        elif len_ratio < 2.0:
-            mouth_pose = 2
-        elif len_ratio < 3.0:
-            mouth_pose = 3
-        else:
-            mouth_pose = 4
 
-        scale_h = 0.15
-        scale_w = 0.04
-        if shape_id=='1':
-            scale_h = 1
-            scale_w = 1
+        # estimate deformation offsets
+        h_offset = 0
+        w_offset = 0
+        bias = 0.2
+        if shape_id=='0':
+            if len_ratio==1.0: # no adjustment needed
+                pass
+            elif len_ratio<1.0: # adjust mouth height
+                h_offset = abs(w_len-h_len)*(1-bias)
+            else: # adjust mouth width
+                w_offset = abs(w_len-h_len)*(1-bias)
 
-        h_offset = (w_len - h_len) * scale_h
-        w_offset = (h_len - w_len) * scale_w
-        print("shape_id: ", shape_id, "h_offset: ", h_offset, "w_offset: ", w_offset)
+        elif shape_id=='1':
+            if len_ratio>5: # no adjustment needed
+                pass
+            else:
+                w_offset = -1*abs(w_len - 5*h_len)*(1-bias)*0.2
+
+        # elif shape_id=='2':
+        #     if len_ratio>1.5: # no adjustment needed
+        #         pass
+        #     else:
+        #         w_offset = -1*abs(1.5*w_len - 3*h_len)*(1-bias)
+
+            # w_scale = w_len / len_ratio
+            # h_scale = h_len / len_ratio
+
+
+
+        # h_offset = ((w_len - h_len)/(w_len + h_len)) * scale_h
+        # w_offset = (h_len - w_len) * scale_w
+        # print("shape_id: ", shape_id, "h_offset: ", h_offset, "w_offset: ", w_offset)
 
         src_pts = np.concatenate([box_pts, anchor_pts])
         deformed_box_pts = box_pts.copy()
+        deformed_anchor_pts = anchor_pts.copy()
+
+        # preventing deformation to leak outside the image
+        lowest_shape_point = deformed_anchor_pts[-1][1]
+        padding = 10
+        h_offset_final = min(h_offset, face_x_max-lowest_shape_point-padding) # x and y naming convention might be reversed
+
         deformed_box_pts[0][0] -= w_offset
         deformed_box_pts[2][0] -= w_offset
         deformed_box_pts[1][0] += w_offset
         deformed_box_pts[3][0] += w_offset
-        deformed_box_pts[2][1] += h_offset
-        deformed_box_pts[3][1] += h_offset
-        deformed_anchor_pts = anchor_pts.copy()
-        # deformed_anchor_pts[-1][1] += h_offset
+        deformed_box_pts[2][1] += h_offset_final
+        deformed_box_pts[3][1] += h_offset_final
+        deformed_anchor_pts[-1][1] += h_offset_final
         deformed_anchor_pts[1][0] -= w_offset
         deformed_anchor_pts[0][0] += w_offset
 
@@ -149,6 +170,12 @@ def tps_warp_box_mouth(
     image, label_id, preset_shape, label_type="mouth", shape_id=None
 ):
     metadata = {}
+    # get extreme points of face region
+    face_region = (label_id == 2) | (label_id == 3) | (label_id == 4) | (label_id == 5) | (label_id == 6) | (label_id == 12) | (label_id == 13) | (label_id == 17) | (label_id == 18) | (label_id == 22) | (label_id == 23)
+    face_Xs, face_Ys = np.where(face_region)
+    face_x_min, face_x_max = np.min(face_Xs), np.max(face_Xs)
+    face_y_min, face_y_max = np.min(face_Ys), np.max(face_Ys)
+    face_extremes = (face_x_min, face_x_max, face_y_min, face_y_max)
     # label to binary mask
     label_binary = (label_id == 3) | (label_id == 23) | (label_id == 17)
     label_binary = label_binary.astype("uint8")
@@ -163,7 +190,7 @@ def tps_warp_box_mouth(
     alpha_image = np.concatenate([alpha_image, transparency], axis=-1)
 
     deformation_params = get_deformation_params(
-        label_type=label_type, shape_id=shape_id, label_binary=label_binary
+        label_type=label_type, shape_id=shape_id, label_binary=label_binary, face_extremes=face_extremes
     )
     if deformation_params == -1:
         print("TPS estimation failed")
