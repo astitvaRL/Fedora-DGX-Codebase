@@ -50,7 +50,7 @@ if __name__ == '__main__':
     save_predcitions_dir_path = './PREDICTIONS/Dog/infer_w_strokes/val/'
 
     # EXPERIMENT CONFIG
-    task_name_coarse = 'ANIMSEG_E2E_Strokes2Coarse'
+    task_name_coarse = 'ANIMSEG_E2E_Strokes2Coarse_randomrot'
     task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k'
     task_name_face = 'ANIMSEG_E2E_FaceOnly_REAL7k_with_face_prior'
     all_ckpts_dir = 'all_ckpts'
