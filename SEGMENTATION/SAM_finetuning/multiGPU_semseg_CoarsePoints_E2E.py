@@ -170,6 +170,10 @@ if __name__ == '__main__':
             image_data, gt, bg_mask, _ = randomaug.apply_augmentation(image_data, gt, bg_mask)
             image_data = randomaug.apply_color_jitter(image_data, gt)
 
+            # resize gt and bg_mask
+            gt = F.resize(gt, 1024, torchvision.transforms.InterpolationMode.NEAREST) # prediction will be umsampled to 1024x1024
+            bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes mask size 256x256
+
             #point-based prompts
             assert gt.shape[-1]==gt.shape[-2] # works only for square image as of now
             num_points = np.random.randint(1,500)
@@ -177,17 +181,10 @@ if __name__ == '__main__':
             point_labels = np.zeros((gt.shape[0],num_points))
             points = torch.tensor(points).float().to(device)
             point_labels = torch.tensor(point_labels).long().to(device)
-            pixels = (points.clone()*256).long().to(device) #cloning is important, otherwise it leads to CUDA assertion errors
+            pixels = (points*gt.shape[-1]).long().to(device)
             for batch_idx in range(gt.shape[0]):
-                try:
-                    labels_id = gt[batch_idx].squeeze(0)
-                    point_labels[batch_idx] = labels_id[pixels[batch_idx][:,0],pixels[batch_idx][:,1]].long()
-                except:
-                    print("Error!")
-
-            # resize gt and bg_mask
-            gt = F.resize(gt, 1024, torchvision.transforms.InterpolationMode.NEAREST) # prediction will be umsampled to 1024x1024
-            bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes mask size 256x256
+                labels_id = gt[batch_idx].squeeze(0)
+                point_labels[batch_idx] = labels_id[pixels[batch_idx][:,0],pixels[batch_idx][:,1]].long()
      
             ################################################################################################
             ######### ------- plt visualizations after resizing  (last sample from batch) -------- #########
