@@ -29,7 +29,7 @@ def create_stroke_prior(mask, exclude_random_class=False):
     MAX_LENGTH = 512  # maximum distance between two end points
     END_BRUSH_RANGE = (np.random.randint(2,15), np.random.randint(2,15))  # brush size range of the two end points
     MID_BRUSH_RANGE = (np.random.randint(2,15), np.random.randint(2,15))  # brush size range of the mid point
-    SCRATCH_CNT = 500
+    SCRATCH_CNT = 20
     strokes = np.zeros_like(mask)
     for _ in range(SCRATCH_CNT):
         generate_scratch(strokes, MAX_LENGTH, END_BRUSH_RANGE, MID_BRUSH_RANGE)

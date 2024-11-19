@@ -747,11 +747,91 @@ class DrawingsDatasetInferFullWithCoarsePrior(Dataset):
         gt2D[hands] = 3
         gt2D[legs] = 1
         gt2D[torso] = 4
-        gt2D[gt2D>4] = 4
+        gt2D[gt2D>4] = 0
 
+        gt2D_label_id_coarse = torch.tensor(gt2D[None, :,:]).long()
+
+        return image_name,input_image_tensor, gt2D_label_id_coarse
+
+###########################################################################################################################################
+### ----------------------------------------------------------------------------------------------------------------------------------- ###
+###########################################################################################################################################
+
+###########################################################################################################################################
+### ----------------------------------------------------------------------------------------------------------------------------------- ###
+###########################################################################################################################################
+
+
+# inference with coarse prior dataset definition for all classes, coarse-to-fine + face
+class DrawingsDatasetInferFullWithStrokes(Dataset): 
+    def __init__(self, sam_model, img_dir_name, label_id_dir_name, semantics, bg_color=[255,255,255], mode='test', device='cuda', num_test_samples=-1):
+        self.sam_model = sam_model
+        self.num_classes_coarse = 5
+        self.num_classes_fine = 18
+        self.num_classes_face = 11
+        self.num_classes_all = 27
+        self.bg_color = bg_color
+        self.mode = mode
+        self.device = device
+        self.semantics = semantics
+        self.image_dir_name = img_dir_name
+        self.label_id_dir_name = label_id_dir_name
+        self.num_test_samples = num_test_samples
+        self.files = sorted(os.listdir(self.image_dir_name))[:self.num_test_samples]
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, index):
+        image_name = self.files[index]
+
+        # image = cv2.imread(join(self.image_dir_name, image_name),-1)
+        image = cv2.imread('dragy.png')
+        if image.shape[-1]==4:
+            alpha = image[:,:,3]
+            image = image[:,:,:3]
+            image[alpha==0] = self.bg_color
+        image = cv2.resize(image, (1024,1024), interpolation=cv2.INTER_LINEAR)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        sam_transform = ResizeLongestSide(self.sam_model.image_encoder.img_size)
+        resize_img = sam_transform.apply_image(image)
+        resize_img_tensor = torch.as_tensor(resize_img.transpose(2, 0, 1)).to(self.device)
+        input_image_tensor = self.sam_model.preprocess(resize_img_tensor[None,:,:,:]) # (1, 3, 1024, 1024)
+        input_image_tensor = input_image_tensor.squeeze(0)
+
+        prior_name = image_name.split('.')[0] + '.png'
+        # gt2D = cv2.imread(join(self.label_id_dir_name, prior_name))
+        gt2D = cv2.imread('dragy_prior.png')
+        gt2D = cv2.resize(gt2D, (1024,1024), interpolation=cv2.INTER_NEAREST)
+
+        # #remapping coarse prior to DrawingsDataset annotation format (only valid for Dog dataset)
+        # gt2D = gt2D[:,:,0]
+        # bg = gt2D==0
+        # head = gt2D==1
+        # hands = (gt2D==3) | (gt2D==4)
+        # legs = (gt2D==5) | (gt2D==6)
+        # torso = (gt2D==2) | (gt2D==7)
+
+
+        # remapping for manual strokes
+        b,g,r = cv2.split(gt2D)
+        gt2D = np.zeros_like(gt2D[:,:,0])
+        bg = (r==0) & (g==0) & (b==0)
+        head = (r==255) & (g==255) & (b==0)
+        hands = (r==255) & (g==0) & (b==0)
+        legs = (r==0) & (g==0) & (b==255)
+        torso = (r==0) & (g==255) & (b==0)
+        
+        # convert to DrawingsDataset format
+        gt2D[bg]=0
+        gt2D[head] = 2
+        gt2D[hands] = 3
+        gt2D[legs] = 1
+        gt2D[torso] = 4
+        gt2D[gt2D>4] = 0
 
         # #mask to strokes
-        gt2D = create_stroke_prior(gt2D, exclude_random_class=False)
+        # gt2D = create_stroke_prior(gt2D, exclude_random_class=False)
 
         gt2D_label_id_coarse = torch.tensor(gt2D[None, :,:]).long()
 

@@ -45,9 +45,9 @@ if __name__ == '__main__':
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/ToonLight/data_generation/3DBiCar_360_Renders/' + suffix
     # save_predcitions_dir_path = './PREDICTIONS/3BiCar_360_Renders/' + suffix + '/'
 
-    inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/DOG_DATASET/test_images'
-    coarse_labels_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/DOG_DATASET/test_segmentations'
-    save_predcitions_dir_path = './PREDICTIONS/Dog/test_with_Prior/'
+    inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/DOG_DATASET/train_images'
+    coarse_labels_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/DOG_DATASET/train_segmentations'
+    save_predcitions_dir_path = './PREDICTIONS/Dog/trainV2_with_Prior/'
 
     # EXPERIMENT CONFIG
     task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
@@ -201,7 +201,7 @@ if __name__ == '__main__':
             coarse_mask = torch.permute(coarse_mask,(0,3,1,2))
 
             #using input coarse prior
-            gt_coarse_mask = F.resize(gt2D_coarse, 256, torchvision.transforms.InterpolationMode.BILINEAR)
+            gt_coarse_mask = F.resize(gt2D_coarse, 256, torchvision.transforms.InterpolationMode.NEAREST)
             gt_coarse_mask = gt_coarse_mask.squeeze(1)
             gt_coarse_mask = torch.nn.functional.one_hot(gt_coarse_mask,(num_classes_coarse-1) if exclude_neck_from_coarse else num_classes_coarse)
             gt_coarse_mask = torch.permute(gt_coarse_mask,(0,3,1,2))

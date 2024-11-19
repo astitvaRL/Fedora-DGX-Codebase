@@ -46,6 +46,8 @@ semantic = SemanticSegmentationAll(labels_definition_path=labels_definition_file
 
 padding = 0
 
+NUM_POINTS = 1000
+
 ref_images = []
 ref_masks = []
 ref_top_points = []
@@ -79,7 +81,7 @@ for name in tqdm(label_names):
     if y_max > 1024:
         y_max = 1024
     
-    ratio = (y_max-y_min)/(x_max-x_min)
+    ratio = (y_max-y_min)/1.0
     ref_ratio.append(ratio)
 
     img_cropped = img[x_min:x_max, y_min:y_max,:]
@@ -99,7 +101,7 @@ for name in tqdm(label_names):
     try:
 
         Xs, Ys = np.where(mouth_mask>0)
-        if len(Xs)<500 or len(Ys)<500:
+        if len(Xs)<NUM_POINTS or len(Ys)<NUM_POINTS:
             continue
 
         top_pixels = []
@@ -121,9 +123,9 @@ for name in tqdm(label_names):
     # plt.savefig('zplot.png')
     # plt.close()
 
-        top_ridx = np.random.choice(np.arange(top_pixels.shape[0]),500)
+        top_ridx = np.random.choice(np.arange(top_pixels.shape[0]),NUM_POINTS)
         top_points = top_pixels[top_ridx]
-        bottom_ridx = np.random.choice(np.arange(bottom_pixels.shape[0]),500)
+        bottom_ridx = np.random.choice(np.arange(bottom_pixels.shape[0]),NUM_POINTS)
         bottom_points = bottom_pixels[bottom_ridx]
 
         # points = (points-points.min(0)) / (points.max(0)-points.min(0))
@@ -144,7 +146,7 @@ image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
 label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
 
 
-label_names = sorted(os.listdir(join(data_root, label_id_dir_name)))[:100]
+label_names = sorted(os.listdir(join(data_root, label_id_dir_name)))[:10]
 
 labels_definition_file_path = 'label_definition.json'
 semantic = SemanticSegmentationAll(labels_definition_path=labels_definition_file_path, num_classes=27)
@@ -184,7 +186,7 @@ for name in tqdm(label_names):
     if y_max > 1024:
         y_max = 1024
 
-    ratio = (y_max-y_min)/(x_max-x_min)
+    ratio = (y_max-y_min)/1.0
     all_ratio.append(ratio)
 
     img_cropped = img[x_min:x_max, y_min:y_max,:]
@@ -204,7 +206,7 @@ for name in tqdm(label_names):
     try:
 
         Xs, Ys = np.where(mouth_mask>0)
-        if len(Xs)<500 or len(Ys)<500:
+        if len(Xs)<NUM_POINTS or len(Ys)<NUM_POINTS:
             continue
 
         top_pixels = []
@@ -226,9 +228,9 @@ for name in tqdm(label_names):
     # plt.savefig('zplot.png')
     # plt.close()
 
-        top_ridx = np.random.choice(np.arange(top_pixels.shape[0]),500)
+        top_ridx = np.random.choice(np.arange(top_pixels.shape[0]),NUM_POINTS)
         top_points = top_pixels[top_ridx]
-        bottom_ridx = np.random.choice(np.arange(bottom_pixels.shape[0]),500)
+        bottom_ridx = np.random.choice(np.arange(bottom_pixels.shape[0]),NUM_POINTS)
         bottom_points = bottom_pixels[bottom_ridx]
 
         # points = (points-points.min(0)) / (points.max(0)-points.min(0))
@@ -251,12 +253,11 @@ for idx1 in range(len(all_top_points)):
     for idx2 in tqdm(range(len(ref_top_points))):
         pts1 = np.concatenate([all_top_points[idx1],all_bottom_points[idx1]])
         pts2 = np.concatenate([ref_top_points[idx2],ref_bottom_points[idx2]])
-        sim_top = shape_similarity(all_top_points[idx1], ref_top_points[idx2], rotations=5)
-        sim_bottom = shape_similarity(all_bottom_points[idx1], ref_bottom_points[idx2], rotations=5)
-        sim = shape_similarity(pts1, pts2, rotations=0)
+        sim_top = shape_similarity(all_top_points[idx1], ref_top_points[idx2], checkRotation=False)
+        sim_bottom = shape_similarity(all_bottom_points[idx1], ref_bottom_points[idx2], checkRotation=False)
+        # sim = shape_similarity(pts1, pts2, rotations=0)
         # sim = shape_similarity(pts1, pts2, checkRotation=False)
-        ratio_diff = abs(ref_ratio[idx2] - all_ratio[idx1])
-        sim = sim_top + sim_bottom + sim 
+        sim = sim_top + sim_bottom
         scores.append(sim)
     
     scores = np.array(scores)

@@ -43,7 +43,7 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'ANIMSEG_CoarsePoints_E2E_REAL7k' # finetuned checkpoint will be saved here
+    task_name = 'ANIMSEG_CoarsePoints_E2EScratch_REAL7k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -66,10 +66,10 @@ if __name__ == '__main__':
 
      # load original SAM cackpoint for finetuning, or load an existing checkpoint for further training
     init_checkpoint = join(sam_original_ckpt_path)
-    epoch_start = 0 # dont change this, change the one below
+    epoch_start = 0 # dont change this while resuming training, change the one below
     if resume_training:
-        epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k/model_eval_best.pth')
+        epoch_start = 8 # change this
+        resume_ckpt = join(ckpt_dir, 'ANIMSEG_CoarsePoints_E2EScratch_REAL7k/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
@@ -176,7 +176,7 @@ if __name__ == '__main__':
 
             #point-based prompts
             assert gt.shape[-1]==gt.shape[-2] # works only for square image as of now
-            num_points = np.random.randint(1,500)
+            num_points = 100
             points = np.random.uniform(0,1,(gt.shape[0],num_points,2))
             point_labels = np.zeros((gt.shape[0],num_points))
             points = torch.tensor(points).float().to(device)
@@ -321,7 +321,6 @@ if __name__ == '__main__':
                 pixels = (points.clone()*1024).long().to(device)
                 for batch_idx in range(gt.shape[0]):
                     labels_id = gt[batch_idx].squeeze(0)
-                    labels_id[labels_id==3] = 4
                     point_labels[batch_idx] = labels_id[pixels[batch_idx][:,0],pixels[batch_idx][:,1]].long()         
                 # not computing any gradients during evaluation
                 with torch.no_grad():

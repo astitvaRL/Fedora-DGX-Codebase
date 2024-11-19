@@ -22,7 +22,7 @@ from segment_anything_parallel_fine_infer import sam_model_registry as sam_model
 
 from segment_anything_parallel_fine_infer.utils.transforms import ResizeLongestSide
 
-from utils.dataset import DrawingsDatasetInferFullWithCoarsePrior
+from utils.dataset import DrawingsDatasetInferFullWithStrokes
 from utils.SurfaceDice import compute_dice_coefficient
 from utils.SemanticSegmentation import SemanticSegmentationCoarse, SemanticSegmentationNoFace, SemanticSegmentationFace, SemanticSegmentationAll
 from utils.augment import RandomAug
@@ -87,7 +87,8 @@ if __name__ == '__main__':
     assert os.path.exists(model_load_path), f"Model path {model_load_path} does not exist"
 
     # checkpoint name and path
-    init_checkpoint_coarse = join(ckpt_dir, f'{task_name_coarse}/model_eval_best.pth')
+    # init_checkpoint_coarse = join(ckpt_dir, f'{task_name_coarse}/model_eval_best.pth')
+    init_checkpoint_coarse = join(ckpt_dir, f'{task_name_coarse}/all_ckpts/model_89.pth')
     init_checkpoint_fine = join(ckpt_dir, f'{task_name_fine}/model_eval_best.pth')
     init_checkpoint_face = join(ckpt_dir, f'{task_name_face}/model_eval_best.pth')
     if not load_best_eval_ckpt:
@@ -141,7 +142,7 @@ if __name__ == '__main__':
 
 
     # create dataset
-    test_dataset = DrawingsDatasetInferFullWithCoarsePrior(sam_model, img_dir_name=inference_image_dir_path, label_id_dir_name=coarse_labels_dir_path, semantics=semantics_coarse)
+    test_dataset = DrawingsDatasetInferFullWithStrokes(sam_model, img_dir_name=inference_image_dir_path, label_id_dir_name=coarse_labels_dir_path, semantics=semantics_coarse)
 
     # label id definitions
     label_to_id = semantics_fine.data['label_name_to_id']
@@ -179,7 +180,7 @@ if __name__ == '__main__':
         strokes_coarse = strokes_coarse_prior.to(device)
 
         #using input coarse strokes prior
-        strokes_coarse = F.resize(strokes_coarse, 256, torchvision.transforms.InterpolationMode.BILINEAR)
+        strokes_coarse = F.resize(strokes_coarse, 256, torchvision.transforms.InterpolationMode.NEAREST)
         strokes_coarse = strokes_coarse.squeeze(1)
         strokes_coarse = torch.nn.functional.one_hot(strokes_coarse,(num_classes_coarse-1) if exclude_neck_from_coarse else num_classes_coarse)
         strokes_coarse = torch.permute(strokes_coarse,(0,3,1,2))
