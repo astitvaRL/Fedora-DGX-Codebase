@@ -236,16 +236,16 @@ def tps_warp_preset_mouth(
     if salient_points != -1:
         left_end, right_end, upper_contour_mid, lower_contour_mid = salient_points
         # TPS-based warping
-        # ratio = (np.abs(upper_contour_mid - lower_contour_mid)[1]) / np.abs(xl-xr)
-        # offset = 512*ratio
-        offset = min(np.square(upper_contour_mid - lower_contour_mid)[1], 100)
+        # ratio = (np.abs(upper_contour_mid - lower_contour_mid)[1]) / np.abs(left_end[0]-right_end[0])
+        # offset = 50*ratio
+        # offset = min(np.square(upper_contour_mid - lower_contour_mid)[1], 100)
         src_pts = np.array(
             [left_end, upper_contour_mid, lower_contour_mid, right_end]
         ).astype(np.float32)
         dst_pts = np.array(
-            # [[0, 512], [512, 510], [512, 512 + offset], [1023, 512]]
-            [[0, 512], [512, 510], [512, 600], [1023, 512]]
+            [[0, 512], [512, 510], [512, 720], [1023, 512]]
         ).astype(np.float32)
+
         tps = ski.transform.ThinPlateSplineTransform()
         tps.estimate(dst_pts, src_pts)
         warped = ski.transform.warp(label_binary, tps, order=0)
@@ -289,7 +289,7 @@ def tps_warp_preset_mouth(
             transparency[label_binary > 0] = 255
             alpha_image = np.concatenate([alpha_image, transparency], axis=-1)
             deformed = ski.transform.warp(alpha_image.astype("float32"), tps, order=1)
-
+            preset_shape_warped = ski.transform.warp(preset_shape.astype("float32"), tps_inv, order=1)
             if return_metadata:
                 # metadata["left_end"] = left_end
                 # metadata["right_end"] = right_end
@@ -299,8 +299,9 @@ def tps_warp_preset_mouth(
                 metadata["tps_inv"] = tps_inv
                 metadata["preset_warped"] = preset_warped
 
-            return deformed, shape_mask, label_binary, metadata
+            return deformed, shape_mask, label_binary, preset_shape_warped, metadata
 
+    print("Error occured!")
     return -1
 
 

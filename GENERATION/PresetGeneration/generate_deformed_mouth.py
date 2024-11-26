@@ -34,13 +34,13 @@ labels_definition_file_path = "./label_definition.json"
 image_dir_name = "MANIFOLD/animated_drawings_images_prior_april22/cropped_image"
 label_id_dir_name = "AD_SegMaps/labels_7k_mouth_type1_1024"
 preset_dir = "./presets"
-preset_class = "arpabets"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CANNY THRESHOLDS ACCORDINGLY IN THE SHAPE & STYLIZATION SCRIPTS
+preset_class = "mouth_talk"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CANNY THRESHOLDS ACCORDINGLY IN THE SHAPE & STYLIZATION SCRIPTS
 
 # prest configuration
 preset_config = PresetConfig(preset_class)
 preset_prompts = preset_config.config["prompts"]
 shape_ids = preset_config.config["shape_ids"]
-output_root = f"OUTPUT/output_{preset_class}_PRESET_ARPABET_type1"
+output_root = f"OUTPUT/output_{preset_class}_TRIAL"
 
 # load stylization model
 control_stylization = ControllableStylization()
@@ -58,7 +58,7 @@ sam_face_model = SAM_face()
 refiner = segref.Refiner(device="cuda:0")  # device can also be 'cpu'
 
 # load labels
-start = 0
+start = 10
 end = -1
 labels = sorted(os.listdir(join(data_root, label_id_dir_name)))[start:end]
 
@@ -84,7 +84,7 @@ for label_name in tqdm(labels):
     # inpainting
     kernel = np.ones((5, 5), np.uint8)
     inpainting_mask = label_id == 0  # default background
-    if preset_class == "mouth" or preset_class == "mouth_talk" or preset_class == "arpabets":
+    if preset_class == "mouth" or preset_class == "mouth_talk":
         inpainting_mask = (label_id == 3) | (label_id == 23) | (label_id == 17)
     elif preset_class == "eyes":
         inpainting_mask = (label_id == 4) | (label_id == 22)
@@ -98,7 +98,6 @@ for label_name in tqdm(labels):
     # mouth_region = face_region.copy() 
     # preset cropping window
     Xs, Ys = np.where(mouth_region)
-    if len(Xs)==0 or len(Ys)==0: continue
     padding = 30
     difference = (np.max(Xs)-np.min(Xs)) - (np.max(Ys)-np.min(Ys))
     x_adj = padding
@@ -123,9 +122,9 @@ for label_name in tqdm(labels):
     h_crop, w_crop, _ = img_cropped.shape
 
    
-    img_cropped = cv2.resize(img_cropped, (1024, 1024))
-    img_base = cv2.resize(img_base, (1024, 1024))
-    label_id = cv2.resize(label_id, (1024, 1024), interpolation=cv2.INTER_NEAREST)
+    # img_cropped = cv2.resize(img_cropped, (1024, 1024))
+    # img_base = cv2.resize(img_base, (1024, 1024))
+    # label_id = cv2.resize(label_id, (1024, 1024), interpolation=cv2.INTER_NEAREST)
 
     # # save original image
     # Image.fromarray(img_cropped).save(
@@ -137,7 +136,7 @@ for label_name in tqdm(labels):
     style_prompt = "hand drawn"
 
     # iterate over presets
-    for preset_idx in tqdm(range(len(preset_prompts))):
+    for preset_idx in tqdm(range(len(preset_prompts[:2]))):
         # load preset
         shape_id = shape_ids[preset_idx]
         preset_image = cv2.imread(join(preset_dir, preset_class, f"{shape_id}.png"), -1)
@@ -147,19 +146,14 @@ for label_name in tqdm(labels):
 
         # get preset shape
         tps_output = None
-        if preset_class == "mouth" or preset_class == "mouth_talk" or preset_class == "arpabets":
-            # tps_output = tps_warp_box_mouth(
-            #     image=img_cropped,
-            #     label_id=label_id,
-            #     label_type=preset_class,
-            #     preset_shape=preset_image,
-            #     shape_id=shape_id,
-            # )
-            tps_output = tps_warp_preset_mouth(img_cropped, label_id, preset_image)
-
-            # 
-            # 
-            # 
+        if preset_class == "mouth" or preset_class == "mouth_talk":
+            tps_output = tps_warp_box_mouth(
+                image=img_cropped,
+                label_id=label_id,
+                label_type=preset_class,
+                preset_shape=preset_image,
+                shape_id=shape_id,
+            )
         elif preset_class == "eyes":
             tps_output = tps_warp_preset_eyes(
                 label_id=label_id, label_type=preset_class, preset_shape=preset_image
@@ -168,24 +162,17 @@ for label_name in tqdm(labels):
             print("Skipping...")
             continue
 
-        # deformed, _, mouth_pose = tps_output
-        mouth_pose = 'preset'
+        deformed, _, mouth_pose = tps_output
 
         # resize crops to 1024x1024
         img_cropped = cv2.resize(img_cropped, (1024, 1024))
         img_base = cv2.resize(img_base, (1024, 1024))
         label_id = cv2.resize(label_id, (1024, 1024), interpolation=cv2.INTER_NEAREST)
-        # deformed = cv2.resize(deformed, (1024, 1024), interpolation=cv2.INTER_NEAREST)
+        deformed = cv2.resize(deformed, (1024, 1024), interpolation=cv2.INTER_NEAREST)
         face_region_cropped = cv2.resize(face_region_cropped.astype('uint8'), (1024, 1024), interpolation=cv2.INTER_NEAREST)
 
         # mask from tps  deformation
-        # deformed_mask = deformed[:, :, 3] == 255
-        deformed_mask = tps_output[1]
-        deformed_preset = tps_output[3]
-        # if shape_id=='18' or shape_id=='19': #remove the green area around the preset (which was used to enable salient point detection on preset)
-        deformed_mask[deformed_preset[:,:,1]==255]=0
-        teeth = (deformed_preset[:,:,0]>0) & (deformed_preset[:,:,0]<200)
-        tongue = deformed_preset[:,:,0]>200
+        deformed_mask = deformed[:, :, 3] == 255
 
         # refined_binmask = refiner.refine(deformed[:,:,:3].astype('uint8'), deformed_mask.astype('uint8')*255, fast=False, L=900)
 
@@ -200,14 +187,11 @@ for label_name in tqdm(labels):
 
         #smoth deformed mask boundaries
         blur_kernel = (53,53)
-        # deformed_mask = cv2.GaussianBlur(deformed_mask.astype('uint8')*255, blur_kernel, 0)
+        deformed_mask = cv2.GaussianBlur(deformed_mask.astype('uint8')*255, blur_kernel, 0)
         deformed_mask = deformed_mask>0
-
 
         # prepare conditioning image
         label_id_cropped[deformed_mask] = 3
-        label_id_cropped[teeth] = 17
-        label_id_cropped[tongue] = 23
         cond_image = semantics.labels_to_colors(label_id_cropped)
         cond_image[cond_image.sum(2)==0] = [255,255,255]
         # cond_image[deformed_mask] = deformed[:, :, :3][deformed_mask]
@@ -219,7 +203,6 @@ for label_name in tqdm(labels):
 
         ref_img = img_cropped.copy()
 
-        # generated = np.zeros_like(ref_img)
         generated, conditioning = control_stylization.generate(
             ref_img, cond_image, ref_prompt, style_prompt, target_prompt
         )
@@ -278,7 +261,7 @@ for label_name in tqdm(labels):
         ax[1].imshow(ref_img)
         ax[1].set_title("Reference Style Image (Cropped)", fontsize=TITLE_SIZE)
         ax[1].axis('off')
-        ax[2].imshow(cond_image)
+        ax[2].imshow(deformed_mask_im)
         ax[2].set_title("Modified Segmap (Mouth)", fontsize=TITLE_SIZE)
         ax[2].axis('off')
         ax[3].imshow(generated)
@@ -290,9 +273,8 @@ for label_name in tqdm(labels):
         ax[4].imshow(img_composited_face)
         ax[4].set_title("Composited", fontsize=TITLE_SIZE)
         ax[4].axis('off')
-        plt.savefig( join(output_dir,f'{label_name.split("_")[0]}_{preset_class}_{shape_id}_plot.png') )
+        plt.savefig( join(output_dir,f'{label_name.split("_")[0]}_{preset_class}_pose{mouth_pose}_{shape_id}.png') )
         plt.close()
-        cv2.imwrite(join(output_dir,f'{label_name.split("_")[0]}_{preset_class}_{shape_id}_face.png'), cv2.cvtColor(img_composited_face, cv2.COLOR_RGB2BGR))
 
         # save images
         # Image.fromarray(final_image).save(

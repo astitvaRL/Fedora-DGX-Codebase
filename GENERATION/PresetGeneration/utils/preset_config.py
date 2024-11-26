@@ -15,13 +15,29 @@ class PresetConfig:
             self.config["shape_ids"] = ["0", "1", "2", "3", "5"]
 
         if self.config["class_name"] == "mouth_talk":
-            self.config["num_shapes"] = 3
+            self.config["num_shapes"] = 2
             self.config["prompts"] = [
-                "with a big open mouth",
-                "with a line-drawing of mouth",
-                "with a small round mouth",
+                "with a mouth with teeth",
+                "with a mouth with lips",
+                # "with a big open mouth",
+                # "with a line-drawing of mouth",
+                # "with a small round mouth",
+                # "with a line-drawing of mouth",
+                # "with a line-drawing of mouth",
+                # "with a line-drawing of mouth",
+                # "with a line-drawing of mouth"
             ]
-            self.config["shape_ids"] = ["0", "1", "2"]
+            self.config["shape_ids"] = ["9", "10"] #, "8"] #, "1", "2", "3", "4", "5", "6"]
+        
+        if self.config["class_name"] == "arpa_mouth":
+            self.config["num_shapes"] = 20
+            self.config["prompts"] = ['with a mouth']*self.config["num_shapes"]
+            self.config["shape_ids"] = [str(i) for i in range(self.config["num_shapes"])]
+        
+        if self.config["class_name"] == "arpabets":
+            self.config["num_shapes"] = 12
+            self.config["prompts"] = ['with a mouth']*self.config["num_shapes"]
+            self.config["shape_ids"] = [str(i) for i in range(self.config["num_shapes"])]
 
         if self.config["class_name"] == "eyes":
             self.config["num_shapes"] = 12

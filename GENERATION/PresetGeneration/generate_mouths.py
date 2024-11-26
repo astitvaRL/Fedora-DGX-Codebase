@@ -1,0 +1,111 @@
+import os
+# setup cache path for huggingface
+os.environ['CACHE_DIR'] = '/mnt/users_scratch/astitva/CACHE/'
+os.environ['HF_HUB_OFFLINE'] = '0'
+os.environ['HF_HOME'] = os.environ['CACHE_DIR']
+os.environ['HF_DATASETS_CACHE'] = os.environ['CACHE_DIR']
+os.environ['TRANSFORMERS_CACHE']= os.environ['CACHE_DIR']
+
+import numpy as np
+import cv2
+from matplotlib import pyplot as plt
+from PIL import Image
+from tqdm import tqdm
+
+from simple_lama_inpainting import SimpleLama
+
+from utils.SemanticSegmentation import SemanticSegmentationAll
+from utils.shape import tps_warp_preset
+from utils.stylization import ControllableStylization
+
+join = os.path.join
+
+# set paths
+data_root = '/mnt/users_scratch/astitva/DATA/'
+labels_definition_file_path = './label_definition.json'
+image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
+label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
+preset_dir = './presets'
+preset_type = 'mouth'
+preset_prompts = ['with an open mouth', 'with mouth wide open',  'frowning', 'with tongue out', 'with vampire teeth']
+shape_ids = ['0','1','2','3','5']
+output_dir = join('output')
+os.makedirs(output_dir, exist_ok=True)
+
+# load stylization model
+control_stylization = ControllableStylization()
+
+# load inpainting model
+inpainting_model = SimpleLama()
+
+# load semantic definitions
+semantics = SemanticSegmentationAll(labels_definition_file_path)
+
+# load labels
+labels = sorted(os.listdir(join(data_root, label_id_dir_name)))
+
+# load preset
+preset_image = cv2.imread(join(preset_dir, preset_type, f'{shape_id}.png'),-1)
+preset_image = cv2.resize(preset_image, (1024,1024), interpolation=cv2.INTER_NEAREST)
+
+for label_name in tqdm(labels):
+    img_name = f"{label_name.split('_')[0]}.png"
+    img_full = cv2.imread(join(data_root, image_dir_name, img_name))
+    img_full = cv2.resize(img_full, (1024,1024))
+    img_full = cv2.cvtColor(img_full, cv2.COLOR_BGR2RGB)
+    label_full = cv2.imread(join(data_root, label_id_dir_name, label_name))
+    label_full = cv2.cvtColor(label_full, cv2.COLOR_BGR2RGB)
+    label_id = semantics.colors_to_labels(label_full)
+    #inpainting
+    kernel = np.ones((5,5),np.uint8)
+    inpainting_mask =  (label_id == 3) | (label_id == 23) | (label_id == 17)
+    inpainting_mask = cv2.dilate(255*inpainting_mask.astype('uint8'), kernel, iterations=3)
+    img_base = inpainting_model(Image.fromarray(img_full.copy()), inpainting_mask)
+    # extract face region
+    face_region = label_id==6
+    Xs, Ys = np.where(face_region)
+    padding = 10
+    x_min, x_max = np.min(Xs)-padding, np.max(Xs)+padding
+    y_min, y_max = np.min(Ys)-padding, np.max(Ys)+padding
+    if x_min<0: x_min = 0
+    if y_min<0: y_min = 0
+    if x_max>1024: x_max = 1024
+    if y_max>1024: y_max = 1024
+    img = img_full[x_min:x_max, y_min:y_max]
+    label_id = label_id[x_min:x_max, y_min:y_max]
+    img_base = np.array(img_base)[x_min:x_max, y_min:y_max]
+    img = cv2.resize(img, (1024,1024))
+    img_base = cv2.resize(img_base, (1024,1024))
+    label_id = cv2.resize(label_id, (1024,1024), interpolation=cv2.INTER_NEAREST)
+    
+    # get preset shape
+    tps_output = tps_warp_preset(label_id=label_id, type='mouth', shape_id='5', preset_image=preset_image)
+    if tps_output==-1:
+        print('Skipping...')
+        continue
+    shape_mask = tps_output[0]
+    original_mouth_mask = tps_output[1]
+
+    # place preset shape over inpainted image
+    cond_image = img_base.copy()
+    cond_image[shape_mask] = np.array([0,0,0])
+
+    # stylization
+    ref_prompt = "face of a cartoon character"
+    style_prompt = "hand drawn"
+    target_prompt = f"face of a cartoon character {preset_prompt}"
+    ref_img = img.copy() # giving entire image as reference for better style context
+    generated, conditioning = control_stylization.generate(ref_img, cond_image, ref_prompt, style_prompt, target_prompt)
+    img_base_np = np.array(img_base)
+    generated = np.array(generated)
+    blurred_mask = cv2.blur(shape_mask.astype('float32'), (7,7))
+    blurred_mask = np.repeat(blurred_mask[..., np.newaxis], 3, axis=2)
+    img_base_np = img_base_np * (1-blurred_mask) + generated * blurred_mask
+    img_base_np = img_base_np.astype('uint8')
+    
+
+    # save images
+    Image.fromarray(img_base_np).save(join(output_dir, f'{label_name.split("_")[0]}_{preset_type}_{shape_id}.png')) # generated image
+    # img_base.save(join(output_dir, f'{label_name.split("_")[0]}_inpainted.png') ) # inpainted image
+    # conditioning.save(join(output_dir, f'{label_name.split("_")[0]}_{preset_type}_{shape_id}_canny.png')) # canny image
+    # cv2.imwrite(join(output_dir, f'{label_name.split("_")[0]}.png'), img) # original image
