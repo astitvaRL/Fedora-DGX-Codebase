@@ -860,7 +860,7 @@ class DrawingsDatasetInferFull(Dataset):
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
         self.num_test_samples = num_test_samples
-        self.files = sorted(os.listdir(self.image_dir_name))[:self.num_test_samples]
+        self.files = sorted(os.listdir(self.image_dir_name))
 
     def __len__(self):
         return len(self.files)

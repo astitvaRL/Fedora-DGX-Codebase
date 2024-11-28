@@ -45,15 +45,16 @@ if __name__ == '__main__':
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/ToonLight/data_generation/3DBiCar_360_Renders/' + suffix
     # save_predcitions_dir_path = './PREDICTIONS/3BiCar_360_Renders/' + suffix + '/'
 
-    inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/dog_val_images'
-    save_predcitions_dir_path = './PREDICTIONS/Dog/val/'
+    # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/dog_val_images'
+    inference_image_dir_path = './IN_THE_WILD_IMAGES/'
+    save_predcitions_dir_path = './PREDICTIONS/IN_THE_WILD'
 
     # EXPERIMENT CONFIG
     task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
     task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k'
     task_name_face = 'ANIMSEG_E2E_FaceOnly_REAL7k_with_face_prior'
     all_ckpts_dir = 'all_ckpts'
-    save_task_name = 'eval_real_400_ALL'
+    save_task_name = 'infer'
     mode = 'test'
     BATCH_SIZE = 1
     load_best_eval_ckpt = True
@@ -295,6 +296,7 @@ if __name__ == '__main__':
                 if refine_masks:
                     overlayed_refined = cv2.addWeighted(image_data_vis, 0.5, labels_out_refined_vis, 0.5, 0)
 
+                cv2.imwrite(f'{eval_epoch_dir}/{save_name_string}_seg.png', cv2.cvtColor(labels_out_vis, cv2.COLOR_BGR2RGB))
                 # plot eval results
                 TITLE_SIZE = 35
                 if visualize_coarse:

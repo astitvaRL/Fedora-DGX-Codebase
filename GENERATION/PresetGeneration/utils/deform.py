@@ -341,7 +341,7 @@ def tps_warp_single_eye(label_binary, preset_shape):
         contour_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
     )
     if len(contours) != 2:
-        print("Complex mouth shape")
+        print("Complex eye shape")
         return -1
 
     # find bottom/top contour
@@ -376,7 +376,7 @@ def tps_warp_single_eye(label_binary, preset_shape):
         src_pts = np.array(
             [[xl, yl], upper_contour_mid, lower_contour_mid, [xr, yr]]
         ).astype(np.float32)
-        dst_pts = np.array([[0, 512], [512, 180], [512, 900], [1023, 512]]).astype(
+        dst_pts = np.array([[0, 512], [512, 100], [512, 924], [1023, 512]]).astype(
             np.float32
         )
         tps = ski.transform.ThinPlateSplineTransform()
@@ -422,9 +422,21 @@ def tps_warp_preset_eyes(label_id, preset_shape, label_type="eyes"):
     left_mask = (comps_im == 1).astype("uint8")
     right_mask = (comps_im == 2).astype("uint8")
 
-    left_shape_mask = tps_warp_single_eye(left_mask, preset_shape)[0]
-    right_shape_mask = tps_warp_single_eye(right_mask, preset_shape)[0]
+    left_out = tps_warp_single_eye(left_mask, preset_shape)
+    right_out = tps_warp_single_eye(right_mask, preset_shape)
+
+    if left_out==-1 or right_out==-1:
+        return -1
+
+    left_shape_mask = left_out[0]
+    right_shape_mask = right_out[0]
+
+    left_deformed = left_out[-1]
+    right_deformed = right_out[-1]
+
+    # combining left and right deformed presets
+    left_deformed[right_shape_mask] = right_deformed[right_shape_mask]
 
     shape_mask = left_shape_mask | right_shape_mask
 
-    return shape_mask, label_binary, left_shape_mask, right_shape_mask
+    return left_deformed, shape_mask, label_binary, left_shape_mask, right_shape_mask
