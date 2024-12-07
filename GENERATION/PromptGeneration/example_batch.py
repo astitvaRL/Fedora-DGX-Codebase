@@ -30,16 +30,18 @@ processor = AutoProcessor.from_pretrained(model_id)
 messages = [
     {"role": "user", "content": [
         {"type": "image"},
-        {"type": "text", "text": "Write a text prompt in not more than 50 words describing the image. DON'T PRINT ANYTHIN ELSE, EXCEPT the text prompt."}
+        {"type": "text", "text": "Write a text prompt in less than 60 words describing the character in this drawing. Include detailed characteristics, posture, colors, art-style, background etc. DON'T PRINT ANYTHIN ELSE, EXCEPT the text prompt."}
     ]}
 ]
 
-DATA_DIR = '/mnt/users_scratch/astitva/DATA/MANIFOLD/animated_drawings_images_prior_april22/cropped_faces/'
-images = sorted(os.listdir(DATA_DIR))
+DATA_DIR = '/mnt/users_scratch/astitva/DATA/MANIFOLD/animated_drawings_images_prior_april22/cropped_image/'
+SEG_DIR = '/mnt/users_scratch/astitva/DATA/AD_SegMaps/labels_7k_1024/'
 
+labels = sorted(os.listdir(SEG_DIR))
 generated_prompts = {}
-for image_name in tqdm(images):
-    image = Image.open(f"{DATA_DIR}/{image_name}")
+for label_name in tqdm(labels):
+    image_name = label_name.split('_')[0]
+    image = Image.open(f"{DATA_DIR}/{image_name}.png")
     input_text = processor.apply_chat_template(messages, add_generation_prompt=True)
     inputs = processor(
         image,
@@ -51,7 +53,8 @@ for image_name in tqdm(images):
     text_output_raw = processor.decode(output[0])
     text_output = text_output_raw.split('<|end_header_id|>')[-1][:-len("<|eot_id|>")].split('\n')[-1]
     generated_prompts[image_name] = text_output
+    # print(text_output)
 
-json_string = json.dumps(generated_prompts, indent=4)
-with open("cropped_faces_prompts.json", "w") as f:
-    f.write(json_string)
+    json_string = json.dumps(generated_prompts, indent=4)
+    with open("drawings_descriptions_7k.json", "w") as f:
+        f.write(json_string)

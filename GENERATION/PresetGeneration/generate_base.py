@@ -32,7 +32,7 @@ join = os.path.join
 data_root = "/mnt/users_scratch/astitva/DATA/"
 labels_definition_file_path = "./label_definition.json"
 image_dir_name = "MANIFOLD/animated_drawings_images_prior_april22/cropped_image"
-label_id_dir_name = "AD_SegMaps/labels_7k_mouth_type1_1024"
+label_id_dir_name = "AD_SegMaps/labels_7k_1024"
 preset_dir = "./presets"
 preset_class = "eyes"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CANNY THRESHOLDS ACCORDINGLY IN THE SHAPE & STYLIZATION SCRIPTS
 
@@ -66,7 +66,9 @@ for label_name in tqdm(labels):
     # img_name = "sample_bizzare.png"
 
     print(label_name)    
-    if not label_name.startswith('0a5b805185614f839b5f015b650970dc'):
+
+    condition = label_name.startswith('07ae7e78bf78421cb2219c236d156cbd') or label_name.startswith('0a5b805185614f839b5f015b650970dc') or label_name.startswith('07cdc5cab5af41e2a102e5453678ca72') or label_name.startswith('07a23dcc43ea436ebf6b75b04c7611d4') or label_name.startswith('07a73dddd01848a19eb97839500a2843') or label_name.startswith('07aba8228cb54faf9f6e4e6cab561331') or label_name.startswith('07ad6ccc1ac34288ab7c4f0a013ba3c3') or label_name.startswith('07aedcb335a04981a016c0c7efed77ba') or label_name.startswith('07af86863ff04f3abc0e0442cdb882b7') or label_name.startswith('07b1a55d68b9425caccb1aadcc58379a') or label_name.startswith('07b9b86ec22e48e1807785b2cd64cb76') or label_name.startswith('07b6c37d7a6944ee98f544d633defeeb') or label_name.startswith('07b8bf4a421744c9b7f985cf6e8fe544') or label_name.startswith('07b97debed234daaa04313b000637b81') or label_name.startswith('07babac076024ce7a89b72e93d16cc99') or label_name.startswith('07c4c1c55b5b4098bf8f5b96defd6d2c') or label_name.startswith('07c7e9cc8d364378912accf8b9c5eb57')
+    if not condition:
         continue
 
     # create output directory

@@ -32,7 +32,7 @@ join = os.path.join
 data_root = "/mnt/users_scratch/astitva/DATA/"
 labels_definition_file_path = "./label_definition.json"
 image_dir_name = "MANIFOLD/animated_drawings_images_prior_april22/cropped_image"
-label_id_dir_name = "AD_SegMaps/labels_7k_mouth_type1_1024"
+label_id_dir_name = "AD_SegMaps/labels_7k_1024"
 preset_dir = "./presets"
 preset_class = "arpabets"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CANNY THRESHOLDS ACCORDINGLY IN THE SHAPE & STYLIZATION SCRIPTS
 
@@ -66,9 +66,9 @@ labels = sorted(os.listdir(join(data_root, label_id_dir_name)))[start:end]
 for label_name in tqdm(labels):
     # label_name = "sample_seg.png"
     # img_name = "sample_bizzare.png"
-    print(label_name)
-    if not label_name.startswith('0a5b805185614f839b5f015b650970dc'):
-        continue
+    # print(label_name)
+    # if not label_name.startswith('0a6bf1b9d15842b6822a92a6b536faf1'):
+    #     continue
 
     # create output directory
     output_dir = join(output_root, label_name.split("_")[0])
