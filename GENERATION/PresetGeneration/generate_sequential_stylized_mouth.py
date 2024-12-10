@@ -12,7 +12,7 @@ import numpy as np
 import segmentation_refinement as segref
 from matplotlib import pyplot as plt
 from PIL import Image
-from color_transfer import color_transfer
+import torch
 
 from simple_lama_inpainting import SimpleLama
 from tqdm import tqdm
@@ -40,7 +40,11 @@ preset_class = "arpabets"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CANN
 preset_config = PresetConfig(preset_class)
 preset_prompts = preset_config.config["prompts"]
 shape_ids = preset_config.config["shape_ids"]
-output_root = f"OUTPUT/output_{preset_class}_PRESET_ARPABET_MOUTH_MODIFIED"
+key_shape_ids = preset_config.config["key_ref_ids"]
+ref_mapping = preset_config.config["ref_mapping"]
+gen_order = preset_config.config["generation_order"]
+
+output_root = f"OUTPUT/output_{preset_class}_PRESET_SEQUENTIAL_MOUTH"
 
 # load stylization model
 control_stylization = ControllableStylization()
@@ -67,7 +71,7 @@ for label_name in tqdm(labels):
     # label_name = "sample_seg.png"
     # img_name = "sample_bizzare.png"
     # print(label_name)
-    if not label_name.startswith('0a4a8a95ac934f4e8d7b58561f7913c9'):
+    if not label_name.startswith('0a3b9f4c787743458c7ca1cc77b902ea'):
         continue
 
     # create output directory
@@ -138,10 +142,19 @@ for label_name in tqdm(labels):
     ref_prompt = "zoomed in mouth of a cartoon character"
     style_prompt = "hand drawn"
 
+
+    NUM_IMAGES_PER_PRESET = 1
+    random_seed = np.random.randint(0,1000)
+    print("Initialized generator with seed:", random_seed)
+    generator = [torch.Generator(device="cuda").manual_seed(999) for i in range(NUM_IMAGES_PER_PRESET+1)] # +1 for reference image latents
+
+    reference_latents = dict()
+    reference_images = dict()
     # iterate over presets
-    for preset_idx in tqdm(range(len(preset_prompts))):
+    # for preset_idx in tqdm(range(len(preset_prompts))):
+    for preset_idx in tqdm(range(len(gen_order))):
         # load preset
-        shape_id = shape_ids[preset_idx]
+        shape_id = gen_order[preset_idx]
         preset_image = cv2.imread(join(preset_dir, preset_class, f"{shape_id}.png"), -1)
         preset_image = cv2.resize(
             preset_image, (1024, 1024), interpolation=cv2.INTER_NEAREST
@@ -217,16 +230,26 @@ for label_name in tqdm(labels):
         
         # stylization
         # target_prompt = f"zoomed in mouth of a cartoon character {preset_prompts[preset_idx]}"
-        target_prompt = f"a solid filled mouth of an animated handrawn character"
-        # target_prompt = f"a solid filled mouth of an animated handrawn character with a tongue"
+        target_prompt = f"a solid-color filled mouth of an animated handrawn character"
 
-        ref_img = img_cropped.copy()
+        if len(reference_images)==0:
+            reference_images['-1']=img_cropped.copy()
 
-        # generated = np.zeros_like(ref_img)
+        # assign style reference image/latent
+        ref_mapping_id = ref_mapping[shape_id]
+        ref_img = reference_images[str(ref_mapping_id)]
+        try:
+            ref_lat = reference_latents[str(ref_mapping_id)]
+        except:
+            ref_lat = None
+        control_stylization.reference_latent = ref_lat # if None it will be automatically be estimated via DDIM
+        # breakpoint()
+        # style-aligned generation
         generated, conditioning = control_stylization.generate(
-            ref_img, cond_image, ref_prompt, style_prompt, target_prompt
+            ref_img, cond_image, ref_prompt, style_prompt, target_prompt, generator=generator
         )
         generated = np.array(generated)
+
         # blur to match resolution of original image
         generated = cv2.blur(generated, (5, 5))
         
@@ -249,6 +272,10 @@ for label_name in tqdm(labels):
         final_image = final_image.astype("uint8")
         asset_image = np.concatenate([generated,255*deformed_mask_im[:,:,0:1]],-1).astype('uint8')
 
+        #store  DDIM reference latent and composited asset image for future reference
+        if shape_id in key_shape_ids:
+            reference_latents[str(ref_mapping_id)] = control_stylization.reference_latent
+            reference_images[str(shape_id)] = final_image
 
         # composite on full image
         final_image_resized = cv2.resize(final_image, (w_crop, h_crop))

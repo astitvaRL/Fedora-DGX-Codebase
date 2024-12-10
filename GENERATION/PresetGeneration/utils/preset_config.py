@@ -35,9 +35,13 @@ class PresetConfig:
             self.config["shape_ids"] = [str(i) for i in range(self.config["num_shapes"])]
         
         if self.config["class_name"] == "arpabets":
-            self.config["num_shapes"] = 12
+            self.config["num_shapes"] = 14
             self.config["prompts"] = ['with a mouth']*self.config["num_shapes"]
             self.config["shape_ids"] = [str(i) for i in range(self.config["num_shapes"])]
+            # self.config["key_ref_ids"] = [1, 2, 7, 9]
+            # self.config["ref_mapping"] = {0:2, 1:-1, 2:-1, 3:1, 4:1, 5:1, 6:1, 7:-1, 8:7, 9:-1, 10:7, 11:2}
+            # self.config["ref_mapping"] = {0:-1, 1:-1, 2:-1, 3:-1, 4:-1, 5:-1, 6:-1, 7:-1, 8:-1, 9:-1, 10:-1, 11:-1}
+            # self.config["generation_order"] = [1,2,7,9,0,3,4,5,6,8,9,10,11]
 
         # if self.config["class_name"] == "eyes":
         #     self.config["num_shapes"] = 12

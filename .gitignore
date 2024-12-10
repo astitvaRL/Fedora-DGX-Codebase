@@ -1,9 +1,12 @@
+*.pt
 *.pth
 *.png
+*.jpg
+*.jpeg
+*.npy
 **/__pycache__
 .watchman*
 .nfs*
 .fuse*
 .bin*
 .safetensors*
-GENERATION/PromptGeneration/llama

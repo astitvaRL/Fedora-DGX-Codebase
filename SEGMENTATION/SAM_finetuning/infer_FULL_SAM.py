@@ -46,9 +46,9 @@ if __name__ == '__main__':
     # save_predcitions_dir_path = './PREDICTIONS/3BiCar_360_Renders/' + suffix + '/'
 
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/dog_val_images'
-    inference_image_dir_path = './IN_THE_WILD_IMAGES/mickey/'
+    inference_image_dir_path = './IN_THE_WILD_IMAGES/frames/1/'
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/ToonLight/data_generation/3DBiCar_drawings/'
-    save_predcitions_dir_path = './PREDICTIONS/mickey/'
+    save_predcitions_dir_path = './PREDICTIONS/frames/1/'
     # save_predcitions_dir_path = './PREDICTIONS/3DBiCar_drawings'
 
     # EXPERIMENT CONFIG

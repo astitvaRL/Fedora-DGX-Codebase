@@ -81,8 +81,9 @@ class ControllableStylization:
         style_prompt,
         target_prompt,
         preprocessor=None,
-        num_inference_steps=25,
-        guidance_scale=15,
+        num_inference_steps=30,
+        guidance_scale=7.5,
+        generator=None
     ):
         assert reference_image.shape[0] == 1024 and reference_image.shape[1] == 1024
         assert condition_image.shape[0] == 1024 and condition_image.shape[1] == 1024
@@ -132,10 +133,11 @@ class ControllableStylization:
             [reference_prompt, target_prompt],
             latents=latents,
             image=proc_cond_image,
-            controlnet_conditioning_scale=0.9,
+            controlnet_conditioning_scale=1.0,
             callback_on_step_end=self.inversion_callback,
             num_inference_steps=num_inference_steps,
             guidance_scale=guidance_scale,
+            # generator = generator
         ).images
         generated = images[-1]
         return generated, proc_cond_image
