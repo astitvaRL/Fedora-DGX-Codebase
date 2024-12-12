@@ -25,13 +25,21 @@ join = os.path.join
 # # load stylization model
 # control_stylization = ControllableStylization()
 
-DRAWINGS_ROOT = "/mnt/users_scratch/astitva/DATA/MANIFOLD/animated_drawings_images_prior_april22/cropped_image"
-SEG_ROOT = "/mnt/users_scratch/astitva/DATA/AD_SegMaps/labels_7k_1024"
-SAVE_ROOT = "/mnt/users_scratch/astitva/DATA/MANIFOLD/animated_drawings_images_prior_april22/cropped_image_GENAUG10k"
+DATA_ROOT = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/DOG_DATASET'
+
+# DRAWINGS_ROOT = "/mnt/users_scratch/astitva/DATA/MANIFOLD/animated_drawings_images_prior_april22/cropped_image"
+DRAWINGS_ROOT = join(DATA_ROOT, 'train_images/')
+# SEG_ROOT = "/mnt/users_scratch/astitva/DATA/AD_SegMaps/labels_7k_1024"
+SEG_ROOT = join(DATA_ROOT, 'train_segmentations/')
+# SAVE_ROOT = "/mnt/users_scratch/astitva/DATA/MANIFOLD/animated_drawings_images_prior_april22/cropped_image_GENAUG10k"
+SAVE_ROOT = join(DATA_ROOT, 'train_images_GENAUG5k/')
+
 os.makedirs(SAVE_ROOT, exist_ok=True)
 
-LABELS_SAMPLED_NUM = 1000
-labels = sorted(os.listdir(SEG_ROOT))[:LABELS_SAMPLED_NUM]
+LABELS_SAMPLED_NUM = -1
+labels = sorted(os.listdir(SEG_ROOT))
+if LABELS_SAMPLED_NUM>-1:
+    labels = labels[:LABELS_SAMPLED_NUM]
 
 
 controlnet = ControlNetModel.from_pretrained(
@@ -47,16 +55,19 @@ pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
 )
 pipe = pipe.to('cuda')
 
-GEN_PER_LABEL = 10
+GEN_PER_LABEL = 5
 
 with open("./generated_random_prompts.json", "r") as f:
     generated_prompts = json.load(f)
 
 for label in tqdm(labels):
-    image_name = label.split('_')[0]
+    if label.startswith('annotations'):
+        continue
+    # image_name = label.split('_')[0]
+    image_name = label.split('.')[0]
     img=None
     try:
-        img = cv2.imread(f'{DRAWINGS_ROOT}/{image_name}.png')
+        img = cv2.imread(f'{DRAWINGS_ROOT}/{image_name}.jpg')
         w,h,_ = img.shape
     except:
         print("Image not found!")

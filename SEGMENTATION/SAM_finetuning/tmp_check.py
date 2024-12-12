@@ -35,13 +35,34 @@ if __name__ == '__main__':
     # set paths
     data_root = '/mnt/users_scratch/astitva/DATA/'
     labels_dir_path = join(data_root, 'AD_SegMaps/labels_7k_1024/')
-    dir1 = join(data_root, 'LIP_drawings/segmentations/train_segmentations/')
-    dir2 = join(data_root, 'LIP_drawings/segmentations/val_segmentations/')
+    remaining_label_dir_path = join(data_root, 'AD_SegMaps/labels_remaining/')
+    images_dir_path = join(data_root, '/mnt/users_scratch/astitva/DATA/MANIFOLD/animated_drawings_images_prior_april22/cropped_image/')
 
-    labels1 = sorted(os.listdir(dir1))
-    labels2 = sorted(os.listdir(dir2))
+    old_labels = sorted(os.listdir(labels_dir_path))
+    labels = sorted(os.listdir(remaining_label_dir_path))
 
-    for lab1 in tqdm(labels1):
-        for lab2 in labels2:
-            if lab1==lab2:
-                print(lab1, lab2)
+    all_labels = old_labels + labels
+
+    COUNT = 0
+    for label in tqdm(labels):
+        img_name = f"{label.split('_')[0]}.png"
+        img_path = join(images_dir_path, img_name)
+        old_label_path = join(labels_dir_path, label)
+        label_path = join(remaining_label_dir_path, label)
+        if os.path.exists(old_label_path) and os.path.exists(label_path) :
+            COUNT+=1
+    print(COUNT)
+
+    names = dict()
+    ALL_COUNT = 0
+    for label in tqdm(all_labels):
+        img_name = f"{label.split('_')[0]}.png"
+        img_path = join(images_dir_path, img_name)
+        if os.path.exists(img_path):
+            ALL_COUNT+=1
+            try:
+                print(names[label])
+            except:
+                names[label] = True
+
+    print(ALL_COUNT)

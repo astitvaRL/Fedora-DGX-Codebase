@@ -203,7 +203,7 @@ class DrawingsDatasetCoarsePoints(Dataset):
 
 # dataset definition for only face
 class DrawingsDatasetFace(Dataset): 
-    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda'):
+    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', num_test_samples=100):
         self.sam_model = sam_model
         self.num_classes = 11
         self.semantics = SemanticSegmentationFace(labels_definition_path=labels_definition_file_path, num_classes=self.num_classes)
@@ -215,7 +215,7 @@ class DrawingsDatasetFace(Dataset):
         self.data_root = data_root
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
-        self.num_test_samples = 100
+        self.num_test_samples = num_test_samples
         self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.num_test_samples]
         if self.mode == 'test':
             self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.num_test_samples:]
@@ -233,7 +233,8 @@ class DrawingsDatasetFace(Dataset):
         if not self.cache_available: 
             # populate cache entry during first-time access
             gt2D = cv2.imread(join(self.data_root, self.label_id_dir_name, self.files[index]))
-            assert gt2D.shape[0]==1024 and gt2D.shape[1]==1024
+            gt2D = cv2.resize(gt2D, (1024,1024), interpolation=cv2.INTER_NEAREST)
+            # assert gt2D.shape[0]==1024 and gt2D.shape[1]==1024
             gt2D = cv2.cvtColor(gt2D, cv2.COLOR_BGR2RGB)
             gt2D_labels = self.semantics.colors_to_labels(gt2D)
             face_binmask = gt2D_labels>0
