@@ -18,9 +18,11 @@ import kornia
 from segment_anything_parallel import SamPredictor, sam_model_registry
 from segment_anything_parallel.utils.transforms import ResizeLongestSide
 
-from utils.dataset import DrawingsDatasetFace
+from DFPNet.networks.Uresnet_v3_ASPP_HD import Res_Deeplab
+
+from utils.dataset import DrawingsDataset
 from utils.SurfaceDice import compute_dice_coefficient
-from utils.SemanticSegmentation import SemanticSegmentationFace
+from utils.SemanticSegmentation import SemanticSegmentationAll
 from utils.augment import RandomAug
 
 join = os.path.join
@@ -31,34 +33,37 @@ if __name__ == '__main__':
     np.random.seed(999)
     torch.multiprocessing.set_start_method('spawn')
 
+    breakpoint()
+
     # set paths
     data_root = '/mnt/users_scratch/astitva/DATA/'
     labels_definition_file_path = 'label_definition.json'
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
     image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
-    label_id_dir_name = 'AD_SegMaps/labels_7k_1024' 
-    cache_dir = join(data_root, 'dataset_caches/cache_FaceOnly_REAL7k')
+    label_id_dir_name = 'AD_SegMaps/labels_16k' 
+    train_input_visualization_dir = './TMP/TRAIN_INPUT_VIS'
+    cache_dir = join(data_root, 'dataset_caches/cache_ALL_REAL16k')
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'ANIMSEG_E2E_FaceOnly_REAL7k_with_face_prior' # finetuned checkpoint will be saved here
+    task_name = '16k_ANIMSEG_E2E_ALL_CLASSES' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
     os.makedirs(join(model_save_path, 'eval'), exist_ok=True)
     os.makedirs(join(model_save_path, 'all_ckpts'), exist_ok=True)
     os.makedirs(join(data_root, label_id_dir_name), exist_ok=True)
-    train_input_visualization_dir = join(data_root, 'TMP_INPUT_VIS')
+    os.makedirs(train_input_visualization_dir, exist_ok=True)
     
     # training choice
-    cache_available = True # save dataset cache after first epoch
+    cache_available = False # save dataset cache after first epoch
     resize_labels = False # False if already resized
-    resume_training = True
+    resume_training = False
     visualize_train_input = False
     ignore_background = False
     bbox_given = False
-    bg_mask_given = True
+    bg_mask_given = False
     
     if visualize_train_input:
         os.makedirs(train_input_visualization_dir, exist_ok=True)
@@ -68,15 +73,15 @@ if __name__ == '__main__':
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
         epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, 'ANIMSEG_E2E_FaceOnly_REAL7k/model_eval_best.pth')
+        resume_ckpt = join(ckpt_dir, 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
     device_ids = [i for i in range(torch.cuda.device_count())]
 
     # semantic segmentation definition
-    num_classes = 11
-    semantics = SemanticSegmentationFace(labels_definition_file_path, num_classes=num_classes)
+    num_classes = 27
+    semantics = SemanticSegmentationAll(labels_definition_file_path, num_classes=num_classes)
 
     # prepare SAM model
     model_type = 'vit_b'
@@ -101,8 +106,8 @@ if __name__ == '__main__':
                 cv2.imwrite(save_path, label)
 
     # create dataset
-    train_dataset = DrawingsDatasetFace(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train')
-    test_dataset = DrawingsDatasetFace(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test')
+    train_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train', num_test_samples=2000)
+    test_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test', num_test_samples=2000)
 
     # set semantic definition
     train_dataset.num_classes = num_classes
@@ -127,12 +132,12 @@ if __name__ == '__main__':
 
     # create dataloader
     train_dataloader = DataLoader(train_dataset, batch_size=32, num_workers=0, shuffle=True, drop_last=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=4, num_workers=0, shuffle=False, drop_last=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=8, num_workers=0, shuffle=False, drop_last=True)
 
     # training config
     num_epochs = 1000
     save_frequency = 1
-    eval_frequency = 1
+    eval_frequency = 2
     train_loss_log = []
     eval_loss_log = []
     best_loss = 1e10
@@ -172,7 +177,7 @@ if __name__ == '__main__':
 
             # resize gt and bg_mask
             gt = F.resize(gt, 1024, torchvision.transforms.InterpolationMode.NEAREST) # prediction will be umsampled to 1024x1024
-            bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # prompt encoder takes mask size 256x256
+            bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes mask size 256x256
 
             ################################################################################################
             ######### ------- plt visualizations after resizing  (last sample from batch) -------- #########
@@ -221,6 +226,7 @@ if __name__ == '__main__':
             bbox[:,2] = 256
             bbox[:,3] = 256
             bbox = bbox.to(device)
+            
             # computing gradients for prompt encoder
             sparse_embeddings, dense_embeddings, image_pe = prompt_encoder(
                 points=None,

@@ -40,24 +40,28 @@ if __name__ == '__main__':
     labels_definition_file_path = 'label_definition.json'
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
-    # image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
-    image_dir_name = 'MANIFOLD/EVAL400'
-    label_id_dir_name = 'AD_SegMaps/labels_EVAL400' 
-    cache_dir = join(data_root, 'dataset_caches/cache_ALL_EVAL400')
+    image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
+    # image_dir_name = 'MANIFOLD/EVAL400'
+    label_id_dir_name = 'AD_SegMaps/labels_16k'  
+    # label_id_dir_name = 'AD_SegMaps/labels_EVAL400' 
+    cache_dir = join(data_root, 'dataset_caches/cache_TEST_SPLIT_16k')
     os.makedirs(cache_dir, exist_ok=True)
 
     # EXPERIMENT CONFIG
-    task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
-    task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k'
-    task_name_face = 'ANIMSEG_E2E_FaceOnly_REAL7k_with_face_prior'
+    # task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
+    # task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k'
+    # task_name_face = 'ANIMSEG_E2E_FaceOnly_REAL7k_with_face_prior'
+    task_name_coarse = '16k_ANIMSEG_E2E_COARSE'
+    task_name_fine = '16k_ANIMSEG_E2E_FINE'
+    task_name_face = '16k_ANIMSEG_E2E_FACE_wBinMask'
     all_ckpts_dir = 'all_ckpts'
-    out_dir = 'eval_real_400_ALL_IgnoreBG'
+    out_dir = 'EVALUATION/eval_16k_E2E_FULL/'
     mode = 'test'
     BATCH_SIZE = 1
     load_best_eval_ckpt = True
-    epoch = 500
-    epoch_coarse = 500
-    epoch_face = 500
+    epoch = 300
+    epoch_coarse = 300
+    epoch_face = 300
     encoder_original = False
     cache_available = False 
     bbox_given = False
@@ -85,7 +89,8 @@ if __name__ == '__main__':
     # model checkpoint directory
     model_load_path = join(ckpt_dir, task_name_fine)
     assert os.path.exists(model_load_path), f"Model path {model_load_path} does not exist"
-    os.makedirs(join(model_load_path, out_dir), exist_ok=True)
+    # os.makedirs(join(model_load_path, out_dir), exist_ok=True)
+    os.makedirs(out_dir, exist_ok=True)
     
 
     # checkpoint name and path
@@ -143,7 +148,7 @@ if __name__ == '__main__':
 
 
     # create dataset
-    test_dataset = DrawingsDatasetC2FAll(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode=mode, num_test_samples=0)
+    test_dataset = DrawingsDatasetC2FAll(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode=mode, num_test_samples=2000)
 
     # assign semantics
     test_dataset.semantics_coarse = semantics_coarse
@@ -189,9 +194,9 @@ if __name__ == '__main__':
         print(f'EVAL at Best-Eval Epoch')
 
     # output directory for EVAL
-    eval_epoch_dir = join(model_load_path, f"{out_dir}/{epoch}")
+    eval_epoch_dir = join(f"{out_dir}/{epoch}")
     if load_best_eval_ckpt:
-        eval_epoch_dir = join(model_load_path, f"{out_dir}/best_eval_SAMPLE")
+        eval_epoch_dir = join(f"{out_dir}/best_eval")
     os.makedirs(eval_epoch_dir, exist_ok=True)
     print(f"EVAL results will be SAVED here --> {eval_epoch_dir}")
 
@@ -199,7 +204,7 @@ if __name__ == '__main__':
     mAcc = 0
     classwise_mIoU = [0]*num_classes_all
     valid_face_detected = False # flag to check if face is detected in the image
-    for step, (image_data_eval, gt_coarse, gt_fine, gt_face, gt_all) in enumerate(tqdm(test_dataloader,"EVAL")):
+    for step, (image_data_eval, gt_coarse, gt_fine, gt_face, gt_all, image_name_string) in enumerate(tqdm(test_dataloader,"EVAL")):
         valid_face_detected = False # reset flag for each image
         image_data_eval = image_data_eval.to(device)
         gt_coarse = gt_coarse.to(device)
@@ -271,7 +276,8 @@ if __name__ == '__main__':
             face_binmask = face_binmask.squeeze(0)
             face_binmask[face_binmask!=2] = 0 # '2' is the label-id of face in fine segmap definiton
             face_binmask[face_binmask==2] = 1
-            if face_binmask.sum().item()>0: # no face detected
+            face_binmask_uncropped = face_binmask.clone()
+            if face_binmask.sum().item()>0: # face detected
                 Xs = torch.where(face_binmask>0)[0]
                 Ys = torch.where(face_binmask>0)[1]
                 image_data_eval_face = image_data_eval[:,:,Xs.min():Xs.max(),Ys.min():Ys.max()] # crop image to face
@@ -339,6 +345,7 @@ if __name__ == '__main__':
                     labels_out_refined_vis = cv2.resize(labels_out_refined_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
                 labels_out_vis = semantics_fine.labels_to_colors(labels_out.cpu().numpy().astype('uint8'))
 
+                labels_out_vis_noFACE = labels_out_vis.copy()
                 if valid_face_detected:
                     labels_out_face = torch.argmax(torch.Tensor(mask_predictions_face[batch_idx]), dim=0)  # last sample from batch
                     labels_out_face_vis = semantics_face.labels_to_colors(labels_out_face.cpu().numpy().astype('uint8'))
@@ -350,17 +357,35 @@ if __name__ == '__main__':
                     labels_out_vis += canvas
 
                 labels_out_vis = cv2.resize(labels_out_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
-                gt_vis = torch.argmax(torch.Tensor(gt_all[batch_idx]), dim=0)  # last sample from batch
-                gt_vis = semantics_all.labels_to_colors(gt_vis.cpu().numpy().astype('uint8'))
-                gt_vis = cv2.resize(gt_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
                 coarse_mask_labels = torch.argmax(coarse_mask[batch_idx], dim=0)
                 coarse_mask_vis = cv2.resize(coarse_mask_labels.cpu().numpy().astype('uint8'), (1024,1024), interpolation=cv2.INTER_NEAREST)
                 coarse_mask_vis = semantics_coarse.labels_to_colors(coarse_mask_vis)
                 overlayed = cv2.addWeighted(image_data_vis, 0.5, labels_out_vis, 0.5, 0)
                 if refine_masks:
                     overlayed_refined = cv2.addWeighted(image_data_vis, 0.5, labels_out_refined_vis, 0.5, 0)
-
-                breakpoint()    
+                
+                # Ground Truth
+                # all
+                gt_all_labels = torch.argmax(torch.Tensor(gt_all[batch_idx]), dim=0)  # last sample from batch
+                gt_vis = semantics_all.labels_to_colors(gt_all_labels.cpu().numpy().astype('uint8'))
+                gt_vis = cv2.resize(gt_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
+                # coarse
+                gt_coarse_labels = torch.argmax(torch.Tensor(gt_coarse[batch_idx]), dim=0)  # last sample from batch
+                gt_coarse_vis = semantics_coarse.labels_to_colors(gt_coarse_labels.cpu().numpy().astype('uint8'))
+                gt_coarse_vis = cv2.resize(gt_coarse_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
+                # fine
+                gt_fine_labels = torch.argmax(torch.Tensor(gt_fine[batch_idx]), dim=0)  # last sample from batch
+                gt_fine_vis = semantics_fine.labels_to_colors(gt_fine_labels.cpu().numpy().astype('uint8'))
+                gt_fine_vis = cv2.resize(gt_fine_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
+                # face
+                if valid_face_detected:
+                    Xs = torch.where(face_binmask_uncropped>0)[0]
+                    Ys = torch.where(face_binmask_uncropped>0)[1]
+                    gt_face_labels = torch.argmax(torch.Tensor(gt_face[batch_idx]), dim=0)  # last sample from batch
+                    gt_face_labels_cropped = gt_face_labels[Xs.min():Xs.max(),Ys.min():Ys.max()]
+                    gt_face_vis = semantics_face.labels_to_colors(gt_face_labels_cropped.cpu().numpy().astype('uint8'))
+                    gt_face_vis = cv2.resize(gt_face_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
+                
                 # plot eval results
                 TITLE_SIZE = 35
                 if visualize_coarse:
@@ -369,10 +394,10 @@ if __name__ == '__main__':
                     ax[0].set_title("Input Image", fontsize=TITLE_SIZE)
                     ax[0].axis('off')
                     ax[1].imshow(coarse_mask_vis, cmap='gray')
-                    ax[1].set_title("Prediction (Coarse)", fontsize=TITLE_SIZE)
+                    ax[1].set_title("Prediction (Stage-1)", fontsize=TITLE_SIZE)
                     ax[1].axis('off')
                     ax[2].imshow(labels_out_vis)
-                    ax[2].set_title("Prediction (Fine)", fontsize=TITLE_SIZE)
+                    ax[2].set_title("Prediction (Stage-2)", fontsize=TITLE_SIZE)
                     ax[2].axis('off')
                     ax[3].imshow(gt_vis)
                     ax[3].set_title("GT", fontsize=TITLE_SIZE)
@@ -380,9 +405,21 @@ if __name__ == '__main__':
                     ax[4].imshow(overlayed)
                     ax[4].set_title("Overlayed Prediction (Fine)", fontsize=TITLE_SIZE)
                     ax[4].axis('off')
-                    metric_string = '999' # str(batch_accuracy).replace('.','_')[:7]
-                    plt.savefig(f"{eval_epoch_dir}/{metric_string}_{step}_{batch_idx}.png")
+                    # metric_string = '999' # str(batch_accuracy).replace('.','_')[:7]
+                    image_name = image_name_string[batch_idx][:-4]
+                    os.makedirs(f"{eval_epoch_dir}/{image_name}", exist_ok=True)
+                    plt.savefig(f"{eval_epoch_dir}/{image_name}/visualization_plot.png")
                     plt.close()
+                    cv2.imwrite(f'{eval_epoch_dir}/{image_name}/pred_coarse.png', cv2.cvtColor(coarse_mask_vis, cv2.COLOR_BGR2RGB))
+                    cv2.imwrite(f'{eval_epoch_dir}/{image_name}/gt_coarse.png', cv2.cvtColor(gt_coarse_vis, cv2.COLOR_BGR2RGB))
+                    cv2.imwrite(f'{eval_epoch_dir}/{image_name}/pred_fine.png', cv2.cvtColor(labels_out_vis_noFACE, cv2.COLOR_BGR2RGB))
+                    cv2.imwrite(f'{eval_epoch_dir}/{image_name}/gt_fine.png', cv2.cvtColor(gt_fine_vis, cv2.COLOR_BGR2RGB))
+                    if valid_face_detected:
+                        cv2.imwrite(f'{eval_epoch_dir}/{image_name}/pred_face.png', cv2.cvtColor(labels_out_face_vis, cv2.COLOR_BGR2RGB))
+                        cv2.imwrite(f'{eval_epoch_dir}/{image_name}/gt_face.png', cv2.cvtColor(gt_face_vis, cv2.COLOR_BGR2RGB))
+                    cv2.imwrite(f'{eval_epoch_dir}/{image_name}/pred_all.png', cv2.cvtColor(labels_out_vis, cv2.COLOR_BGR2RGB))
+                    cv2.imwrite(f'{eval_epoch_dir}/{image_name}/gt_all.png', cv2.cvtColor(gt_vis, cv2.COLOR_BGR2RGB))
+
                 else:
                     fig, ax = plt.subplots(1,4, figsize=(40,10))
                     if refine_masks:
@@ -406,6 +443,7 @@ if __name__ == '__main__':
                     metric_string = str(batch_accuracy).replace('.','_')[:7]
                     plt.savefig(f"{eval_epoch_dir}/{metric_string}_{step}_{batch_idx}.png")
                     plt.close()
+
                 
                 if visualize_heatmap:
                     # show heatmap
@@ -414,7 +452,7 @@ if __name__ == '__main__':
                     ax[0].set_title("Prediction", fontsize=TITLE_SIZE)
                     ax[0].axis('off')
                     #normalize mask predictions across channels
-                    heatmaps = mask_predictions[batch_idx]
+                    heatmaps = mask_predictions_fine[batch_idx]
                     heatmaps = heatmaps/heatmaps.sum(dim=0, keepdim=True)
                     for i in range(1,num_classes_all+1):
                         heatmap = heatmaps[i-1].cpu().numpy().astype('float32')

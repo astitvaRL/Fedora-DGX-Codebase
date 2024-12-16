@@ -617,7 +617,7 @@ class DrawingsDatasetC2FAll(Dataset):
         self.num_test_samples = num_test_samples
         self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.num_test_samples]
         if self.mode == 'test':
-            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.num_test_samples:]
+            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.num_test_samples:][:10]
 
     def __len__(self):
         return len(self.files)
@@ -627,8 +627,7 @@ class DrawingsDatasetC2FAll(Dataset):
         if not self.cache_available: 
             image_name = f"{self.files[index].split('_')[0]}.png"
             # populate cache entry during first-time access
-            # image = cv2.imread(join(self.data_root, self.image_dir_name, image_name))
-            image = cv2.imread('2_textured.png')
+            image = cv2.imread(join(self.data_root, self.image_dir_name, image_name))
             image = cv2.resize(image, (1024,1024), interpolation=cv2.INTER_LINEAR)
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             sam_transform = ResizeLongestSide(self.sam_model.image_encoder.img_size)
@@ -667,7 +666,7 @@ class DrawingsDatasetC2FAll(Dataset):
             gt2D_labels_coarse[neck_mask] = 4 #merge with torso
 
         # convert image, gt, mask, bounding box to torch tensor
-        return input_image_tensor, gt2D_labels_coarse.long(), gt2D_labels_fine.long(),  gt2D_labels_face.long(),  gt2D_labels_all.long()
+        return input_image_tensor, gt2D_labels_coarse.long(), gt2D_labels_fine.long(),  gt2D_labels_face.long(),  gt2D_labels_all.long(), image_name
 
     def init_cache(self):
         print(f"Initializing {self.mode} cache...")
