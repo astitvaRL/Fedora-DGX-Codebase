@@ -16,7 +16,7 @@ import json
 from monai.networks import one_hot
 import torchmetrics
 import segmentation_refinement as segref
-from torchmetrics import segmentation
+from torchmetrics import segmentation, classification
 
 from segment_anything_parallel import sam_model_registry
 from segment_anything_parallel_fine_infer import sam_model_registry as sam_model_registry_fine
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     # define metrics
     MeanIoU = segmentation.MeanIoU(num_classes=NUM_CLASSES, include_background=True, per_class=True, input_format='index')
     GeneralizedDiceScore = segmentation.GeneralizedDiceScore(num_classes=NUM_CLASSES, include_background=True, per_class=True, input_format='index')
-    HausdorffDistance = segmentation.HausdorffDistance(num_classes=NUM_CLASSES, include_background=True, per_class=True, input_format='index')
+    MulticlassAccuracy = classification.MulticlassAccuracy(num_classes=NUM_CLASSES, average=None, ignore_index=0)
     
     # set paths
     data_root = '/mnt/users_scratch/astitva/DATA/'
@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
     semantics = SemanticSegmentationAll(num_classes=NUM_CLASSES, labels_definition_path=labels_definition_file_path)
 
-    out = sorted(os.listdir(exp1_out_dir))[:30]
+    files = sorted(os.listdir(exp1_out_dir))
 
     classwise_ious_1 = torch.zeros((NUM_CLASSES,))
     classwise_ious_2 = torch.zeros((NUM_CLASSES,))
@@ -76,12 +76,12 @@ if __name__ == '__main__':
     classwise_gds_2 = torch.zeros((NUM_CLASSES,))
     classwise_gds_3 = torch.zeros((NUM_CLASSES,))
     classwise_gds_4 = torch.zeros((NUM_CLASSES,))
-    classwise_hdist_1 = torch.zeros((NUM_CLASSES,))
-    classwise_hdist_2 = torch.zeros((NUM_CLASSES,))
-    classwise_hdist_3 = torch.zeros((NUM_CLASSES,))
-    classwise_hdist_4 = torch.zeros((NUM_CLASSES,))
+    classwise_acc_1 = torch.zeros((NUM_CLASSES,))
+    classwise_acc_2 = torch.zeros((NUM_CLASSES,))
+    classwise_acc_3 = torch.zeros((NUM_CLASSES,))
+    classwise_acc_4 = torch.zeros((NUM_CLASSES,))
     COUNT = 0
-    for filename in tqdm(out):
+    for filename in tqdm(files):
         if filename.endswith('.png'):
             filename_base = filename.split('_')[0]
             input_im = cv2.imread(join(data_root, image_dir_name, f'{filename_base}.png'))
@@ -127,11 +127,36 @@ if __name__ == '__main__':
                 classwise_ious_2 += iou_2
                 classwise_ious_3 += iou_3
                 classwise_ious_4 += iou_4
+
                 # Per-class Generalized Dice Score
+                not_present = GeneralizedDiceScore(gt_t, gt_t) == 0
+                gds_1 = GeneralizedDiceScore(exp1_t, gt_t)
+                gds_2 = GeneralizedDiceScore(exp2_t, gt_t)
+                gds_3 = GeneralizedDiceScore(exp3_t, gt_t)
+                gds_4 = GeneralizedDiceScore(exp4_t, gt_t)
+                gds_1[not_present] = 1.0
+                gds_2[not_present] = 1.0
+                gds_3[not_present] = 1.0
+                gds_4[not_present] = 1.0
+                classwise_gds_1 += gds_1
+                classwise_gds_2 += gds_2
+                classwise_gds_3 += gds_3
+                classwise_gds_4 += gds_4
+
                 # Per-class Hausdorff Distance
-
-                breakpoint()
-
+                not_present = MulticlassAccuracy(gt_t, gt_t) == 0
+                acc_1 = MulticlassAccuracy(exp1_t, gt_t)
+                acc_2 = MulticlassAccuracy(exp2_t, gt_t)
+                acc_3 = MulticlassAccuracy(exp3_t, gt_t)
+                acc_4 = MulticlassAccuracy(exp4_t, gt_t)
+                acc_1[not_present] = 1.0
+                acc_2[not_present] = 1.0
+                acc_3[not_present] = 1.0
+                acc_4[not_present] = 1.0
+                classwise_acc_1 += acc_1
+                classwise_acc_2 += acc_2
+                classwise_acc_3 += acc_3
+                classwise_acc_4 += acc_4
 
             if plot:
                 # plot
@@ -164,16 +189,36 @@ if __name__ == '__main__':
     avg_classwise_ious_3 = classwise_ious_3 / COUNT
     avg_classwise_ious_4 = classwise_ious_4 / COUNT
 
+    avg_classwise_gds_1 = classwise_gds_1 / COUNT
+    avg_classwise_gds_2 = classwise_gds_2 / COUNT
+    avg_classwise_gds_3 = classwise_gds_3 / COUNT
+    avg_classwise_gds_4 = classwise_gds_4 / COUNT
+
+    avg_classwise_acc_1 = classwise_acc_1 / COUNT
+    avg_classwise_acc_2 = classwise_acc_2 / COUNT
+    avg_classwise_acc_3 = classwise_acc_3 / COUNT
+    avg_classwise_acc_4 = classwise_acc_4 / COUNT
+
     final_mean_iou_1 = avg_classwise_ious_1.sum()/NUM_CLASSES
     final_mean_iou_2 = avg_classwise_ious_2.sum()/NUM_CLASSES
     final_mean_iou_3 = avg_classwise_ious_3.sum()/NUM_CLASSES
     final_mean_iou_4 = avg_classwise_ious_4.sum()/NUM_CLASSES
 
+    final_mean_gds_1 = avg_classwise_gds_1.sum()/NUM_CLASSES
+    final_mean_gds_2 = avg_classwise_gds_2.sum()/NUM_CLASSES
+    final_mean_gds_3 = avg_classwise_gds_3.sum()/NUM_CLASSES
+    final_mean_gds_4 = avg_classwise_gds_4.sum()/NUM_CLASSES
+
+    final_mean_acc_1 = avg_classwise_acc_1.sum()/NUM_CLASSES
+    final_mean_acc_2 = avg_classwise_acc_2.sum()/NUM_CLASSES
+    final_mean_acc_3 = avg_classwise_acc_3.sum()/NUM_CLASSES
+    final_mean_acc_4 = avg_classwise_acc_4.sum()/NUM_CLASSES
+
     log = f'''
-    SAPIENS (ALL classes) : MeanIoU={final_mean_iou_1}
-    SAM DecoderOnly (ALL Classes) : MeanIoU={final_mean_iou_2}
-    SAM End-to-End (ALL Classes) : MeanIoU={final_mean_iou_3}
-    SAM End-to-End (C2F) : MeanIoU={final_mean_iou_4}
+    SAPIENS (ALL classes) : MeanIoU={final_mean_iou_1}; MeanGenDiceScore={final_mean_gds_1}; MeanAcc={final_mean_acc_1}
+    SAM DecoderOnly (ALL Classes) : MeanIoU={final_mean_iou_2}; MeanGenDiceScore={final_mean_gds_2}; MeanAcc={final_mean_acc_2}
+    SAM End-to-End (ALL Classes) : MeanIoU={final_mean_iou_3}; MeanDiceScore={final_mean_gds_3}; MeanAcc={final_mean_acc_3}
+    SAM End-to-End (C2F) : MeanIoU={final_mean_iou_4}; MeanDiceScore={final_mean_gds_4}; MeanAcc={final_mean_acc_4}
     '''
 
     print(log)
