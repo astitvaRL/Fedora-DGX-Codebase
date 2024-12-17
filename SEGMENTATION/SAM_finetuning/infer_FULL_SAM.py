@@ -46,23 +46,26 @@ if __name__ == '__main__':
     # save_predcitions_dir_path = './PREDICTIONS/3BiCar_360_Renders/' + suffix + '/'
 
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/dog_val_images'
-    inference_image_dir_path = './IN_THE_WILD_IMAGES/frames/1/'
+    inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/IN_THE_WILD/'
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/ToonLight/data_generation/3DBiCar_drawings/'
-    save_predcitions_dir_path = './PREDICTIONS/test_split/'
+    save_predcitions_dir_path = './INFERENCE/IN_THE_WILD/'
     # save_predcitions_dir_path = './PREDICTIONS/3DBiCar_drawings'
 
     # EXPERIMENT CONFIG
-    task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
-    task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k'
-    task_name_face = 'ANIMSEG_E2E_FaceOnly_REAL7k_with_face_prior'
+    # task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
+    # task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k'
+    # task_name_face = 'ANIMSEG_E2E_FaceOnly_REAL7k_with_face_prior'
+    task_name_coarse = '16k_ANIMSEG_E2E_COARSE'
+    task_name_fine = '16k_ANIMSEG_E2E_FINE'
+    task_name_face = '16k_ANIMSEG_E2E_FACE_wBinMask'
     all_ckpts_dir = 'all_ckpts'
-    save_task_name = 'infer'
+    save_task_name = 'infer_16k_ANIMSEG_C2F'
     mode = 'test'
     BATCH_SIZE = 1
-    load_best_eval_ckpt = True
-    epoch = 500
-    epoch_coarse = 500
-    epoch_face = 500
+    load_best_eval_ckpt = False
+    epoch = 300
+    epoch_coarse = 300
+    epoch_face = 300
     encoder_original = False
     bbox_given = False
     visualize_coarse = True

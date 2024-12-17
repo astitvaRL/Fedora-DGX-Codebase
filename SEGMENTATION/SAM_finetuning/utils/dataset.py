@@ -617,7 +617,7 @@ class DrawingsDatasetC2FAll(Dataset):
         self.num_test_samples = num_test_samples
         self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.num_test_samples]
         if self.mode == 'test':
-            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.num_test_samples:][:10]
+            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.num_test_samples:]
 
     def __len__(self):
         return len(self.files)
