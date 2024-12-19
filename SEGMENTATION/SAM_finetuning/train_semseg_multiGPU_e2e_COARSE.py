@@ -32,18 +32,19 @@ if __name__ == '__main__':
     torch.multiprocessing.set_start_method('spawn')
 
     # set paths
+    train_split_size_k = 12 # (4k,8k,10k,12k,14k)
     data_root = '/mnt/users_scratch/astitva/DATA/'
     labels_definition_file_path = 'label_definition.json'
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
-    image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
-    label_id_dir_name = 'AD_SegMaps/labels_16k' 
+    image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image' # directory containing all ~16k images
+    label_id_dir_name = 'AD_SegMaps/labels_16k' # directory containing all ~16k annotations
     train_input_visualization_dir = './TMP/TRAIN_INPUT_VIS'
-    cache_dir = join(data_root, 'dataset_caches/cache_COARSE_REAL16k')
+    cache_dir = join(data_root, f'dataset_caches/cache_COARSE_REAL{train_split_size_k}k')
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = '16k_ANIMSEG_E2E_COARSE' # finetuned checkpoint will be saved here
+    task_name = f'{train_split_size_k}k_ANIMSEG_E2E_COARSE' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -90,8 +91,8 @@ if __name__ == '__main__':
     mask_decoder = torch.nn.DataParallel(sam_model.mask_decoder, device_ids=device_ids)
 
     # create dataset
-    train_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train', num_test_samples=2000)
-    test_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test', num_test_samples=2000)
+    train_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train', num_test_samples=(16-train_split_size_k)*1000)
+    test_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test', num_test_samples=2000) # this remains fixed as 2000
 
     # set semantic definition
     train_dataset.num_classes = num_classes

@@ -43,7 +43,7 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = '16k_ANIMSEG_E2E_ALL_CLASSES' # finetuned checkpoint will be saved here
+    task_name = '16k_ANIMSEG_E2E_SCRATCH_ALL_CLASSES' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -53,8 +53,8 @@ if __name__ == '__main__':
     os.makedirs(train_input_visualization_dir, exist_ok=True)
     
     # training choice
-    cache_available = False # save dataset cache after first epoch
-    resize_labels = False # False if already resized
+    train_from_scratch = True
+    cache_available = True # if False, save dataset cache after first epoch
     resume_training = False
     visualize_train_input = False
     ignore_background = False
@@ -79,7 +79,10 @@ if __name__ == '__main__':
     num_classes = 27
     semantics = SemanticSegmentationAll(labels_definition_file_path, num_classes=num_classes)
 
+    
     # prepare SAM model
+    if train_from_scratch: init_checkpoint = None
+    print("Checkpoint will be initialized from -->", init_checkpoint)
     model_type = 'vit_b'
     sam_model = sam_model_registry[model_type](num_classes = num_classes, checkpoint=init_checkpoint).to(device)
     sam_model.image_encoder.to(device)
@@ -89,17 +92,6 @@ if __name__ == '__main__':
     image_encoder = torch.nn.DataParallel(sam_model.image_encoder, device_ids=device_ids)
     prompt_encoder = torch.nn.DataParallel(sam_model.prompt_encoder, device_ids=device_ids)
     mask_decoder = torch.nn.DataParallel(sam_model.mask_decoder, device_ids=device_ids)
-
-    if resize_labels:
-        load_dir_name = label_id_dir_name[:-5] # remove '_1024'
-        labels = sorted(os.listdir(join(data_root, load_dir_name)))
-        print('Resizing Labels...')
-        for label_name in tqdm(labels):
-            save_path = join(data_root, label_id_dir_name, label_name.split('.png')[0]+'_1024.png')
-            if not os.path.exists(save_path):
-                label = cv2.imread(join(data_root, load_dir_name, label_name))
-                label = cv2.resize(label, (1024,1024), interpolation=cv2.INTER_NEAREST)
-                cv2.imwrite(save_path, label)
 
     # create dataset
     train_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train', num_test_samples=2000)
@@ -142,7 +134,7 @@ if __name__ == '__main__':
 
     # Set up the optimizer
     all_params = list(sam_model.image_encoder.parameters()) + list(sam_model.prompt_encoder.parameters()) + list(sam_model.mask_decoder.parameters())
-    optimizer = torch.optim.Adam(iter(all_params), lr=1e-5, weight_decay=0) # adding all parameters to optimizer as an iterable
+    optimizer = torch.optim.Adam(iter(all_params), lr=1e-4, weight_decay=0) # adding all parameters to optimizer as an iterable
 
     # Set up the losses
     dice_loss = monai.losses.DiceCELoss(sigmoid=True, squared_pred=True, reduction='mean')

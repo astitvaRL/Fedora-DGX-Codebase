@@ -47,8 +47,9 @@ if __name__ == '__main__':
 
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/dog_val_images'
     inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/IN_THE_WILD/'
+    # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/IN_THE_WILD_IMAGES/images/'
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/ToonLight/data_generation/3DBiCar_drawings/'
-    save_predcitions_dir_path = './INFERENCE/IN_THE_WILD/'
+    save_predcitions_dir_path = './INFERENCE/IN_THE_WILD_IMAGES/'
     # save_predcitions_dir_path = './PREDICTIONS/3DBiCar_drawings'
 
     # EXPERIMENT CONFIG
@@ -62,7 +63,7 @@ if __name__ == '__main__':
     save_task_name = 'infer_16k_ANIMSEG_C2F'
     mode = 'test'
     BATCH_SIZE = 1
-    load_best_eval_ckpt = False
+    load_best_eval_ckpt = True
     epoch = 300
     epoch_coarse = 300
     epoch_face = 300

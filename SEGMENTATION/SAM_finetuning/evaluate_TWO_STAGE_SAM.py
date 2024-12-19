@@ -55,10 +55,10 @@ if __name__ == '__main__':
     task_name_fine = '16k_ANIMSEG_E2E_FINE'
     task_name_face = '16k_ANIMSEG_E2E_FACE_wBinMask'
     all_ckpts_dir = 'all_ckpts'
-    out_dir = 'EVALUATION/eval_16k_E2E_FULL/'
+    out_dir = 'EVALUATION/eval_16k_E2E_FULL_ep300/'
     mode = 'test'
     BATCH_SIZE = 1
-    load_best_eval_ckpt = True
+    load_best_eval_ckpt = False
     epoch = 300
     epoch_coarse = 300
     epoch_face = 300

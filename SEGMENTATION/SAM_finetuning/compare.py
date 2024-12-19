@@ -105,59 +105,65 @@ if __name__ == '__main__':
             exp4_seg = cv2.resize(exp4_seg, (1024,1024), interpolation=cv2.INTER_NEAREST)
             gt_seg = cv2.resize(gt_seg, (1024,1024), interpolation=cv2.INTER_NEAREST)
 
-            COUNT += 1
+
+
 
             if compute_metrics:
-                gt_t = torch.Tensor(semantics.colors_to_labels(gt_seg)).long().unsqueeze(0)
-                exp1_t = torch.Tensor(semantics.colors_to_labels(exp1_seg)).long().unsqueeze(0)
-                exp2_t = torch.Tensor(semantics.colors_to_labels(exp2_seg)).long().unsqueeze(0)
-                exp3_t = torch.Tensor(semantics.colors_to_labels(exp3_seg)).long().unsqueeze(0)
-                exp4_t = torch.Tensor(semantics.colors_to_labels(exp4_seg)).long().unsqueeze(0)
-                # Per-class IoU
-                not_present = MeanIoU(gt_t, gt_t) == 0
-                iou_1 = MeanIoU(exp1_t, gt_t)
-                iou_2 = MeanIoU(exp2_t, gt_t)
-                iou_3 = MeanIoU(exp3_t, gt_t)
-                iou_4 = MeanIoU(exp4_t, gt_t)
-                iou_1[not_present] = 1.0
-                iou_2[not_present] = 1.0
-                iou_3[not_present] = 1.0
-                iou_4[not_present] = 1.0
-                classwise_ious_1 += iou_1
-                classwise_ious_2 += iou_2
-                classwise_ious_3 += iou_3
-                classwise_ious_4 += iou_4
+                try:
+                    gt_t = torch.Tensor(semantics.colors_to_labels(gt_seg)).long().unsqueeze(0)
+                    exp1_t = torch.Tensor(semantics.colors_to_labels(exp1_seg)).long().unsqueeze(0)
+                    exp2_t = torch.Tensor(semantics.colors_to_labels(exp2_seg)).long().unsqueeze(0)
+                    exp3_t = torch.Tensor(semantics.colors_to_labels(exp3_seg)).long().unsqueeze(0)
+                    exp4_t = torch.Tensor(semantics.colors_to_labels(exp4_seg)).long().unsqueeze(0)
+                    # Per-class IoU
+                    not_present = MeanIoU(gt_t, gt_t) == 0
+                    iou_1 = MeanIoU(exp1_t, gt_t)
+                    iou_2 = MeanIoU(exp2_t, gt_t)
+                    iou_3 = MeanIoU(exp3_t, gt_t)
+                    iou_4 = MeanIoU(exp4_t, gt_t)
+                    iou_1[not_present] = 1.0
+                    iou_2[not_present] = 1.0
+                    iou_3[not_present] = 1.0
+                    iou_4[not_present] = 1.0
+                    classwise_ious_1 += iou_1
+                    classwise_ious_2 += iou_2
+                    classwise_ious_3 += iou_3
+                    classwise_ious_4 += iou_4
 
-                # Per-class Generalized Dice Score
-                not_present = GeneralizedDiceScore(gt_t, gt_t) == 0
-                gds_1 = GeneralizedDiceScore(exp1_t, gt_t)
-                gds_2 = GeneralizedDiceScore(exp2_t, gt_t)
-                gds_3 = GeneralizedDiceScore(exp3_t, gt_t)
-                gds_4 = GeneralizedDiceScore(exp4_t, gt_t)
-                gds_1[not_present] = 1.0
-                gds_2[not_present] = 1.0
-                gds_3[not_present] = 1.0
-                gds_4[not_present] = 1.0
-                classwise_gds_1 += gds_1
-                classwise_gds_2 += gds_2
-                classwise_gds_3 += gds_3
-                classwise_gds_4 += gds_4
+                    # Per-class Generalized Dice Score
+                    not_present = GeneralizedDiceScore(gt_t, gt_t) == 0
+                    gds_1 = GeneralizedDiceScore(exp1_t, gt_t)
+                    gds_2 = GeneralizedDiceScore(exp2_t, gt_t)
+                    gds_3 = GeneralizedDiceScore(exp3_t, gt_t)
+                    gds_4 = GeneralizedDiceScore(exp4_t, gt_t)
+                    gds_1[not_present] = 1.0
+                    gds_2[not_present] = 1.0
+                    gds_3[not_present] = 1.0
+                    gds_4[not_present] = 1.0
+                    classwise_gds_1 += gds_1
+                    classwise_gds_2 += gds_2
+                    classwise_gds_3 += gds_3
+                    classwise_gds_4 += gds_4
 
-                # Per-class Hausdorff Distance
-                not_present = MulticlassAccuracy(gt_t, gt_t) == 0
-                acc_1 = MulticlassAccuracy(exp1_t, gt_t)
-                acc_2 = MulticlassAccuracy(exp2_t, gt_t)
-                acc_3 = MulticlassAccuracy(exp3_t, gt_t)
-                acc_4 = MulticlassAccuracy(exp4_t, gt_t)
-                acc_1[not_present] = 1.0
-                acc_2[not_present] = 1.0
-                acc_3[not_present] = 1.0
-                acc_4[not_present] = 1.0
-                classwise_acc_1 += acc_1
-                classwise_acc_2 += acc_2
-                classwise_acc_3 += acc_3
-                classwise_acc_4 += acc_4
+                    # Per-class Hausdorff Distance
+                    not_present = MulticlassAccuracy(gt_t, gt_t) == 0
+                    acc_1 = MulticlassAccuracy(exp1_t, gt_t)
+                    acc_2 = MulticlassAccuracy(exp2_t, gt_t)
+                    acc_3 = MulticlassAccuracy(exp3_t, gt_t)
+                    acc_4 = MulticlassAccuracy(exp4_t, gt_t)
+                    acc_1[not_present] = 1.0
+                    acc_2[not_present] = 1.0
+                    acc_3[not_present] = 1.0
+                    acc_4[not_present] = 1.0
+                    classwise_acc_1 += acc_1
+                    classwise_acc_2 += acc_2
+                    classwise_acc_3 += acc_3
+                    classwise_acc_4 += acc_4
 
+                    COUNT += 1
+                except:
+                    pass
+                
             if plot:
                 # plot
                 TITLE_SIZE = 30

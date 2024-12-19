@@ -48,9 +48,9 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
 
     # EXPERIMENT CONFIG
-    task_name = '16k_ANIMSEG_DecoderOnly_ALL_CLASSES'
+    task_name = '16k_ANIMSEG_E2E_SCRATCH_ALL_CLASSES'
     all_ckpts_dir = 'all_ckpts'
-    out_dir = 'EVALUATION/eval_16k_DecoderOnly_SINGLE_STAGE/'
+    out_dir = 'EVALUATION/eval_16k_E2E_SCRATCH_SINGLE_STAGE/epoch_4/'
     mode = 'test'
     BATCH_SIZE = 1
     load_best_eval_ckpt = True

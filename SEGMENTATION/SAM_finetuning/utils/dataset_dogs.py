@@ -27,9 +27,8 @@ from .SemanticSegmentation import SemanticSegmentationNoFace, SemanticSegmentati
 ###########################################################################################################################################
 
 class DogsDataset(Dataset): 
-    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda'):
-        self.sam_model = sam_model
-        self.num_classes = 7
+    def __init__(self, data_root, labels_definition_file_path, mode='train', device='cuda'):
+        self.num_classes = 8
         #using arbitrary classes from ALL classes of drawings for visualization
         self.semantics = SemanticSegmentationNoFace(labels_definition_path=labels_definition_file_path, num_classes=18)
         self.compute_bbox=False # slower data loading if True
@@ -38,8 +37,8 @@ class DogsDataset(Dataset):
         self.cache = None
         self.device = device
         self.data_root = data_root
-        self.image_dir_name = img_dir_name
-        self.label_id_dir_name = label_id_dir_name
+        self.image_dir_name = f'{mode}_images'
+        self.label_id_dir_name = f'{mode}_segmentations'
         self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))
 
     def __len__(self):
@@ -57,11 +56,8 @@ class DogsDataset(Dataset):
             except:
                 print("Corrupted Image! Skipping...")
                 image = np.zeros((1024,1024,3))
-            sam_transform = ResizeLongestSide(self.sam_model.image_encoder.img_size)
-            resize_img = sam_transform.apply_image(image)
-            resize_img_tensor = torch.as_tensor(resize_img.transpose(2, 0, 1)).to(self.device)
-            input_image_tensor = self.sam_model.preprocess(resize_img_tensor[None,:,:,:]) # (1, 3, 1024, 1024)
-            input_image_tensor = input_image_tensor.squeeze(0)
+            input_image_tensor = torch.tensor(image).float()/255
+            input_image_tensor = torch.permute(input_image_tensor, (2,0,1))
             self.cache[index][:3,:,:] = input_image_tensor
 
         gt2D_labels = self.cache[index][3:,:,:]
@@ -88,8 +84,8 @@ class DogsDataset(Dataset):
             Ys = np.where(binmask>0)[1]
             bbox = np.array([min(Ys),min(Xs),max(Ys),max(Xs)])
 
-        # convert image, gt, mask, bounding box to torch tensor
-        return input_image_tensor, gt2D_labels.long(), torch.tensor(binmask[None, :,:]).float(), torch.from_numpy(bbox).float()
+
+        return input_image_tensor, gt2D_labels.to(torch.int64), torch.tensor(binmask[None, :,:]).float(), torch.from_numpy(bbox).float()
 
     def init_cache(self):
         print(f"Initializing {self.mode} cache...")
