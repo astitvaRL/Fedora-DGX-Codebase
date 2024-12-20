@@ -54,14 +54,14 @@ if __name__ == '__main__':
 
 
     SAM_EVAL_ROOT = "/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/EVALUATION/"
-    SAPIENS_EVAL_ROOT = "/mnt/users_scratch/astitva/DATA/LIP_drawings_16k/sapiens_val_prediction/sapiens_0.3b/"
+    SAPIENS_EVAL_ROOT = "/mnt/users_scratch/astitva/DATA/LIP_drawings_16k/sapiens_val_prediction_400/sapiens_0.3b/"
     
     exp1_out_dir = join(SAPIENS_EVAL_ROOT)
-    exp2_out_dir = join(SAM_EVAL_ROOT,"eval_16k_DecoderOnly_SINGLE_STAGE/best_eval/")
-    exp3_out_dir = join(SAM_EVAL_ROOT,"16k_ANIMSEG_E2E_ALL_CLASSES_SlowLR/best/best_eval/")
-    exp4_out_dir = join(SAM_EVAL_ROOT,"eval_16k_E2E_FULL_LATEST_v0/best_eval/")
+    exp2_out_dir = join(SAM_EVAL_ROOT,"16k_ANIMSEG_DecoderOnly_ALL_CLASSES/400/400")
+    exp3_out_dir = join(SAM_EVAL_ROOT,"16k_ANIMSEG_E2E_ALL_CLASSES_SlowLR/400/400/")
+    exp4_out_dir = join(SAM_EVAL_ROOT,"eval_16k_E2E_FULL/400/400/")
 
-    OUT_DIR = './COMPARISON/latest/'
+    OUT_DIR = './COMPARISON/400/EVAL2k/'
     os.makedirs(OUT_DIR, exist_ok=True)
 
     semantics = SemanticSegmentationAll(num_classes=NUM_CLASSES, labels_definition_path=labels_definition_file_path)
