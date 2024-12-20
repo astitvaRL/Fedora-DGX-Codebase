@@ -304,14 +304,14 @@ if __name__ == '__main__':
                     plt.savefig(f"{eval_epoch_dir}/{step}_{batch_idx}_heatmap.png")
                     plt.close()
                     
-    # logging metrics
-    eval_loss /= (step+1)
-    mAcc /= (step+1)
-    classwise_mIoU = np.array(classwise_mIoU)/(step+1)
-    mIoU = classwise_mIoU.sum()/(num_classes-1)
+    # # logging metrics
+    # eval_loss /= (step+1)
+    # mAcc /= (step+1)
+    # classwise_mIoU = np.array(classwise_mIoU)/(step+1)
+    # mIoU = classwise_mIoU.sum()/(num_classes-1)
 
-    print(f'EVAL-->{step} steps')
-    print(f'Eval Loss: {eval_loss}')
-    print(f'Mean-Accuracy: {mAcc}')
-    print(f'Classwise Mean-IoU: {classwise_mIoU}')
-    print(f'Total Mean-IoU: {mIoU}')
+    # print(f'EVAL-->{step} steps')
+    # print(f'Eval Loss: {eval_loss}')
+    # print(f'Mean-Accuracy: {mAcc}')
+    # print(f'Classwise Mean-IoU: {classwise_mIoU}')
+    # print(f'Total Mean-IoU: {mIoU}')

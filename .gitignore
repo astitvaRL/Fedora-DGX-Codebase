@@ -1,5 +1,6 @@
 *.pt
 *.pth
+*.pkl
 *.png
 *.jpg
 *.jpeg
@@ -7,6 +8,7 @@
 **/__pycache__
 .watchman*
 .nfs*
+*events.out*
 .fuse*
 .bin*
 .safetensors*

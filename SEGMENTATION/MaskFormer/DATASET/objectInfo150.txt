@@ -1,0 +1,28 @@
+Idx	Ratio	Train	Val	Name
+1	0.1576	11664	1172	wall
+2	0.1072	6046	612	building, edifice
+3	0.0878	8265	796	sky
+4	0.0621	9336	917	floor, flooring
+5	0.0480	6678	641	tree
+6	0.0450	6604	643	ceiling
+7	0.0398	4023	408	road, route
+8	0.0231	1906	199	bed 
+9	0.0198	4688	460	windowpane, window 
+10	0.0183	2423	225	grass
+11	0.0181	2874	294	cabinet
+12	0.0166	3068	310	sidewalk, pavement
+13	0.0160	5075	526	person, individual, someone, somebody, mortal, soul
+14	0.0151	1804	190	earth, ground
+15	0.0118	6666	796	door, double door
+16	0.0110	4269	411	table
+17	0.0109	1691	160	mountain, mount
+18	0.0104	3999	441	plant, flora, plant life
+19	0.0104	2149	217	curtain, drape, drapery, mantle, pall
+20	0.0103	3261	318	chair
+21	0.0098	3164	306	car, auto, automobile, machine, motorcar
+22 	0.0074	709	75	water
+23	0.0067	3296	315	painting, picture
+24 	0.0065	1191	106	sofa, couch, lounge
+25 	0.0061	1516	162	shelf
+26 	0.0060	667	69	house
+27 	0.0053	651	57	sea

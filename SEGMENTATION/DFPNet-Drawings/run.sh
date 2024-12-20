@@ -3,18 +3,18 @@ uname -a
 #date
 #env
 date
-CS_PATH='./Cartoon_sketches/Dog/'
+CS_PATH='./Cartoon_sketches/Drawings/'
 LR=1e-3
 WD=5e-4
 #10 max for annnV2
 BS=12
 # GPU_IDS=1,2,3
-GPU_IDS=0,1,2,3,4,5,6,7
+GPU_IDS=0
 RESTORE_FROM='./resnet101-imagenet.pth'
 INPUT_SIZE='384,384'  
-SNAPSHOT_DIR='./snapshots'
+SNAPSHOT_DIR='./snapshots_drawings_lre3'
 DATASET='train'
-NUM_CLASSES=8 
+NUM_CLASSES=27 
 START_EPOCH=1
 EPOCHS=500
 
