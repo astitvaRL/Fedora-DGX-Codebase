@@ -36,7 +36,7 @@ if __name__ == '__main__':
     torch.multiprocessing.set_start_method('spawn')
 
     NUM_CLASSES = 27
-    plot = False
+    plot = True
     compute_metrics = True
 
     # define metrics
@@ -58,10 +58,10 @@ if __name__ == '__main__':
     
     exp1_out_dir = join(SAPIENS_EVAL_ROOT)
     exp2_out_dir = join(SAM_EVAL_ROOT,"eval_16k_DecoderOnly_SINGLE_STAGE/best_eval/")
-    exp3_out_dir = join(SAM_EVAL_ROOT,"eval_16k_E2E_SINGLE_STAGE/best_eval/")
-    exp4_out_dir = join(SAM_EVAL_ROOT,"eval_16k_E2E_FULL/best_eval/")
+    exp3_out_dir = join(SAM_EVAL_ROOT,"16k_ANIMSEG_E2E_ALL_CLASSES_SlowLR/best/best_eval/")
+    exp4_out_dir = join(SAM_EVAL_ROOT,"eval_16k_E2E_FULL_LATEST_v0/best_eval/")
 
-    OUT_DIR = './COMPARISON/epoch_300/'
+    OUT_DIR = './COMPARISON/latest/'
     os.makedirs(OUT_DIR, exist_ok=True)
 
     semantics = SemanticSegmentationAll(num_classes=NUM_CLASSES, labels_definition_path=labels_definition_file_path)
@@ -109,7 +109,8 @@ if __name__ == '__main__':
 
 
             if compute_metrics:
-                try:
+                # try:
+                if True:
                     gt_t = torch.Tensor(semantics.colors_to_labels(gt_seg)).long().unsqueeze(0)
                     exp1_t = torch.Tensor(semantics.colors_to_labels(exp1_seg)).long().unsqueeze(0)
                     exp2_t = torch.Tensor(semantics.colors_to_labels(exp2_seg)).long().unsqueeze(0)
@@ -161,8 +162,8 @@ if __name__ == '__main__':
                     classwise_acc_4 += acc_4
 
                     COUNT += 1
-                except:
-                    pass
+                # except:
+                #     pass
                 
             if plot:
                 # plot

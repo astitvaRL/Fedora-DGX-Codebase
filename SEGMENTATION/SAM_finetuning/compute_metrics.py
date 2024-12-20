@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     semantics = SemanticSegmentationCoarse(num_classes=NUM_CLASSES, labels_definition_path=labels_definition_file_path)
 
-    exp_out_dir = join(SAM_EVAL_ROOT,"eval_16k_E2E_FULL_ep300/300/")
+    exp_out_dir = join(SAM_EVAL_ROOT,"16k_ANIMSEG_E2E_ALL_CLASSES_SlowLR/best/best_eval")
 
     ref_dir = join(data_root, label_id_dir_name)
     files = sorted(os.listdir(ref_dir))[-2000:]
@@ -69,8 +69,8 @@ if __name__ == '__main__':
         if filename.endswith('.png'):
             filename_base = filename.split('_')[0]
             input_im = cv2.imread(join(data_root, image_dir_name, f'{filename_base}.png'))
-            exp_seg = cv2.imread(join(exp_out_dir, f'{filename_base}/pred_all.png'))
-            gt_seg = cv2.imread(join(exp_out_dir, f'{filename_base}/gt_all.png'))
+            exp_seg = cv2.imread(join(exp_out_dir, f'{filename_base}/pred.png'))
+            gt_seg = cv2.imread(join(exp_out_dir, f'{filename_base}/gt.png'))
             input_im =  cv2.cvtColor(input_im, cv2.COLOR_BGR2RGB)
             exp_seg =  cv2.cvtColor(exp_seg, cv2.COLOR_BGR2RGB)
             gt_seg =  cv2.cvtColor(gt_seg, cv2.COLOR_BGR2RGB)

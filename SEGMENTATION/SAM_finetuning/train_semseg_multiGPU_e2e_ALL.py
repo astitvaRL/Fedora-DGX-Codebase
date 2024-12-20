@@ -43,7 +43,7 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = '16k_ANIMSEG_E2E_SCRATCH_ALL_CLASSES' # finetuned checkpoint will be saved here
+    task_name = '16k_ANIMSEG_E2E_ALL_CLASSES_SlowLR' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     os.makedirs(train_input_visualization_dir, exist_ok=True)
     
     # training choice
-    train_from_scratch = True
+    train_from_scratch = False
     cache_available = True # if False, save dataset cache after first epoch
     resume_training = False
     visualize_train_input = False
@@ -134,7 +134,7 @@ if __name__ == '__main__':
 
     # Set up the optimizer
     all_params = list(sam_model.image_encoder.parameters()) + list(sam_model.prompt_encoder.parameters()) + list(sam_model.mask_decoder.parameters())
-    optimizer = torch.optim.Adam(iter(all_params), lr=1e-4, weight_decay=0) # adding all parameters to optimizer as an iterable
+    optimizer = torch.optim.Adam(iter(all_params), lr=1e-5, weight_decay=0) # adding all parameters to optimizer as an iterable
 
     # Set up the losses
     dice_loss = monai.losses.DiceCELoss(sigmoid=True, squared_pred=True, reduction='mean')

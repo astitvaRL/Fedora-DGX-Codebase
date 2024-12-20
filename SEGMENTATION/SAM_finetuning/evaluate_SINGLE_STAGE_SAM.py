@@ -44,17 +44,17 @@ if __name__ == '__main__':
     # image_dir_name = 'MANIFOLD/EVAL400'
     label_id_dir_name = 'AD_SegMaps/labels_16k'  
     # label_id_dir_name = 'AD_SegMaps/labels_EVAL400' 
-    cache_dir = join(data_root, 'dataset_caches/cache_TEST_SPLIT_16k')
+    cache_dir = join(data_root, 'dataset_caches/cache_ALL_REAL16k')
     os.makedirs(cache_dir, exist_ok=True)
 
     # EXPERIMENT CONFIG
-    task_name = '16k_ANIMSEG_E2E_SCRATCH_ALL_CLASSES'
+    task_name = '16k_ANIMSEG_DecoderOnly_ALL_CLASSES'
     all_ckpts_dir = 'all_ckpts'
-    out_dir = 'EVALUATION/eval_16k_E2E_SCRATCH_SINGLE_STAGE/epoch_4/'
+    out_dir = 'EVALUATION/16k_ANIMSEG_DecoderOnly_ALL_CLASSES/LATEST/'
     mode = 'test'
     BATCH_SIZE = 1
     load_best_eval_ckpt = True
-    epoch = 300
+    epoch = 400
     encoder_original = False
     cache_available = False 
     bbox_given = False

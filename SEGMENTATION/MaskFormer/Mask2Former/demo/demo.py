@@ -13,7 +13,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 import tempfile
 import time
 import warnings
-
+import torch
 import cv2
 import numpy as np
 import tqdm
@@ -22,6 +22,8 @@ from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.projects.deeplab import add_deeplab_config
 from detectron2.utils.logger import setup_logger
+
+from drawings_utils.SemanticSegmentation import SemanticSegmentationAll
 
 from mask2former import add_maskformer2_config
 from predictor import VisualizationDemo
@@ -107,6 +109,9 @@ if __name__ == "__main__":
 
     demo = VisualizationDemo(cfg)
 
+    label_definition_file_path = './drawings_utils/label_definition.json'
+    semantics = SemanticSegmentationAll(label_definition_file_path, num_classes=27)
+
     if args.input:
         if len(args.input) == 1:
             args.input = glob.glob(os.path.expanduser(args.input[0]))
@@ -116,6 +121,8 @@ if __name__ == "__main__":
             img = read_image(path, format="BGR")
             start_time = time.time()
             predictions, visualized_output = demo.run_on_image(img)
+            pred_labels = torch.argmax(predictions['sem_seg'],0).cpu().numpy().astype('uint8')
+            segmap = semantics.labels_to_colors(pred_labels)
             logger.info(
                 "{}: {} in {:.2f}s".format(
                     path,
@@ -133,7 +140,9 @@ if __name__ == "__main__":
                 else:
                     assert len(args.input) == 1, "Please specify a directory with args.output"
                     out_filename = args.output
-                visualized_output.save(out_filename)
+                # visualized_output.save(out_filename)
+                # cv2.imwrite(out_filename, cv2.cvtColor(segmap, cv2.COLOR_BGR2RGB))
+                cv2.imwrite(out_filename, segmap)
             else:
                 cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
                 cv2.imshow(WINDOW_NAME, visualized_output.get_image()[:, :, ::-1])

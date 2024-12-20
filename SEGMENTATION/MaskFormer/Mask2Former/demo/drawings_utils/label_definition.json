@@ -1,0 +1,186 @@
+{
+    "label_name_to_id": {
+        "Lower_leg": 1,
+        "Eyebrows": 2,
+        "Mouth": 3,
+        "Pupils": 4,
+        "Other_Facial_Accessory_": 5,
+        "Head_Region": 6,
+        "Hand": 7,
+        "Lower_Torso": 8,
+        "Lower_arm": 9,
+        "Fingers": 10,
+        "Skirt": 11,
+        "Other_Head_accessory_": 12,
+        "Nose": 13,
+        "Upper_leg": 14,
+        "Upper_Torso": 15,
+        "Upper_arm": 16,
+        "Teeth": 17,
+        "Ears": 18,
+        "Hand_accessory": 19,
+        "Hair": 20,
+        "Other_Body_accessory": 21,
+        "Eyes": 22,
+        "Tongue": 23,
+        "Feet": 24,
+        "Neck": 25,
+        "BACKGROUND": 0,
+        "CONFLICT": 255,
+        "Unlabeled": 255,
+        "Not_Annotated": 0,
+        "Conflicted": 255
+    },
+    "label_name_to_color": {
+        "Lower_leg": [
+            177,
+            25,
+            217
+        ],
+        "Eyebrows": [
+            68,
+            121,
+            228
+        ],
+        "Mouth": [
+            21,
+            28,
+            56
+        ],
+        "Pupils": [
+            63,
+            128,
+            243
+        ],
+        "Other_Facial_Accessory_": [
+            171,
+            69,
+            206
+        ],
+        "Head_Region": [
+            12,
+            87,
+            48
+        ],
+        "Hand": [
+            245,
+            66,
+            108
+        ],
+        "Lower_Torso": [
+            125,
+            172,
+            35
+        ],
+        "Lower_arm": [
+            117,
+            209,
+            198
+        ],
+        "Fingers": [
+            149,
+            218,
+            110
+        ],
+        "Skirt": [
+            169,
+            185,
+            239
+        ],
+        "Other_Head_accessory_": [
+            71,
+            196,
+            14
+        ],
+        "Nose": [
+            160,
+            234,
+            179
+        ],
+        "Upper_leg": [
+            16,
+            162,
+            174
+        ],
+        "Upper_Torso": [
+            247,
+            181,
+            62
+        ],
+        "Upper_arm": [
+            187,
+            108,
+            168
+        ],
+        "Teeth": [
+            121,
+            28,
+            75
+        ],
+        "Ears": [
+            86,
+            162,
+            11
+        ],
+        "Hand_accessory": [
+            240,
+            55,
+            58
+        ],
+        "Hair": [
+            197,
+            206,
+            105
+        ],
+        "Other_Body_accessory": [
+            245,
+            124,
+            15
+        ],
+        "Eyes": [
+            245,
+            22,
+            161
+        ],
+        "Tongue": [
+            154,
+            131,
+            193
+        ],
+        "Feet": [
+            15,
+            77,
+            174
+        ],
+        "Neck": [
+            21,
+            176,
+            108
+        ],
+        "BACKGROUND": [
+            0,
+            0,
+            0
+        ],
+        "CONFLICT": [
+            255,
+            255,
+            255
+        ],
+        "Unlabeled": [
+            255,
+            255,
+            255
+        ],
+        "Not_Annotated": [
+            0,
+            0,
+            0
+        ],
+        "Conflicted": [
+            255,
+            255,
+            255
+        ]
+    }
+}

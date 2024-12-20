@@ -52,8 +52,8 @@ if __name__ == '__main__':
     os.makedirs(join(data_root, label_id_dir_name), exist_ok=True)
     
     # training choice
-    cache_available = False # if False, save dataset cache after first epoch
-    resume_training = False
+    cache_available = True # if False, save dataset cache after first epoch
+    resume_training = True
     visualize_train_input = False
     ignore_background = True
     bbox_given = False
@@ -67,8 +67,8 @@ if __name__ == '__main__':
     init_checkpoint = join(sam_original_ckpt_path)
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
-        epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, 'ANIMSEG_E2E_Cneck2F_REAL7k/all_ckpts/model_100.pth')
+        epoch_start = 442
+        resume_ckpt = join(ckpt_dir, '16k_ANIMSEG_E2E_FINE/all_ckpts/model_441.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
