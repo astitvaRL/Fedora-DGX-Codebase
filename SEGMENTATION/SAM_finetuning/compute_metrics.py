@@ -35,7 +35,7 @@ if __name__ == '__main__':
     np.random.seed(999)
     torch.multiprocessing.set_start_method('spawn')
 
-    NUM_CLASSES = 6
+    NUM_CLASSES = 27
     plot = False
     compute_metrics = True
 
@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
     SAM_EVAL_ROOT = "/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/EVALUATION/"
 
-    semantics = SemanticSegmentationCoarse(num_classes=NUM_CLASSES, labels_definition_path=labels_definition_file_path)
+    semantics = SemanticSegmentationAll(num_classes=NUM_CLASSES, labels_definition_path=labels_definition_file_path)
 
     exp_out_dir = join(SAM_EVAL_ROOT,"eval_16k_E2E_FULL/400/400")
 

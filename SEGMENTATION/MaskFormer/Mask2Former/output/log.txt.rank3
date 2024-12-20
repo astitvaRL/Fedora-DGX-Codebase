@@ -4181,3 +4181,126 @@ sem_seg_head.predictor.class_embed.{bias, weight}
 [12/20 11:30:42] detectron2.evaluation.evaluator INFO: Inference done 194/250. Dataloading: 0.0022 s/iter. Inference: 0.0477 s/iter. Eval: 0.0052 s/iter. Total: 0.0551 s/iter. ETA=0:00:03
 [12/20 11:30:46] detectron2.evaluation.evaluator INFO: Total inference time: 0:00:14.396342 (0.058761 s / iter per device, on 8 devices)
 [12/20 11:30:46] detectron2.evaluation.evaluator INFO: Total inference pure compute time: 0:00:11 (0.047199 s / iter per device, on 8 devices)
+[12/20 11:33:55] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 11:33:55] detectron2.data.dataset_mapper INFO: [DatasetMapper] Augmentations used in inference: [ResizeShortestEdge(short_edge_length=(512, 512), max_size=2048, sample_style='choice')]
+[12/20 11:33:55] detectron2.data.common INFO: Serializing 2000 elements to byte tensors and concatenating them all ...
+[12/20 11:33:55] detectron2.data.common INFO: Serialized dataset takes 0.86 MiB
+[12/20 11:33:55] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 11:33:55] detectron2.evaluation.evaluator INFO: Start inference on 250 batches
+[12/20 11:34:16] detectron2.evaluation.evaluator INFO: Inference done 11/250. Dataloading: 0.0016 s/iter. Inference: 0.0538 s/iter. Eval: 0.0048 s/iter. Total: 0.0603 s/iter. ETA=0:00:14
+[12/20 11:34:21] detectron2.evaluation.evaluator INFO: Inference done 103/250. Dataloading: 0.0022 s/iter. Inference: 0.0477 s/iter. Eval: 0.0052 s/iter. Total: 0.0551 s/iter. ETA=0:00:08
+[12/20 11:34:26] detectron2.evaluation.evaluator INFO: Inference done 193/250. Dataloading: 0.0023 s/iter. Inference: 0.0481 s/iter. Eval: 0.0052 s/iter. Total: 0.0556 s/iter. ETA=0:00:03
+[12/20 11:34:30] detectron2.evaluation.evaluator INFO: Total inference time: 0:00:14.587747 (0.059542 s / iter per device, on 8 devices)
+[12/20 11:34:30] detectron2.evaluation.evaluator INFO: Total inference pure compute time: 0:00:11 (0.048211 s / iter per device, on 8 devices)
+[12/20 11:37:39] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 11:37:39] detectron2.data.dataset_mapper INFO: [DatasetMapper] Augmentations used in inference: [ResizeShortestEdge(short_edge_length=(512, 512), max_size=2048, sample_style='choice')]
+[12/20 11:37:39] detectron2.data.common INFO: Serializing 2000 elements to byte tensors and concatenating them all ...
+[12/20 11:37:39] detectron2.data.common INFO: Serialized dataset takes 0.86 MiB
+[12/20 11:37:39] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 11:37:39] detectron2.evaluation.evaluator INFO: Start inference on 250 batches
+[12/20 11:38:04] detectron2.evaluation.evaluator INFO: Inference done 11/250. Dataloading: 0.0016 s/iter. Inference: 0.0468 s/iter. Eval: 0.0045 s/iter. Total: 0.0529 s/iter. ETA=0:00:12
+[12/20 11:38:09] detectron2.evaluation.evaluator INFO: Inference done 105/250. Dataloading: 0.0023 s/iter. Inference: 0.0462 s/iter. Eval: 0.0049 s/iter. Total: 0.0535 s/iter. ETA=0:00:07
+[12/20 11:38:14] detectron2.evaluation.evaluator INFO: Inference done 200/250. Dataloading: 0.0023 s/iter. Inference: 0.0461 s/iter. Eval: 0.0049 s/iter. Total: 0.0533 s/iter. ETA=0:00:02
+[12/20 11:38:18] detectron2.evaluation.evaluator INFO: Total inference time: 0:00:14.235998 (0.058106 s / iter per device, on 8 devices)
+[12/20 11:38:18] detectron2.evaluation.evaluator INFO: Total inference pure compute time: 0:00:11 (0.046335 s / iter per device, on 8 devices)
+[12/20 11:41:29] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 11:41:29] detectron2.data.dataset_mapper INFO: [DatasetMapper] Augmentations used in inference: [ResizeShortestEdge(short_edge_length=(512, 512), max_size=2048, sample_style='choice')]
+[12/20 11:41:29] detectron2.data.common INFO: Serializing 2000 elements to byte tensors and concatenating them all ...
+[12/20 11:41:29] detectron2.data.common INFO: Serialized dataset takes 0.86 MiB
+[12/20 11:41:29] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 11:41:29] detectron2.evaluation.evaluator INFO: Start inference on 250 batches
+[12/20 11:41:48] detectron2.evaluation.evaluator INFO: Inference done 11/250. Dataloading: 0.0033 s/iter. Inference: 0.0565 s/iter. Eval: 0.0072 s/iter. Total: 0.0669 s/iter. ETA=0:00:15
+[12/20 11:41:53] detectron2.evaluation.evaluator INFO: Inference done 103/250. Dataloading: 0.0022 s/iter. Inference: 0.0476 s/iter. Eval: 0.0054 s/iter. Total: 0.0552 s/iter. ETA=0:00:08
+[12/20 11:41:58] detectron2.evaluation.evaluator INFO: Inference done 193/250. Dataloading: 0.0023 s/iter. Inference: 0.0480 s/iter. Eval: 0.0053 s/iter. Total: 0.0555 s/iter. ETA=0:00:03
+[12/20 11:42:03] detectron2.evaluation.evaluator INFO: Total inference time: 0:00:14.819605 (0.060488 s / iter per device, on 8 devices)
+[12/20 11:42:03] detectron2.evaluation.evaluator INFO: Total inference pure compute time: 0:00:11 (0.048470 s / iter per device, on 8 devices)
+[12/20 11:45:14] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 11:45:14] detectron2.data.dataset_mapper INFO: [DatasetMapper] Augmentations used in inference: [ResizeShortestEdge(short_edge_length=(512, 512), max_size=2048, sample_style='choice')]
+[12/20 11:45:14] detectron2.data.common INFO: Serializing 2000 elements to byte tensors and concatenating them all ...
+[12/20 11:45:14] detectron2.data.common INFO: Serialized dataset takes 0.86 MiB
+[12/20 11:45:14] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 11:45:14] detectron2.evaluation.evaluator INFO: Start inference on 250 batches
+[12/20 11:45:33] detectron2.evaluation.evaluator INFO: Inference done 11/250. Dataloading: 0.0016 s/iter. Inference: 0.0503 s/iter. Eval: 0.0047 s/iter. Total: 0.0566 s/iter. ETA=0:00:13
+[12/20 11:45:38] detectron2.evaluation.evaluator INFO: Inference done 102/250. Dataloading: 0.0022 s/iter. Inference: 0.0481 s/iter. Eval: 0.0052 s/iter. Total: 0.0555 s/iter. ETA=0:00:08
+[12/20 11:45:43] detectron2.evaluation.evaluator INFO: Inference done 193/250. Dataloading: 0.0022 s/iter. Inference: 0.0479 s/iter. Eval: 0.0051 s/iter. Total: 0.0552 s/iter. ETA=0:00:03
+[12/20 11:45:47] detectron2.evaluation.evaluator INFO: Total inference time: 0:00:14.312798 (0.058420 s / iter per device, on 8 devices)
+[12/20 11:45:47] detectron2.evaluation.evaluator INFO: Total inference pure compute time: 0:00:11 (0.047762 s / iter per device, on 8 devices)
+[12/20 11:49:01] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 11:49:01] detectron2.data.dataset_mapper INFO: [DatasetMapper] Augmentations used in inference: [ResizeShortestEdge(short_edge_length=(512, 512), max_size=2048, sample_style='choice')]
+[12/20 11:49:01] detectron2.data.common INFO: Serializing 2000 elements to byte tensors and concatenating them all ...
+[12/20 11:49:01] detectron2.data.common INFO: Serialized dataset takes 0.86 MiB
+[12/20 11:49:01] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 11:49:01] detectron2.evaluation.evaluator INFO: Start inference on 250 batches
+[12/20 11:49:21] detectron2.evaluation.evaluator INFO: Inference done 11/250. Dataloading: 0.0017 s/iter. Inference: 0.0496 s/iter. Eval: 0.0054 s/iter. Total: 0.0567 s/iter. ETA=0:00:13
+[12/20 11:49:26] detectron2.evaluation.evaluator INFO: Inference done 104/250. Dataloading: 0.0022 s/iter. Inference: 0.0469 s/iter. Eval: 0.0051 s/iter. Total: 0.0542 s/iter. ETA=0:00:07
+[12/20 11:49:31] detectron2.evaluation.evaluator INFO: Inference done 196/250. Dataloading: 0.0022 s/iter. Inference: 0.0470 s/iter. Eval: 0.0051 s/iter. Total: 0.0543 s/iter. ETA=0:00:02
+[12/20 11:49:35] detectron2.evaluation.evaluator INFO: Total inference time: 0:00:14.394895 (0.058755 s / iter per device, on 8 devices)
+[12/20 11:49:35] detectron2.evaluation.evaluator INFO: Total inference pure compute time: 0:00:11 (0.047244 s / iter per device, on 8 devices)
+[12/20 11:52:49] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 11:52:49] detectron2.data.dataset_mapper INFO: [DatasetMapper] Augmentations used in inference: [ResizeShortestEdge(short_edge_length=(512, 512), max_size=2048, sample_style='choice')]
+[12/20 11:52:49] detectron2.data.common INFO: Serializing 2000 elements to byte tensors and concatenating them all ...
+[12/20 11:52:49] detectron2.data.common INFO: Serialized dataset takes 0.86 MiB
+[12/20 11:52:49] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 11:52:49] detectron2.evaluation.evaluator INFO: Start inference on 250 batches
+[12/20 11:53:14] detectron2.evaluation.evaluator INFO: Inference done 11/250. Dataloading: 0.0017 s/iter. Inference: 0.0494 s/iter. Eval: 0.0062 s/iter. Total: 0.0573 s/iter. ETA=0:00:13
+[12/20 11:53:19] detectron2.evaluation.evaluator INFO: Inference done 106/250. Dataloading: 0.0021 s/iter. Inference: 0.0461 s/iter. Eval: 0.0050 s/iter. Total: 0.0532 s/iter. ETA=0:00:07
+[12/20 11:53:24] detectron2.evaluation.evaluator INFO: Inference done 199/250. Dataloading: 0.0021 s/iter. Inference: 0.0464 s/iter. Eval: 0.0050 s/iter. Total: 0.0536 s/iter. ETA=0:00:02
+[12/20 11:53:28] detectron2.evaluation.evaluator INFO: Total inference time: 0:00:14.337417 (0.058520 s / iter per device, on 8 devices)
+[12/20 11:53:28] detectron2.evaluation.evaluator INFO: Total inference pure compute time: 0:00:11 (0.046301 s / iter per device, on 8 devices)
+[12/20 11:56:38] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 11:56:38] detectron2.data.dataset_mapper INFO: [DatasetMapper] Augmentations used in inference: [ResizeShortestEdge(short_edge_length=(512, 512), max_size=2048, sample_style='choice')]
+[12/20 11:56:38] detectron2.data.common INFO: Serializing 2000 elements to byte tensors and concatenating them all ...
+[12/20 11:56:38] detectron2.data.common INFO: Serialized dataset takes 0.86 MiB
+[12/20 11:56:38] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 11:56:38] detectron2.evaluation.evaluator INFO: Start inference on 250 batches
+[12/20 11:56:57] detectron2.evaluation.evaluator INFO: Inference done 11/250. Dataloading: 0.0017 s/iter. Inference: 0.0518 s/iter. Eval: 0.0051 s/iter. Total: 0.0586 s/iter. ETA=0:00:14
+[12/20 11:57:02] detectron2.evaluation.evaluator INFO: Inference done 107/250. Dataloading: 0.0020 s/iter. Inference: 0.0455 s/iter. Eval: 0.0050 s/iter. Total: 0.0525 s/iter. ETA=0:00:07
+[12/20 11:57:07] detectron2.evaluation.evaluator INFO: Inference done 201/250. Dataloading: 0.0021 s/iter. Inference: 0.0460 s/iter. Eval: 0.0049 s/iter. Total: 0.0531 s/iter. ETA=0:00:02
+[12/20 11:57:10] detectron2.evaluation.evaluator INFO: Total inference time: 0:00:13.893868 (0.056710 s / iter per device, on 8 devices)
+[12/20 11:57:10] detectron2.evaluation.evaluator INFO: Total inference pure compute time: 0:00:11 (0.045983 s / iter per device, on 8 devices)
+[12/20 12:00:20] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 12:00:20] detectron2.data.dataset_mapper INFO: [DatasetMapper] Augmentations used in inference: [ResizeShortestEdge(short_edge_length=(512, 512), max_size=2048, sample_style='choice')]
+[12/20 12:00:20] detectron2.data.common INFO: Serializing 2000 elements to byte tensors and concatenating them all ...
+[12/20 12:00:20] detectron2.data.common INFO: Serialized dataset takes 0.86 MiB
+[12/20 12:00:20] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 12:00:20] detectron2.evaluation.evaluator INFO: Start inference on 250 batches
+[12/20 12:00:40] detectron2.evaluation.evaluator INFO: Inference done 11/250. Dataloading: 0.0016 s/iter. Inference: 0.0565 s/iter. Eval: 0.0059 s/iter. Total: 0.0641 s/iter. ETA=0:00:15
+[12/20 12:00:45] detectron2.evaluation.evaluator INFO: Inference done 102/250. Dataloading: 0.0021 s/iter. Inference: 0.0482 s/iter. Eval: 0.0053 s/iter. Total: 0.0557 s/iter. ETA=0:00:08
+[12/20 12:00:50] detectron2.evaluation.evaluator INFO: Inference done 192/250. Dataloading: 0.0022 s/iter. Inference: 0.0482 s/iter. Eval: 0.0053 s/iter. Total: 0.0557 s/iter. ETA=0:00:03
+[12/20 12:00:54] detectron2.evaluation.evaluator INFO: Total inference time: 0:00:14.990092 (0.061184 s / iter per device, on 8 devices)
+[12/20 12:00:54] detectron2.evaluation.evaluator INFO: Total inference pure compute time: 0:00:11 (0.048565 s / iter per device, on 8 devices)
+[12/20 12:04:05] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 12:04:05] detectron2.data.dataset_mapper INFO: [DatasetMapper] Augmentations used in inference: [ResizeShortestEdge(short_edge_length=(512, 512), max_size=2048, sample_style='choice')]
+[12/20 12:04:05] detectron2.data.common INFO: Serializing 2000 elements to byte tensors and concatenating them all ...
+[12/20 12:04:05] detectron2.data.common INFO: Serialized dataset takes 0.86 MiB
+[12/20 12:04:05] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 12:04:05] detectron2.evaluation.evaluator INFO: Start inference on 250 batches
+[12/20 12:04:24] detectron2.evaluation.evaluator INFO: Inference done 11/250. Dataloading: 0.0020 s/iter. Inference: 0.0550 s/iter. Eval: 0.0057 s/iter. Total: 0.0627 s/iter. ETA=0:00:14
+[12/20 12:04:29] detectron2.evaluation.evaluator INFO: Inference done 103/250. Dataloading: 0.0022 s/iter. Inference: 0.0475 s/iter. Eval: 0.0052 s/iter. Total: 0.0550 s/iter. ETA=0:00:08
+[12/20 12:04:34] detectron2.evaluation.evaluator INFO: Inference done 196/250. Dataloading: 0.0022 s/iter. Inference: 0.0472 s/iter. Eval: 0.0051 s/iter. Total: 0.0545 s/iter. ETA=0:00:02
+[12/20 12:04:39] detectron2.evaluation.evaluator INFO: Total inference time: 0:00:14.632955 (0.059726 s / iter per device, on 8 devices)
+[12/20 12:04:39] detectron2.evaluation.evaluator INFO: Total inference pure compute time: 0:00:11 (0.047262 s / iter per device, on 8 devices)
+[12/20 12:07:51] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 12:07:51] detectron2.data.dataset_mapper INFO: [DatasetMapper] Augmentations used in inference: [ResizeShortestEdge(short_edge_length=(512, 512), max_size=2048, sample_style='choice')]
+[12/20 12:07:51] detectron2.data.common INFO: Serializing 2000 elements to byte tensors and concatenating them all ...
+[12/20 12:07:51] detectron2.data.common INFO: Serialized dataset takes 0.86 MiB
+[12/20 12:07:51] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 12:07:51] detectron2.evaluation.evaluator INFO: Start inference on 250 batches
+[12/20 12:08:10] detectron2.evaluation.evaluator INFO: Inference done 11/250. Dataloading: 0.0019 s/iter. Inference: 0.0547 s/iter. Eval: 0.0052 s/iter. Total: 0.0618 s/iter. ETA=0:00:14
+[12/20 12:08:15] detectron2.evaluation.evaluator INFO: Inference done 98/250. Dataloading: 0.0023 s/iter. Inference: 0.0503 s/iter. Eval: 0.0055 s/iter. Total: 0.0583 s/iter. ETA=0:00:08
+[12/20 12:08:20] detectron2.evaluation.evaluator INFO: Inference done 186/250. Dataloading: 0.0024 s/iter. Inference: 0.0499 s/iter. Eval: 0.0054 s/iter. Total: 0.0577 s/iter. ETA=0:00:03
+[12/20 12:08:25] detectron2.evaluation.evaluator INFO: Total inference time: 0:00:15.112718 (0.061685 s / iter per device, on 8 devices)
+[12/20 12:08:25] detectron2.evaluation.evaluator INFO: Total inference pure compute time: 0:00:12 (0.049530 s / iter per device, on 8 devices)
+[12/20 12:11:34] detectron2.engine.hooks INFO: Overall training speed: 159998 iterations in 16:52:27 (0.3797 s / it)
+[12/20 12:11:34] detectron2.engine.hooks INFO: Total training time: 20:07:49 (3:15:21 on hooks)
+[12/20 12:11:34] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 12:11:34] detectron2.data.dataset_mapper INFO: [DatasetMapper] Augmentations used in inference: [ResizeShortestEdge(short_edge_length=(512, 512), max_size=2048, sample_style='choice')]
+[12/20 12:11:34] detectron2.data.common INFO: Serializing 2000 elements to byte tensors and concatenating them all ...
+[12/20 12:11:34] detectron2.data.common INFO: Serialized dataset takes 0.86 MiB
+[12/20 12:11:34] detectron2.data.datasets.coco INFO: Loaded 2000 images with semantic segmentation from /mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/DATASET/Drawings/ADEChallengeData2016/images/validation
+[12/20 12:11:34] detectron2.evaluation.evaluator INFO: Start inference on 250 batches
+[12/20 12:11:54] detectron2.evaluation.evaluator INFO: Inference done 11/250. Dataloading: 0.0021 s/iter. Inference: 0.0537 s/iter. Eval: 0.0089 s/iter. Total: 0.0647 s/iter. ETA=0:00:15
+[12/20 12:11:59] detectron2.evaluation.evaluator INFO: Inference done 103/250. Dataloading: 0.0022 s/iter. Inference: 0.0473 s/iter. Eval: 0.0055 s/iter. Total: 0.0551 s/iter. ETA=0:00:08
+[12/20 12:12:04] detectron2.evaluation.evaluator INFO: Inference done 197/250. Dataloading: 0.0022 s/iter. Inference: 0.0468 s/iter. Eval: 0.0053 s/iter. Total: 0.0543 s/iter. ETA=0:00:02
+[12/20 12:12:08] detectron2.evaluation.evaluator INFO: Total inference time: 0:00:14.514793 (0.059244 s / iter per device, on 8 devices)
+[12/20 12:12:08] detectron2.evaluation.evaluator INFO: Total inference pure compute time: 0:00:11 (0.046622 s / iter per device, on 8 devices)
