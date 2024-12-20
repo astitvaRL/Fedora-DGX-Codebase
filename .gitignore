@@ -12,3 +12,4 @@
 .fuse*
 .bin*
 .safetensors*
+SEGMENTATION/MaskFormer/Mask2Former/output
