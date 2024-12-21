@@ -43,7 +43,7 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = '16k_ANIMSEG_E2E_ALL_CLASSES_SlowLR' # finetuned checkpoint will be saved here
+    task_name = '16k_ANIMSEG_E2E_ALL_CLASSES_SlowLR_SCRATCH' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     os.makedirs(train_input_visualization_dir, exist_ok=True)
     
     # training choice
-    train_from_scratch = False
+    train_from_scratch = True
     cache_available = True # if False, save dataset cache after first epoch
     resume_training = False
     visualize_train_input = False
