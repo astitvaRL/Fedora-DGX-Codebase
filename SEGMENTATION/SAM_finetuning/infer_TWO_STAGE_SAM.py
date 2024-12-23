@@ -46,12 +46,13 @@ if __name__ == '__main__':
     # save_predcitions_dir_path = './PREDICTIONS/3BiCar_360_Renders/' + suffix + '/'
 
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/dog_val_images'
-    inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/IN_THE_WILD/'
-    # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/IN_THE_WILD_IMAGES/images/'
+    # inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/IN_THE_WILD/'
+    inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/IN_THE_WILD_IMAGES/random/'
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/ToonLight/data_generation/3DBiCar_drawings/'
-    save_predcitions_dir_path = './INFERENCE/IN_THE_WILD_IMAGES/'
+    save_predcitions_dir_path = './INFERENCE/random/'
+    # save_predcitions_dir_path = f'{inference_image_dir_path}/prediction/'
     # save_predcitions_dir_path = './PREDICTIONS/3DBiCar_drawings'
-
+    # os.makedirs(save_predcitions_dir_path)
     # EXPERIMENT CONFIG
     # task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
     # task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k'
@@ -60,10 +61,10 @@ if __name__ == '__main__':
     task_name_fine = '16k_ANIMSEG_E2E_FINE'
     task_name_face = '16k_ANIMSEG_E2E_FACE_wBinMask'
     all_ckpts_dir = 'all_ckpts'
-    save_task_name = f'infer{task_name_fine}_400'
+    save_task_name = f'infer{task_name_fine}_BEST'
     mode = 'test'
     BATCH_SIZE = 1
-    load_best_eval_ckpt = False
+    load_best_eval_ckpt = True
     epoch = 400
     epoch_coarse = 400
     epoch_face = 512
@@ -73,7 +74,7 @@ if __name__ == '__main__':
     coarse_includes_neck = True
     bg_mask_given = False
     visualize_heatmap = False
-    refine_masks = False
+    refine_labels = True
     model_type = 'vit_b'
 
     # semantic definitions
@@ -106,7 +107,7 @@ if __name__ == '__main__':
     device_ids = [i for i in range(torch.cuda.device_count())]
 
     refiner = None
-    if refine_masks:
+    if refine_labels:
         refiner = segref.Refiner(device=device) # device can also be 'cpu'
 
     # prepare and load SAM coarse model
@@ -178,9 +179,10 @@ if __name__ == '__main__':
     print(f"EVAL results will be SAVED here --> {eval_epoch_dir}")
 
     valid_face_detected = False # flag to check if face is detected in the image
-    for step, (image_name_string, image_data_eval) in enumerate(tqdm(test_dataloader,"EVAL")):
+    for step, (image_name_string, image_data_eval, image_dims) in enumerate(tqdm(test_dataloader,"EVAL")):
         valid_face_detected = False # reset flag for each image
         image_data_eval = image_data_eval.to(device)
+        w_orig, h_orig = image_dims[:2]
         # not computing gradients for image encoder, prompt encoder and mask decoder during evaluation
         with torch.no_grad():
             # predict coarse mask
@@ -274,7 +276,9 @@ if __name__ == '__main__':
                 image_data_vis = image_data_vis.astype('uint8')
                 labels_out = torch.argmax(torch.Tensor(mask_predictions_fine[batch_idx]), dim=0)  # last sample from batch
                 labels_out_refined = torch.clone(labels_out)
-                if refine_masks:
+                labels_out_vis = semantics_fine.labels_to_colors(labels_out.cpu().numpy().astype('uint8'))
+
+                if refine_labels:
                     for label in torch.unique(labels_out_refined):
                         binmask = labels_out==label
                         binmask = binmask.cpu().numpy().astype('uint8')*255
@@ -282,8 +286,7 @@ if __name__ == '__main__':
                         labels_out_refined[refined_binmask>0] = label
                     labels_out_refined_vis = semantics_fine.labels_to_colors(labels_out_refined.cpu().numpy().astype('uint8'))
                     labels_out_refined_vis = cv2.resize(labels_out_refined_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
-                labels_out_vis = semantics_fine.labels_to_colors(labels_out.cpu().numpy().astype('uint8'))
-
+                
                 if valid_face_detected:
                     labels_out_face = torch.argmax(torch.Tensor(mask_predictions_face[batch_idx]), dim=0)  # last sample from batch
                     labels_out_face_vis = semantics_face.labels_to_colors(labels_out_face.cpu().numpy().astype('uint8'))
@@ -293,16 +296,25 @@ if __name__ == '__main__':
                     face_mask = canvas.sum(axis=2)>0
                     labels_out_vis[face_mask] = [0,0,0]
                     labels_out_vis += canvas
+                    if refine_labels:
+                        labels_out_refined_vis[face_mask] = [0,0,0]
+                        labels_out_refined_vis += canvas
 
                 labels_out_vis = cv2.resize(labels_out_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
                 coarse_mask_labels = torch.argmax(coarse_mask[batch_idx], dim=0)
                 coarse_mask_vis = cv2.resize(coarse_mask_labels.cpu().numpy().astype('uint8'), (1024,1024), interpolation=cv2.INTER_NEAREST)
                 coarse_mask_vis = semantics_coarse.labels_to_colors(coarse_mask_vis)
                 overlayed = cv2.addWeighted(image_data_vis, 0.5, labels_out_vis, 0.5, 0)
-                if refine_masks:
+                if refine_labels:
                     overlayed_refined = cv2.addWeighted(image_data_vis, 0.5, labels_out_refined_vis, 0.5, 0)
-
-                cv2.imwrite(f'{eval_epoch_dir}/{save_name_string}_seg.png', cv2.cvtColor(labels_out_vis, cv2.COLOR_BGR2RGB))
+                # resize to original dimensions
+                coarse_mask_vis_reshaped = cv2.resize(coarse_mask_vis, (h_orig.item(), w_orig.item()), interpolation=cv2.INTER_NEAREST)
+                labels_out_vis_reshaped = cv2.resize(labels_out_vis, (h_orig.item(), w_orig.item()), interpolation=cv2.INTER_NEAREST)
+                labels_out_refined_vis_reshaped = cv2.resize(labels_out_refined_vis, (h_orig.item(), w_orig.item()), interpolation=cv2.INTER_NEAREST)
+                cv2.imwrite(f'{eval_epoch_dir}/{save_name_string}_seg_coarse.png', cv2.cvtColor(coarse_mask_vis_reshaped, cv2.COLOR_BGR2RGB))
+                cv2.imwrite(f'{eval_epoch_dir}/{save_name_string}_seg_fine.png', cv2.cvtColor(labels_out_vis_reshaped, cv2.COLOR_BGR2RGB))
+                if refine_labels:
+                    cv2.imwrite(f'{eval_epoch_dir}/{save_name_string}_seg_refined.png', cv2.cvtColor(labels_out_refined_vis_reshaped, cv2.COLOR_BGR2RGB))
                 # plot eval results
                 TITLE_SIZE = 35
                 if visualize_coarse:
@@ -324,7 +336,7 @@ if __name__ == '__main__':
                     plt.close()
                 else:
                     fig, ax = plt.subplots(1,3, figsize=(30,10))
-                    if refine_masks:
+                    if refine_labels:
                         fig, ax = plt.subplots(1,5, figsize=(50,10))
                     ax[0].imshow(image_data_vis)
                     ax[0].set_title("Input Image", fontsize=TITLE_SIZE)
@@ -335,7 +347,7 @@ if __name__ == '__main__':
                     ax[2].imshow(overlayed)
                     ax[2].set_title("Overlayed Prediction", fontsize=TITLE_SIZE)
                     ax[2].axis('off')
-                    if refine_masks:
+                    if refine_labels:
                         ax[4].imshow(overlayed_refined)
                         ax[4].set_title("Overlayed (Refined)", fontsize=TITLE_SIZE)
                         ax[4].axis('off')

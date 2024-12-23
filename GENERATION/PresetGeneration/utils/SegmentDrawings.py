@@ -55,7 +55,7 @@ class DrawingsDatasetInference():
 
 
 class SAM_face:
-    def __init__(self, ckpt_dir='/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/checkpoints', labels_definition_file_path='label_definition.json', task_name='ANIMSEG_E2E_FaceOnly_REAL7k_with_face_prior', device=torch.device('cuda:0') ):
+    def __init__(self, ckpt_dir='/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/checkpoints', labels_definition_file_path='label_definition.json', task_name='16k_ANIMSEG_E2E_FACE_wBinMask', device=torch.device('cuda:0') ):
 
         torch.manual_seed(999)
         np.random.seed(999)

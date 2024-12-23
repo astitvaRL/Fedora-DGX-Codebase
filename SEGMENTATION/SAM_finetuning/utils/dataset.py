@@ -874,6 +874,7 @@ class DrawingsDatasetInferFull(Dataset):
             alpha = image[:,:,3]
             image = image[:,:,:3]
             image[alpha==0] = self.bg_color
+        dims = image.shape
         image = cv2.resize(image, (1024,1024), interpolation=cv2.INTER_LINEAR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -883,7 +884,7 @@ class DrawingsDatasetInferFull(Dataset):
         input_image_tensor = self.sam_model.preprocess(resize_img_tensor[None,:,:,:]) # (1, 3, 1024, 1024)
         input_image_tensor = input_image_tensor.squeeze(0)
 
-        return image_name, input_image_tensor
+        return image_name, input_image_tensor, dims
 
 ###########################################################################################################################################
 ### ----------------------------------------------------------------------------------------------------------------------------------- ###
