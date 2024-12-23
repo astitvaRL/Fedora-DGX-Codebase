@@ -70,7 +70,7 @@ pillow==10.2.0
 pipreqs==0.5.0
 platformdirs==4.3.6
 prompt_toolkit==3.0.48
-protobuf @ file:///home/conda/feedstock_root/build_artifacts/protobuf_1731365422090/work/bazel-bin/python/dist/protobuf-5.28.3-cp39-abi3-linux_x86_64.whl#sha256=4b7eaa51273fd1ef995da09f1c9c0b12a9bc91c7f75819403907369240ccacc8
+protobuf
 psutil==6.0.0
 ptyprocess==0.7.0
 pure_eval==0.2.3
@@ -95,14 +95,14 @@ six==1.16.0
 soupsieve==2.6
 stack-data==0.6.3
 sympy==1.12
-tensorboardX @ file:///home/conda/feedstock_root/build_artifacts/tensorboardx_1692548726750/work
+tensorboardX
 threadpoolctl==3.5.0
 tifffile==2024.8.28
 tinycss2==1.4.0
-torch==2.4.0+cu118
-torchaudio==2.4.0+cu118
-torchmetrics==1.6.0
-torchvision==0.19.0+cu118
+# torch==2.4.0+cu118
+# torchaudio==2.4.0+cu118
+# torchmetrics==1.6.0
+# torchvision==0.19.0+cu118
 tornado==6.4.2
 tqdm==4.66.5
 traitlets==5.14.3
