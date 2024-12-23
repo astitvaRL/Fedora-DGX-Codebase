@@ -9,12 +9,12 @@ from ui.mouse_event import ReferenceDialog, SnapshotDialog
 import copy
 
 
-Lb_width = 100
+Lb_width = 120
 Lb_height = 40
 Lb_row_shift = 25
 Lb_col_shift = 5
 Lb_x = 100
-Lb_y = 690
+Lb_y = 800
 
 
 Tb_width = 100
@@ -31,6 +31,7 @@ _translate = QtCore.QCoreApplication.translate
 
 
 class Ui_Form(object):
+
     def setupUi(self, Form):
         Form.setObjectName("Form")
         Form.resize(1920, 1080)
@@ -51,14 +52,14 @@ class Ui_Form(object):
 
 
         self.graphicsView = QtWidgets.QGraphicsView(Form)
-        self.graphicsView.setGeometry(QtCore.QRect(652, 140, 518, 518))
+        self.graphicsView.setGeometry(QtCore.QRect(652, 200, 518, 518))
         self.graphicsView.setObjectName("graphicsView")
         self.graphicsView_2 = QtWidgets.QGraphicsView(Form)
-        self.graphicsView_2.setGeometry(QtCore.QRect(1204, 140, 518, 518))
+        self.graphicsView_2.setGeometry(QtCore.QRect(1204, 200, 518, 518))
         self.graphicsView_2.setObjectName("graphicsView_2")
 
         self.graphicsView_GT = QtWidgets.QGraphicsView(Form)
-        self.graphicsView_GT.setGeometry(QtCore.QRect(100, 140, 518, 518))
+        self.graphicsView_GT.setGeometry(QtCore.QRect(100, 200, 518, 518))
         self.graphicsView_GT.setObjectName("graphicsView_GT")
 
 
@@ -78,7 +79,7 @@ class Ui_Form(object):
         self.snapshotDialogImage.setFixedSize(512, 512)
 
         self.add_intermediate_results_button(Form)
-        self.add_alpha_bar(Form)
+        # self.add_alpha_bar(Form)
 
 
 
@@ -86,13 +87,13 @@ class Ui_Form(object):
 
     def retranslateUi(self, Form):
         # Form.setWindowTitle(_translate("Form", "Let's Party Face Manipulation v0.2"))
-        Form.setWindowTitle(_translate("Form", "Let's Party Face Manipulation"))
-        self.pushButton.setText(_translate("Form", "Open Image"))
-        self.pushButton_2.setText(_translate("Form", "Mask"))
-        self.pushButton_3.setText(_translate("Form", "Sketches"))
-        self.pushButton_4.setText(_translate("Form", "Color"))
+        Form.setWindowTitle(_translate("Form", "Segmentation-to-Drawings"))
+        self.pushButton.setText(_translate("Form", "Load"))
+        # self.pushButton_2.setText(_translate("Form", "Run"))
+        # self.pushButton_3.setText(_translate("Form", "Sketches"))
+        # self.pushButton_4.setText(_translate("Form", "Color"))
 
-        self.saveImg.setText(_translate("Form", "Save Img"))
+        self.saveImg.setText(_translate("Form", "Save"))
 
     def add_alpha_bar(self, Form):
 
@@ -182,7 +183,7 @@ class Ui_Form(object):
 
     def add_checkbox_widgets(self, Form):
         self.checkBoxGroupBox = QtWidgets.QGroupBox("Replace Style of Components", Form)
-        self.checkBoxGroupBox.setGeometry(QtCore.QRect(920, 10, 800, 100))
+        self.checkBoxGroupBox.setGeometry(QtCore.QRect(920, 10, 800, 150))
 
         layout = QtWidgets.QGridLayout()
         self.checkBoxGroup = QtWidgets.QButtonGroup(Form)
@@ -190,11 +191,11 @@ class Ui_Form(object):
         for i, j in enumerate(number_object):
             cb = QtWidgets.QCheckBox(number_object[j])
             self.checkBoxGroup.addButton(cb, i)
-            layout.addWidget(cb, i//10, i%10)
+            layout.addWidget(cb, i//6, i%6)
 
         cb = QtWidgets.QCheckBox('ALL')
         self.checkBoxGroup.addButton(cb, )
-        layout.addWidget(cb, (i+1)//10, (i+1)%10)
+        layout.addWidget(cb, (i+1)//6, (i+1)%6)
 
         self.checkBoxGroupBox.setLayout(layout)
 
@@ -214,7 +215,7 @@ class Ui_Form(object):
     def add_brush_widgets(self, Form):
         KaustLogo = QtWidgets.QLabel(self)
         # KaustLogo.setPixmap(QPixmap('icons/kaust_logo.svg').scaled(60, 60))
-        KaustLogo.setPixmap(QPixmap('icons/1999780_200.png').scaled(60, 60))
+        # KaustLogo.setPixmap(QPixmap('icons/1999780_200.png').scaled(60, 60))
         KaustLogo.setGeometry(QtCore.QRect(int(Lb_x - 1 * Lb_row_shift - 60), 25, 80, 80))
 
 
@@ -222,7 +223,7 @@ class Ui_Form(object):
 
         self.brushsizeLabel = QtWidgets.QLabel(Form)
         self.brushsizeLabel.setObjectName("brushsizeLabel")
-        self.brushsizeLabel.setGeometry(QtCore.QRect(Tb_x, 25, 150, 20))
+        self.brushsizeLabel.setGeometry(QtCore.QRect(Tb_x, 25, 150, 50))
         self.brushsizeLabel.setText('Brush size: 6')
         font = self.brushsizeLabel.font()
         font.setPointSize(10)
@@ -231,7 +232,7 @@ class Ui_Form(object):
 
         self.brushSlider = QtWidgets.QSlider(Form)
         self.brushSlider.setOrientation(QtCore.Qt.Horizontal)
-        self.brushSlider.setGeometry(QtCore.QRect(Tb_x + 150, 25, 600, 10))
+        self.brushSlider.setGeometry(QtCore.QRect(Tb_x + 160, 50, 600, 10))
         self.brushSlider.setObjectName("brushSlider")
         self.brushSlider.setMinimum(1)
         self.brushSlider.setMaximum(100)
@@ -239,33 +240,29 @@ class Ui_Form(object):
         self.brushSlider.valueChanged.connect(Form.change_brush_size)
 
 
-
-
-
     def add_top_buttons(self, Form):
         self.pushButton = QtWidgets.QPushButton(Form)
-        self.pushButton.setGeometry(QtCore.QRect(Tb_x, Tb_y, Tb_width, Tb_height))
+        self.pushButton.setGeometry(QtCore.QRect(Tb_x, Tb_y+30, Tb_width, Tb_height))
         self.pushButton.setObjectName("pushButton")
         self.pushButton.clicked.connect(Form.open)
 
-        self.pushButton_2 = QtWidgets.QPushButton(Form)
-        self.pushButton_2.setGeometry(QtCore.QRect(Tb_x + 1 * Tb_row_shift + 1 * Tb_width, Tb_y, Tb_width, Tb_height))
-        self.pushButton_2.setObjectName("pushButton_2")
-
-        self.pushButton_2.clicked.connect(Form.style_linear_interpolation)
+        # self.pushButton_2 = QtWidgets.QPushButton(Form)
+        # self.pushButton_2.setGeometry(QtCore.QRect(Tb_x + 1 * Tb_row_shift + 1 * Tb_width, Tb_y, Tb_width, Tb_height))
+        # self.pushButton_2.setObjectName("pushButton_2")
 
 
 
 
-        self.pushButton_3 = QtWidgets.QPushButton(Form)
-        self.pushButton_3.setGeometry(QtCore.QRect(Tb_x + 2 * Tb_row_shift + 2 * Tb_width, Tb_y, Tb_width, Tb_height))
-        self.pushButton_3.setObjectName("pushButton_3")
-        self.pushButton_4 = QtWidgets.QPushButton(Form)
-        self.pushButton_4.setGeometry(QtCore.QRect(Tb_x + 3 * Tb_row_shift + 3 * Tb_width, Tb_y, Tb_width, Tb_height))
-        self.pushButton_4.setObjectName("pushButton_4")
+        # self.pushButton_3 = QtWidgets.QPushButton(Form)
+        # self.pushButton_3.setGeometry(QtCore.QRect(Tb_x + 2 * Tb_row_shift + 2 * Tb_width, Tb_y, Tb_width, Tb_height))
+        # self.pushButton_3.setObjectName("pushButton_3")
+        # self.pushButton_4 = QtWidgets.QPushButton(Form)
+        # self.pushButton_4.setGeometry(QtCore.QRect(Tb_x + 3 * Tb_row_shift + 3 * Tb_width, Tb_y, Tb_width, Tb_height))
+        # self.pushButton_4.setObjectName("pushButton_4")
 
+        
         self.saveImg = QtWidgets.QPushButton(Form)
-        self.saveImg.setGeometry(QtCore.QRect(Tb_x + 4 * Tb_row_shift + 4 * Tb_width, Tb_y, Tb_width, Tb_height))
+        self.saveImg.setGeometry(QtCore.QRect(Tb_x + 1 * Tb_row_shift + 1 * Tb_width, Tb_y+30, Tb_width, Tb_height))
         self.saveImg.setObjectName("saveImg")
         self.saveImg.clicked.connect(Form.save_img)
         self.retranslateUi(Form)
@@ -275,14 +272,14 @@ class Ui_Form(object):
 
     def add_tool_buttons(self, Form):
         self.newButton = QtWidgets.QPushButton(Form)
-        self.newButton.setGeometry(QtCore.QRect(int(Lb_x - 1 * Lb_row_shift - 60), 140, 60, 60))
+        self.newButton.setGeometry(QtCore.QRect(int(Lb_x - 1 * Lb_row_shift - 60), 220, 60, 60))
         self.newButton.setObjectName("openButton")
         self.newButton.setIcon(QIcon('icons/add_new_document.png'))
         self.newButton.setIconSize(QSize(60, 60))
         self.newButton.clicked.connect(Form.init_screen)
 
         self.openButton = QtWidgets.QPushButton(Form)
-        self.openButton.setGeometry(QtCore.QRect(int(Lb_x - 1 * Lb_row_shift - 60), 140 + 60*1 + 10*1, 60, 60))
+        self.openButton.setGeometry(QtCore.QRect(int(Lb_x - 1 * Lb_row_shift - 60), 220 + 60*1 + 10*1, 60, 60))
         self.openButton.setObjectName("openButton")
         self.openButton.setIcon(QIcon('icons/open.png'))
         self.openButton.setIconSize(QSize(60, 60))
@@ -291,7 +288,7 @@ class Ui_Form(object):
 
 
         self.fillButton = QtWidgets.QPushButton(Form)
-        self.fillButton.setGeometry(QtCore.QRect(int(Lb_x - 1*Lb_row_shift - 60), 140 + 60*2 + 10*2, 60, 60))
+        self.fillButton.setGeometry(QtCore.QRect(int(Lb_x - 1*Lb_row_shift - 60), 220 + 60*2 + 10*2, 60, 60))
         self.fillButton.setObjectName("fillButton")
         self.fillButton.setIcon(QIcon('icons/paint_can.png'))
         self.fillButton.setIconSize(QSize(60, 60))
@@ -299,7 +296,7 @@ class Ui_Form(object):
 
 
         self.brushButton = QtWidgets.QPushButton(Form)
-        self.brushButton.setGeometry(QtCore.QRect(int(Lb_x - 1*Lb_row_shift - 60), 140 + 60*3 + 10*3, 60, 60))
+        self.brushButton.setGeometry(QtCore.QRect(int(Lb_x - 1*Lb_row_shift - 60), 220 + 60*3 + 10*3, 60, 60))
         self.brushButton.setObjectName("brushButton")
         self.brushButton.setIcon(QIcon('icons/paint_brush.png'))
         self.brushButton.setIconSize(QSize(60, 60))
@@ -309,7 +306,7 @@ class Ui_Form(object):
 
 
         self.recButton = QtWidgets.QPushButton(Form)
-        self.recButton.setGeometry(QtCore.QRect(int(Lb_x - 1 * Lb_row_shift - 60), 140 + 60 * 4 + 10 * 4, 60, 60))
+        self.recButton.setGeometry(QtCore.QRect(int(Lb_x - 1 * Lb_row_shift - 60), 220 + 60 * 4 + 10 * 4, 60, 60))
         self.recButton.setObjectName("undolButton")
         self.recButton.setIcon(QIcon('icons/brush_square.png'))
         self.recButton.setIconSize(QSize(60, 60))
@@ -318,14 +315,14 @@ class Ui_Form(object):
 
 
         self.undoButton = QtWidgets.QPushButton(Form)
-        self.undoButton.setGeometry(QtCore.QRect(int(Lb_x - 1*Lb_row_shift - 60), 140 + 60*5 + 10*5, 60, 60))
+        self.undoButton.setGeometry(QtCore.QRect(int(Lb_x - 1*Lb_row_shift - 60), 220 + 60*5 + 10*5, 60, 60))
         self.undoButton.setObjectName("undolButton")
         self.undoButton.setIcon(QIcon('icons/undo.png'))
         self.undoButton.setIconSize(QSize(60, 60))
         self.undoButton.clicked.connect(Form.undo)
 
         self.saveButton = QtWidgets.QPushButton(Form)
-        self.saveButton.setGeometry(QtCore.QRect(int(Lb_x - 1 * Lb_row_shift - 60), 140 + 60 * 6 + 10 * 6, 60, 60))
+        self.saveButton.setGeometry(QtCore.QRect(int(Lb_x - 1 * Lb_row_shift - 60), 220 + 60 * 6 + 10 * 6, 60, 60))
         self.saveButton.setObjectName("saveButton")
         self.saveButton.setIcon(QIcon('icons/save.png'))
         self.saveButton.setIconSize(QSize(60, 60))
@@ -335,7 +332,7 @@ class Ui_Form(object):
     def add_style_imgs_buttons(self, Form):
 
         self.scrollArea = QtWidgets.QScrollArea(Form)
-        self.scrollArea.setGeometry(QtCore.QRect(1756, 140, 140, 512))
+        self.scrollArea.setGeometry(QtCore.QRect(1756, 200, 140, 512))
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
 
@@ -356,12 +353,12 @@ class Ui_Form(object):
         img_path_list = glob.glob('imgs/style_imgs_test/*.png')
         img_path_list.sort()
 
-        style_button = QtWidgets.QPushButton(self.scrollAreaWidgetContents)
-        style_button.setFixedSize(100, 100)
-        style_button.setIcon(QIcon('icons/random.png'))
-        style_button.setIconSize(QSize(100, 100))
-        style_button.clicked.connect(Form.load_partial_average_feature)
-        verticalLayout.addWidget(style_button)
+        # style_button = QtWidgets.QPushButton(self.scrollAreaWidgetContents)
+        # style_button.setFixedSize(100, 100)
+        # style_button.setIcon(QIcon('icons/random.png'))
+        # style_button.setIconSize(QSize(100, 100))
+        # style_button.clicked.connect(Form.load_partial_average_feature)
+        # verticalLayout.addWidget(style_button)
 
         for img_path in img_path_list:
             style_button = QtWidgets.QPushButton(self.scrollAreaWidgetContents)
@@ -382,15 +379,15 @@ class Ui_Form(object):
         self.color_Button = QtWidgets.QPushButton(Form)
         self.color_Button.setGeometry(QtCore.QRect(int(Lb_x - 1*Lb_row_shift - 60), Lb_y, 60, 60))
         self.color_Button.setObjectName("labelButton_0")
-        self.color_Button.setStyleSheet("background-color: %s;" % number_color[1])
+        self.color_Button.setStyleSheet("background-color: %s;" % number_color[0])
 
 
 
         self.labelButton_0 = QtWidgets.QPushButton(Form)
         self.labelButton_0.setGeometry(QtCore.QRect(Lb_x, Lb_y, Lb_width, Lb_height))
         self.labelButton_0.setObjectName("labelButton_0")
-        self.labelButton_0.setText(_translate("Form", "background"))
-        self.labelButton_0.setStyleSheet("background-color: %s;" % number_color[0]+ " color: black")
+        self.labelButton_0.setText(_translate("Form", "BG"))
+        self.labelButton_0.setStyleSheet("background-color: %s;" % number_color[0]+ " color: white")
         self.labelButton_0.clicked.connect(partial(Form.switch_labels, 0))
 
 
@@ -398,84 +395,93 @@ class Ui_Form(object):
         self.labelButton_1 = QtWidgets.QPushButton(Form)
         self.labelButton_1.setGeometry(QtCore.QRect(Lb_x + 1*Lb_row_shift + 1*Lb_width, Lb_y, Lb_width, Lb_height))
         self.labelButton_1.setObjectName("labelButton_1")
-        self.labelButton_1.setText(_translate("Form", "eyebrows"))
-        self.labelButton_1.setStyleSheet("background-color: %s;" % number_color[1] + " color: black")
+        self.labelButton_1.setText(_translate("Form", "Eyebrows"))
+        self.labelButton_1.setStyleSheet("background-color: %s;" % number_color[1] + " color: white")
         self.labelButton_1.clicked.connect(partial(Form.switch_labels, 1))
 
 
         self.labelButton_2 = QtWidgets.QPushButton(Form)
         self.labelButton_2.setGeometry(QtCore.QRect(Lb_x + 2*Lb_row_shift + 2*Lb_width, Lb_y, Lb_width, Lb_height))
         self.labelButton_2.setObjectName("labelButton_2")
-        self.labelButton_2.setText(_translate("Form", "mouth"))
-        self.labelButton_2.setStyleSheet("background-color: %s;" % number_color[2] + " color: black")
+        self.labelButton_2.setText(_translate("Form", "Mouth"))
+        self.labelButton_2.setStyleSheet("background-color: %s;" % number_color[2] + " color: white")
         self.labelButton_2.clicked.connect(partial(Form.switch_labels, 2))
 
 
         self.labelButton_3 = QtWidgets.QPushButton(Form)
         self.labelButton_3.setGeometry(QtCore.QRect(Lb_x + 3*Lb_row_shift + 3*Lb_width, Lb_y, Lb_width, Lb_height))
         self.labelButton_3.setObjectName("labelButton_3")
-        self.labelButton_3.setText(_translate("Form", "pupil"))
-        self.labelButton_3.setStyleSheet("background-color: %s;" % number_color[3] + " color: black")
+        self.labelButton_3.setText(_translate("Form", "Pupil"))
+        self.labelButton_3.setStyleSheet("background-color: %s;" % number_color[3] + " color: white")
         self.labelButton_3.clicked.connect(partial(Form.switch_labels, 3))
 
 
         self.labelButton_4 = QtWidgets.QPushButton(Form)
         self.labelButton_4.setGeometry(QtCore.QRect(Lb_x + 4*Lb_row_shift + 4*Lb_width, Lb_y, Lb_width, Lb_height))
         self.labelButton_4.setObjectName("labelButton_4")
-        self.labelButton_4.setText(_translate("Form", "accessory"))
-        self.labelButton_4.setStyleSheet("background-color: %s;" % number_color[4] + " color: black")
+        self.labelButton_4.setText(_translate("Form", "Accessory"))
+        self.labelButton_4.setStyleSheet("background-color: %s;" % number_color[4] + " color: white")
         self.labelButton_4.clicked.connect(partial(Form.switch_labels, 4))
 
 
         self.labelButton_5 = QtWidgets.QPushButton(Form)
         self.labelButton_5.setGeometry(QtCore.QRect(Lb_x + 5*Lb_row_shift + 5*Lb_width, Lb_y, Lb_width, Lb_height))
         self.labelButton_5.setObjectName("labelButton_5")
-        self.labelButton_5.setText(_translate("Form", "skin"))
-        self.labelButton_5.setStyleSheet("background-color: %s;" % number_color[5] + " color: black")
+        self.labelButton_5.setText(_translate("Form", "Skin"))
+        self.labelButton_5.setStyleSheet("background-color: %s;" % number_color[5] + " color: white")
         self.labelButton_5.clicked.connect(partial(Form.switch_labels, 5))
 
 
         self.labelButton_6 = QtWidgets.QPushButton(Form)
         self.labelButton_6.setGeometry(QtCore.QRect(Lb_x + 6*Lb_row_shift + 6*Lb_width, Lb_y, Lb_width, Lb_height))
         self.labelButton_6.setObjectName("labelButton_6")
-        self.labelButton_6.setText(_translate("Form", "nose"))
-        self.labelButton_6.setStyleSheet("background-color: %s;" % number_color[6] + " color: black")
+        self.labelButton_6.setText(_translate("Form", "Nose"))
+        self.labelButton_6.setStyleSheet("background-color: %s;" % number_color[6] + " color: white")
         self.labelButton_6.clicked.connect(partial(Form.switch_labels, 6))
 
 
         self.labelButton_7 = QtWidgets.QPushButton(Form)
         self.labelButton_7.setGeometry(QtCore.QRect(Lb_x + 7*Lb_row_shift + 7*Lb_width, Lb_y, Lb_width, Lb_height))
         self.labelButton_7.setObjectName("labelButton_7")
-        self.labelButton_7.setText(_translate("Form", "teeth"))
-        self.labelButton_7.setStyleSheet("background-color: %s;" % number_color[7] + " color: black")
+        self.labelButton_7.setText(_translate("Form", "Teeth"))
+        self.labelButton_7.setStyleSheet("background-color: %s;" % number_color[7] + " color: white")
         self.labelButton_7.clicked.connect(partial(Form.switch_labels, 7))
 
 
         self.labelButton_8 = QtWidgets.QPushButton(Form)
         self.labelButton_8.setGeometry(QtCore.QRect(Lb_x + 8*Lb_row_shift + 8*Lb_width, Lb_y, Lb_width, Lb_height))
         self.labelButton_8.setObjectName("labelButton_8")
-        self.labelButton_8.setText(_translate("Form", "ear"))
-        self.labelButton_8.setStyleSheet("background-color: %s;" % number_color[8] + " color: black")
+        self.labelButton_8.setText(_translate("Form", "Ear"))
+        self.labelButton_8.setStyleSheet("background-color: %s;" % number_color[8] + " color: white")
         self.labelButton_8.clicked.connect(partial(Form.switch_labels, 8))
 
         self.labelButton_9 = QtWidgets.QPushButton(Form)
         self.labelButton_9.setGeometry(QtCore.QRect(Lb_x + 9 * Lb_row_shift + 9 * Lb_width, Lb_y, Lb_width, Lb_height))
         self.labelButton_9.setObjectName("labelButton_9")
-        self.labelButton_9.setText(_translate("Form", "eye"))
-        self.labelButton_9.setStyleSheet("background-color: %s;" % number_color[9] + " color: black")
+        self.labelButton_9.setText(_translate("Form", "Eye"))
+        self.labelButton_9.setStyleSheet("background-color: %s;" % number_color[9] + " color: white")
         self.labelButton_9.clicked.connect(partial(Form.switch_labels, 9))
 
 
-        # Second Row
-
-
         self.labelButton_10 = QtWidgets.QPushButton(Form)
-        self.labelButton_10.setGeometry(QtCore.QRect(Lb_x,
-                                                     Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
+        self.labelButton_10.setGeometry(QtCore.QRect(Lb_x + 10 * Lb_row_shift + 10 * Lb_width, Lb_y, Lb_width, Lb_height))
         self.labelButton_10.setObjectName("labelButton_10")
-        self.labelButton_10.setText(_translate("Form", "tongue"))
-        self.labelButton_10.setStyleSheet("background-color: %s;" % number_color[10] + " color: black")
+        self.labelButton_10.setText(_translate("Form", "Tongue"))
+        self.labelButton_10.setStyleSheet("background-color: %s;" % number_color[10] + " color: white")
         self.labelButton_10.clicked.connect(partial(Form.switch_labels, 10))
+        
+
+
+        # # Second Row
+
+
+        # self.labelButton_10 = QtWidgets.QPushButton(Form)
+        # self.labelButton_10.setGeometry(QtCore.QRect(Lb_x,
+        #                                              Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
+        # self.labelButton_10.setObjectName("labelButton_10")
+        # self.labelButton_10.setText(_translate("Form", "tongue"))
+        # self.labelButton_10.setStyleSheet("background-color: %s;" % number_color[10] + " color: black")
+        # self.labelButton_10.clicked.connect(partial(Form.switch_labels, 10))
 
 
         # self.labelButton_11 = QtWidgets.QPushButton(Form)

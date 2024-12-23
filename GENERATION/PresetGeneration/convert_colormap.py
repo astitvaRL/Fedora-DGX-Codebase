@@ -30,16 +30,14 @@ join = os.path.join
 # set paths
 data_root = "/mnt/users_scratch/astitva/DATA/"
 labels_definition_file_path = "./label_definition.json"
-colormaps_path = join(data_root, "FACES_DRAWINGS16k/segmaps")
+colormaps_path = join(data_root, "FACES_DRAWINGS16k/vis")
 
-output_vis_root = join(data_root, "FACES_DRAWINGS16k/vis")
+output_vis_root = join(data_root, "FACES_DRAWINGS16k/vis_face")
 os.makedirs(output_vis_root, exist_ok=True)
 
 # load semantic definitions
-semantics_src = SemanticSegmentationFace(labels_definition_file_path)
-semantics_tgt = SemanticSegmentationAll(labels_definition_file_path)
-
-breakpoint()
+semantics_face = SemanticSegmentationFace(labels_definition_file_path, num_classes=11)
+semantics_all = SemanticSegmentationAll(labels_definition_file_path, num_classes=27)
 
 # load labels
 start = 0
@@ -51,7 +49,10 @@ for label_name in tqdm(labels):
 
     # load images
     label_full = cv2.imread(join(colormaps_path, label_name))
-    label_full = cv2.cvtColor(label_full, cv2.COLOR_BGR2RGB)
+    label_full_colors = cv2.cvtColor(label_full, cv2.COLOR_BGR2RGB)
+    label_id = semantics_all.colors_to_labels(label_full_colors)
+    face_region = (label_id == 2) | (label_id == 3) | (label_id == 4) | (label_id == 5) | (label_id == 6) | (label_id == 12) | (label_id == 13) | (label_id == 17) | (label_id == 18) | (label_id == 22) | (label_id == 23)
+    label_full[~face_region] = [0,0,0]
 
     cv2.imwrite(join(output_vis_root, label_name), label_full)
 

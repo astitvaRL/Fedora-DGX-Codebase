@@ -49,6 +49,7 @@ class Ex(QWidget, Ui_Form):
         self.alpha = 1
 
         self.mouse_clicked = False
+
         self.scene = GraphicsScene(self.modes, self)
         self.scene.setSceneRect(0, 0, 512, 512)
         self.graphicsView.setScene(self.scene)
@@ -106,14 +107,16 @@ class Ex(QWidget, Ui_Form):
         self.run_deep_model()
         self.recorded_img_names = []
 
-
-
     def init_deep_model(self, opt):
         self.opt = opt
+        self.opt.load_size = 1024
+        self.opt.crop_size = 1024
         self.model = Pix2PixModel(self.opt)
         self.model.eval()
+    
 
     def run_deep_model(self):
+        
         torch.manual_seed(0)
 
         data_i = self.get_single_input()
@@ -121,17 +124,16 @@ class Ex(QWidget, Ui_Form):
         if self.obj_dic is not None:
             data_i['obj_dic'] = self.obj_dic
 
-
         generated = self.model(data_i, mode='UI_mode')
         generated_img = self.convert_output_image(generated)
         # qim = QImage(generated_img.data, generated_img.shape[1], generated_img.shape[0], QImage.Format_RGB888)
         qim = QImage(generated_img.data.tobytes(), generated_img.shape[1], generated_img.shape[0], QImage.Format_RGB888)
 
-
         if len(self.result_scene.items()) > 0:
             self.result_scene.removeItem(self.result_scene.items()[-1])
         self.result_scene.addPixmap(QPixmap.fromImage(qim).scaled(QSize(512,512),transformMode=Qt.SmoothTransformation))
         self.generated_img = generated_img
+
 
 
     @pyqtSlot()
@@ -346,7 +348,7 @@ class Ex(QWidget, Ui_Form):
 
         self.style_img_mask_dic = {}
 
-        for i in range(19):
+        for i in range(11):
             input_style_dic[str(i)] = {}
 
             input_category_folder_list = glob(os.path.join(input_style_code_folder, str(i), '*.npy'))

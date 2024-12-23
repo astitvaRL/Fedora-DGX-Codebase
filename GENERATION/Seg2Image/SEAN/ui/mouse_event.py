@@ -96,12 +96,13 @@ class GraphicsScene(QGraphicsScene):
 
                 self.history_list.append(fill)
                 self.convert_fill(fill)
-                self.Form.run_deep_model()
+                # self.Form.run_deep_model()
 
 
 
 
     def mouseReleaseEvent(self, event):
+        self.Form.run_deep_model()
         self.prev_pt = None
         self.mouse_clicked = False
 
@@ -144,7 +145,7 @@ class GraphicsScene(QGraphicsScene):
         stroke['shape'] = 'Stroke'
         self.history_list.append(stroke)
         self.convert_stroke(stroke)
-        self.Form.run_deep_model()
+        # self.Form.run_deep_model()
 
     def drawRec(self, prev_pt, curr_pt):
 
@@ -179,7 +180,7 @@ class GraphicsScene(QGraphicsScene):
 
         self.Form.mat_img = self.old_rec_mat_img.copy()
         self.convert_rec(rec)
-        self.Form.run_deep_model()
+        # self.Form.run_deep_model()
 
 
 
@@ -241,7 +242,7 @@ class GraphicsScene(QGraphicsScene):
                     self.convert_rec(pts)
                 elif pts['shape'] == 'Fill':
                     self.convert_fill(pts)
-            self.Form.run_deep_model()
+            # self.Form.run_deep_model()
 
 
 

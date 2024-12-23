@@ -135,17 +135,17 @@ import numpy as np
 
 #################### FACES DRAWINGS #################################
 number_object = {
-                0: 'background',
-                1: 'eyebrows',
-                2: 'mouth',
-                3: 'pupil',
-                4: 'accessory',
-                5: 'skin',
-                6: 'nose',
-                7: 'teeth',
-                8: 'ear',
-                9: 'eye',
-                10: 'tongue',
+                0: 'BG',
+                1: 'Eyebrows',
+                2: 'Mouth',
+                3: 'Pupil',
+                4: 'Accessory',
+                5: 'Skin',
+                6: 'Nose',
+                7: 'Teeth',
+                8: 'Ear',
+                9: 'Eye',
+                10: 'Tongue',
 }
 
 
