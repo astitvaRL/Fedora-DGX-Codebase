@@ -124,7 +124,8 @@ class Ex(QWidget, Ui_Form):
 
         generated = self.model(data_i, mode='UI_mode')
         generated_img = self.convert_output_image(generated)
-        qim = QImage(generated_img.data, generated_img.shape[1], generated_img.shape[0], QImage.Format_RGB888)
+        # qim = QImage(generated_img.data, generated_img.shape[1], generated_img.shape[0], QImage.Format_RGB888)
+        qim = QImage(generated_img.data.tobytes(), generated_img.shape[1], generated_img.shape[0], QImage.Format_RGB888)
 
 
         if len(self.result_scene.items()) > 0:
@@ -155,7 +156,7 @@ class Ex(QWidget, Ui_Form):
             self.mat_img = cv2.resize(mat_img, (512, 512), interpolation=cv2.INTER_NEAREST)
             self.mat_img_org = self.mat_img.copy()
 
-            self.GT_img_path = os.path.join(self.opt.image_dir, os.path.basename(fileName)[:-4] + '.jpg')
+            self.GT_img_path = os.path.join(self.opt.image_dir, os.path.basename(fileName)[:-4] + '.png')
             GT_img = skimage.io.imread(self.GT_img_path)
             self.GT_img = Image.fromarray(GT_img)
             self.GT_img = self.GT_img.convert('RGB')
@@ -379,7 +380,7 @@ class Ex(QWidget, Ui_Form):
         ui_result_folder = 'style_interpolation'
 
 
-        img_list = glob('imgs/style_imgs_test/*.jpg')
+        img_list = glob('imgs/style_imgs_test/*.png')
         img_list.sort()
 
         for style_count,_ in enumerate(img_list):
@@ -515,7 +516,8 @@ class Ex(QWidget, Ui_Form):
             ########## show mask option 1: masks of the style image
             rgb_mask = skimage.io.imread(os.path.join(os.path.dirname(self.opt.label_dir), 'vis', os.path.basename(name)[:-4] + '.png'))
             gray_mask = skimage.io.imread(os.path.join(self.opt.label_dir, os.path.basename(name)[:-4] + '.png'))
-
+            if len(gray_mask.shape)>2:
+                gray_mask = gray_mask[:,:,0]
 
             mask_snap = np.where(np.isin(np.repeat(np.expand_dims(gray_mask,2),3, axis=2), self.recorded_mask_dic[name]), rgb_mask, 255)
 
