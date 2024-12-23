@@ -49,6 +49,7 @@ class DrawingsDataset(Dataset):
         return len(self.files)
 
     def __getitem__(self, index):
+        image_name = self.files[index]
         input_image_tensor = self.cache[index][:3,:,:]
         if not self.cache_available: 
             image_name = f"{self.files[index].split('_')[0]}.png"
@@ -84,8 +85,11 @@ class DrawingsDataset(Dataset):
             Ys = np.where(binmask>0)[1]
             bbox = np.array([min(Ys),min(Xs),max(Ys),max(Xs)])
 
-        # convert image, gt, mask, bounding box to torch tensor
+        if self.mode=='eval': 
+            return input_image_tensor, gt2D_labels.long(), image_name
+
         return input_image_tensor, gt2D_labels.long(), torch.tensor(binmask[None, :,:]).float(), torch.from_numpy(bbox).float()
+    
 
     def init_cache(self):
         print(f"Initializing {self.mode} cache...")

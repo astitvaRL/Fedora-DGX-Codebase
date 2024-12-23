@@ -18,11 +18,10 @@ import torchmetrics
 import segmentation_refinement as segref
 
 from segment_anything_parallel import sam_model_registry
-from segment_anything_parallel_fine_infer import sam_model_registry as sam_model_registry_fine
 
 from segment_anything_parallel_fine_infer.utils.transforms import ResizeLongestSide
 
-from utils.dataset import DrawingsDatasetC2FAll
+from utils.dataset import DrawingsDataset
 from utils.SurfaceDice import compute_dice_coefficient
 from utils.SemanticSegmentation import SemanticSegmentationCoarse, SemanticSegmentationNoFace, SemanticSegmentationFace, SemanticSegmentationAll
 from utils.augment import RandomAug
@@ -48,13 +47,13 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
 
     # EXPERIMENT CONFIG
-    task_name = '16k_ANIMSEG_DecoderOnly_ALL_CLASSES'
+    task_name = '4k_ANIMSEG_E2E_COARSE'
     all_ckpts_dir = 'all_ckpts'
-    out_dir = 'EVALUATION/16k_ANIMSEG_DecoderOnly_ALL_CLASSES/LATEST/'
+    out_dir = 'EVALUATION/4k_ANIMSEG_E2E_COARSE/500/'
     mode = 'test'
     BATCH_SIZE = 1
-    load_best_eval_ckpt = True
-    epoch = 400
+    load_best_eval_ckpt = False
+    epoch = 500
     encoder_original = False
     cache_available = False 
     bbox_given = False
@@ -66,8 +65,9 @@ if __name__ == '__main__':
     model_type = 'vit_b'
 
     # semantic definitions
-    num_classes = 27
-    semantics = SemanticSegmentationAll(labels_definition_path=labels_definition_file_path, num_classes=num_classes)
+    num_classes = 6
+    # semantics = SemanticSegmentationAll(labels_definition_path=labels_definition_file_path, num_classes=num_classes)
+    semantics = SemanticSegmentationCoarse(labels_definition_path=labels_definition_file_path, num_classes=num_classes)
 
     # set dataset cache path
     cache_path = join(cache_dir, f'{mode}_cache.pt')
@@ -106,7 +106,7 @@ if __name__ == '__main__':
 
 
     # create dataset
-    test_dataset = DrawingsDatasetC2FAll(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode=mode, num_test_samples=2000)
+    test_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode=mode, num_test_samples=2000)
 
     # assign semantics
     test_dataset.semantics = semantics
@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
     # create dataloader
     assert BATCH_SIZE==1
-    test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=False, drop_last=False)
+    test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=False, drop_last=True)
 
     # Set up the metrics
     dice_loss = monai.losses.DiceCELoss(sigmoid=True, squared_pred=True, reduction='mean')
@@ -155,10 +155,13 @@ if __name__ == '__main__':
     os.makedirs(eval_epoch_dir, exist_ok=True)
     print(f"EVAL results will be SAVED here --> {eval_epoch_dir}")
 
+    # set dataset in eval mode
+    test_dataset.mode = 'eval'
+
     eval_loss = 0
     mAcc = 0
     classwise_mIoU = [0]*num_classes
-    for step, (image_data_eval, _, _, _, gt_all, image_name_string) in enumerate(tqdm(test_dataloader,"EVAL")):
+    for step, (image_data_eval, gt_all, image_name_string) in enumerate(tqdm(test_dataloader,"EVAL")):
         image_data_eval = image_data_eval.to(device)
         gt_all = gt_all.to(device)
         # not computing gradients for image encoder, prompt encoder and mask decoder during evaluation
@@ -194,16 +197,16 @@ if __name__ == '__main__':
             pred_one_hot = torch.nn.functional.one_hot(pred_labels,num_classes)
             pred_one_hot = torch.permute(pred_one_hot,(0,3,1,2))
 
-            #compute accuracy
-            batch_accuracy = accuracy(pred_one_hot, gt_all).mean().item()
-            mAcc += batch_accuracy
-            # compute batch IoU
-            for class_idx in range(1, mask_predictions.shape[1]):
-                batch_IoU = monai.metrics.compute_iou(pred_one_hot[:,class_idx,:,:].unsqueeze(1), gt_all[:,class_idx,:,:].unsqueeze(1), include_background=True, ignore_empty=False)
-                sum_notnans = torch.nan_to_num(batch_IoU, nan=0.0).sum()
-                count_notnans = torch.isfinite(batch_IoU).sum()
-                batch_mean_IoU = sum_notnans / count_notnans
-                classwise_mIoU[class_idx] += batch_mean_IoU.item()
+            # #compute accuracy
+            # batch_accuracy = accuracy(pred_one_hot, gt_all).mean().item()
+            # mAcc += batch_accuracy
+            # # compute batch IoU
+            # for class_idx in range(1, mask_predictions.shape[1]):
+            #     batch_IoU = monai.metrics.compute_iou(pred_one_hot[:,class_idx,:,:].unsqueeze(1), gt_all[:,class_idx,:,:].unsqueeze(1), include_background=True, ignore_empty=False)
+            #     sum_notnans = torch.nan_to_num(batch_IoU, nan=0.0).sum()
+            #     count_notnans = torch.isfinite(batch_IoU).sum()
+            #     batch_mean_IoU = sum_notnans / count_notnans
+            #     classwise_mIoU[class_idx] += batch_mean_IoU.item()
 
 
             # visualizing samples from every batch
@@ -251,7 +254,10 @@ if __name__ == '__main__':
                     ax[3].set_title("Overlayed Prediction (Fine)", fontsize=TITLE_SIZE)
                     ax[3].axis('off')
                     # metric_string = '999' # str(batch_accuracy).replace('.','_')[:7]
-                    image_name = image_name_string[batch_idx][:-4]
+                    image_name = image_name_string[0]
+                    os.makedirs(f"{eval_epoch_dir}/{image_name}", exist_ok=True)
+                    plt.savefig(f"{eval_epoch_dir}/{image_name}/visualization_plot.png")
+                    plt.close()
                     os.makedirs(f"{eval_epoch_dir}/{image_name}", exist_ok=True)
                     plt.savefig(f"{eval_epoch_dir}/{image_name}/visualization_plot.png")
                     plt.close()
@@ -278,7 +284,7 @@ if __name__ == '__main__':
                         ax[4].imshow(overlayed_refined)
                         ax[4].set_title("Overlayed (Refined)", fontsize=TITLE_SIZE)
                         ax[4].axis('off')
-                    metric_string = str(batch_accuracy).replace('.','_')[:7]
+                    # metric_string = str(batch_accuracy).replace('.','_')[:7]
                     plt.savefig(f"{eval_epoch_dir}/{metric_string}_{step}_{batch_idx}.png")
                     plt.close()
 
@@ -296,7 +302,7 @@ if __name__ == '__main__':
                         heatmap = heatmaps[i-1].cpu().numpy().astype('float32')
                         remapped_id = semantics.reverse_remap[i-1]
                         class_name = id_to_label[remapped_id]
-                        if coarse:
+                        if num_classes<=6:
                             class_name = semantics.class_names[i-1]
                         ax[i].imshow(heatmap, cmap='jet_r')
                         ax[i].set_title(f"{class_name}", fontsize=TITLE_SIZE)

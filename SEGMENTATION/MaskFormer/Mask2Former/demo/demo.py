@@ -120,8 +120,10 @@ if __name__ == "__main__":
             # use PIL, to be consistent with evaluation
             img = read_image(path, format="BGR")
             start_time = time.time()
-            predictions, visualized_output = demo.run_on_image(img)
-            pred_labels = torch.argmax(predictions['sem_seg'],0).cpu().numpy().astype('uint8')
+            # predictions, visualized_output = demo.run_on_image(img)
+            predictions = demo.run_on_image(img)
+            pred_labels = (predictions['sem_seg'].argmax(dim=0)).cpu().numpy().astype('uint8')
+            pred_labels = pred_labels + 1 # bg will go to 255
             segmap = semantics.labels_to_colors(pred_labels)
             logger.info(
                 "{}: {} in {:.2f}s".format(
@@ -141,8 +143,8 @@ if __name__ == "__main__":
                     assert len(args.input) == 1, "Please specify a directory with args.output"
                     out_filename = args.output
                 # visualized_output.save(out_filename)
-                # cv2.imwrite(out_filename, cv2.cvtColor(segmap, cv2.COLOR_BGR2RGB))
-                cv2.imwrite(out_filename, segmap)
+                cv2.imwrite(f'{out_filename[:-4]}_seg.png', cv2.cvtColor(segmap, cv2.COLOR_BGR2RGB))
+                cv2.imwrite(out_filename, img)
             else:
                 cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
                 cv2.imshow(WINDOW_NAME, visualized_output.get_image()[:, :, ::-1])
