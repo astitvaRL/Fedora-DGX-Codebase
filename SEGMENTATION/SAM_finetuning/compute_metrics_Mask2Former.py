@@ -35,9 +35,10 @@ if __name__ == '__main__':
     np.random.seed(999)
     torch.multiprocessing.set_start_method('spawn')
 
-    NUM_CLASSES = 6
+    NUM_CLASSES = 27
     plot = False
     compute_metrics = True
+    ignore_bg = True
 
     # define metrics
     MeanIoU = segmentation.MeanIoU(num_classes=NUM_CLASSES, include_background=True, per_class=True, input_format='index')
@@ -52,12 +53,13 @@ if __name__ == '__main__':
     image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
     label_id_dir_name = 'AD_SegMaps/labels_16k'  
 
-    SAM_EVAL_ROOT = "/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/EVALUATION/"
+    semantics = SemanticSegmentationAll(num_classes=NUM_CLASSES, labels_definition_path=labels_definition_file_path)
+    # semantics = SemanticSegmentationCoarse(num_classes=NUM_CLASSES, labels_definition_path=labels_definition_file_path)
 
-    # semantics = SemanticSegmentationAll(num_classes=NUM_CLASSES, labels_definition_path=labels_definition_file_path)
-    semantics = SemanticSegmentationCoarse(num_classes=NUM_CLASSES, labels_definition_path=labels_definition_file_path)
+    exp_eval_results_dir = "/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/Mask2Former/demo/results/EVAL_DRAWINGS_FINAL//"
 
-    exp_eval_results_dir = "/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/EVALUATION/4k_ANIMSEG_E2E_COARSE/500/500"
+    out_dir = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/MaskFormer/Mask2Former/demo/results/EVAL_DRAWINGS_FINAL_wBG/'
+    os.makedirs(out_dir, exist_ok=True)
 
     ref_dir = join(data_root, label_id_dir_name)
     files = sorted(os.listdir(ref_dir))[-2000:]
@@ -68,20 +70,42 @@ if __name__ == '__main__':
     COUNT = 0
     for filename in tqdm(files):
         if filename.endswith('.png'):
-            filename_base = filename.split('_')[0]
-            input_im = cv2.imread(join(data_root, image_dir_name, f'{filename_base}.png'))
-            exp_seg = cv2.imread(join(exp_eval_results_dir, f'{filename_base}.png/pred.png'))
-            gt_seg = cv2.imread(join(exp_eval_results_dir, f'{filename_base}.png/gt.png'))
-            input_im =  cv2.cvtColor(input_im, cv2.COLOR_BGR2RGB)
-            exp_seg =  cv2.cvtColor(exp_seg, cv2.COLOR_BGR2RGB)
-            gt_seg =  cv2.cvtColor(gt_seg, cv2.COLOR_BGR2RGB)
-            input_im = cv2.resize(input_im, (1024,1024), interpolation=cv2.INTER_LINEAR)
-            exp_seg = cv2.resize(exp_seg, (1024,1024), interpolation=cv2.INTER_NEAREST)
-            gt_seg = cv2.resize(gt_seg, (1024,1024), interpolation=cv2.INTER_NEAREST)
-
             try:
+                filename_base = filename.split('.')[0]
+                input_im = cv2.imread(join(data_root, image_dir_name, f"{filename_base.split('_')[0]}.png"))
+                exp_seg = cv2.imread(join(exp_eval_results_dir, f'{filename_base}_seg.png'))
+                gt_seg = cv2.imread(join(data_root, label_id_dir_name, f'{filename_base}.png'))
+                input_im =  cv2.cvtColor(input_im, cv2.COLOR_BGR2RGB)
+                exp_seg =  cv2.cvtColor(exp_seg, cv2.COLOR_BGR2RGB)
+                gt_seg =  cv2.cvtColor(gt_seg, cv2.COLOR_BGR2RGB)
+                input_im = cv2.resize(input_im, (1024,1024), interpolation=cv2.INTER_LINEAR)
+                exp_seg = cv2.resize(exp_seg, (1024,1024), interpolation=cv2.INTER_NEAREST)
+                gt_seg = cv2.resize(gt_seg, (1024,1024), interpolation=cv2.INTER_NEAREST)
+
+                if ignore_bg:
+                    exp_seg[gt_seg.sum(2)==0] = [0,0,0]
+                
+
+                # plot
+                TITLE_SIZE = 30
+                fig, ax = plt.subplots(1,3, figsize=(30,10))
+                ax[0].imshow(input_im)
+                ax[0].set_title("Input Image", fontsize=TITLE_SIZE)
+                ax[0].axis('off')
+                ax[1].imshow(exp_seg)
+                ax[1].set_title("Prediction", fontsize=TITLE_SIZE)
+                ax[1].axis('off')
+                ax[2].imshow(gt_seg)
+                ax[2].set_title("Ground Truth", fontsize=TITLE_SIZE)
+                ax[2].axis('off')
+                plt.savefig(join(out_dir, f'{filename_base}_vis.png'))
+                plt.close()
+                exp_seg =  cv2.cvtColor(exp_seg, cv2.COLOR_BGR2RGB)
+                cv2.imwrite(join(out_dir, f'{filename_base}_seg_BG.png'), exp_seg)
+
                 gt_t = torch.Tensor(semantics.colors_to_labels(gt_seg)).long().unsqueeze(0)
                 exp_t = torch.Tensor(semantics.colors_to_labels(exp_seg)).long().unsqueeze(0)
+
                 # Per-class IoU
                 not_present = MeanIoU(gt_t, gt_t) == 0
                 iou = MeanIoU(exp_t, gt_t)
@@ -101,6 +125,7 @@ if __name__ == '__main__':
                 classwise_acc += acc
 
                 COUNT += 1
+
             except:
                 pass
                 

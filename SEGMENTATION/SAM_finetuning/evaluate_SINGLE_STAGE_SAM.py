@@ -47,13 +47,13 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
 
     # EXPERIMENT CONFIG
-    task_name = '4k_ANIMSEG_E2E_COARSE'
+    task_name = '16k_ANIMSEG_E2E_COARSE'
     all_ckpts_dir = 'all_ckpts'
-    out_dir = 'EVALUATION/4k_ANIMSEG_E2E_COARSE/500/'
+    out_dir = 'EVALUATION/16k_ANIMSEG_E2E_COARSE/BEST/'
     mode = 'test'
     BATCH_SIZE = 1
-    load_best_eval_ckpt = False
-    epoch = 500
+    load_best_eval_ckpt = True
+    epoch = 300
     encoder_original = False
     cache_available = False 
     bbox_given = False
