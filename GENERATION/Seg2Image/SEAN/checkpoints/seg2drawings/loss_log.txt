@@ -3589,3 +3589,14 @@
 (epoch: 23, iters: 4656, time: 0.277) GAN: 0.639 GAN_Feat: 5.868 VGG: 1.912 D_Fake: 0.487 D_real: 1.209 
 (epoch: 23, iters: 4752, time: 0.287) GAN: 0.286 GAN_Feat: 5.761 VGG: 2.074 D_Fake: 0.791 D_real: 0.889 
 (epoch: 23, iters: 4864, time: 0.281) GAN: 0.714 GAN_Feat: 5.174 VGG: 1.828 D_Fake: 0.425 D_real: 1.317 
+(epoch: 23, iters: 4960, time: 0.292) GAN: 0.225 GAN_Feat: 5.054 VGG: 1.768 D_Fake: 0.832 D_real: 1.029 
+(epoch: 23, iters: 5056, time: 0.290) GAN: 0.426 GAN_Feat: 5.315 VGG: 1.860 D_Fake: 0.658 D_real: 0.873 
+(epoch: 23, iters: 5152, time: 0.276) GAN: 0.178 GAN_Feat: 5.261 VGG: 2.044 D_Fake: 0.867 D_real: 0.799 
+(epoch: 23, iters: 5264, time: 0.280) GAN: 0.007 GAN_Feat: 5.144 VGG: 1.551 D_Fake: 1.182 D_real: 0.645 
+(epoch: 23, iters: 5360, time: 0.287) GAN: 0.187 GAN_Feat: 5.139 VGG: 1.746 D_Fake: 0.864 D_real: 0.960 
+(epoch: 23, iters: 5456, time: 0.289) GAN: 0.522 GAN_Feat: 5.798 VGG: 2.081 D_Fake: 0.470 D_real: 1.225 
+(epoch: 23, iters: 5552, time: 0.289) GAN: 0.569 GAN_Feat: 5.593 VGG: 1.836 D_Fake: 0.466 D_real: 1.354 
+(epoch: 23, iters: 5664, time: 0.280) GAN: 0.447 GAN_Feat: 5.421 VGG: 1.823 D_Fake: 0.692 D_real: 0.887 
+(epoch: 23, iters: 5760, time: 0.278) GAN: 0.724 GAN_Feat: 5.047 VGG: 1.866 D_Fake: 0.623 D_real: 1.198 
+(epoch: 23, iters: 5856, time: 0.283) GAN: 0.189 GAN_Feat: 5.487 VGG: 2.009 D_Fake: 0.901 D_real: 0.763 
+(epoch: 23, iters: 5952, time: 0.306) GAN: 0.286 GAN_Feat: 5.480 VGG: 1.713 D_Fake: 0.726 D_real: 0.974 
