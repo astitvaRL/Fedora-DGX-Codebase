@@ -176,7 +176,6 @@ class SemanticSegmentationNoFace():
                 print("Label ID overflows Number of Classes!")
                 exit()
             labels[mask] = remapped_id
-    
         labels = labels.reshape(w,h)
         return labels
 
@@ -190,7 +189,7 @@ class SemanticSegmentationTernary():
         self.data['label_name_to_id']['Unlabeled'] = 26 # handling id 255
         self.remap = {0:0, 1:1, 2:2, 3:2, 4:2, 5:2, 6:2, 13:2, 17:2, 18:2, 22:2, 23:2, 7:1, 8:1, 9:1, 10:1, 11:1, 12:1, 14:1, 15:1, 16:1, 19:1, 20:1, 21:1, 24:1, 25:1, 26:0}
         self.reverse_remap = {value: key for key, value in self.remap.items()}
-        assert self.num_classes == 3 #highest remapped id+1
+        assert self.num_classes == 3 #highest remapped id + 1
         self.color_dict = {}
         for label_name in self.data['label_name_to_color']:
             self.color_dict[int(self.data['label_name_to_id'][label_name])] = self.data['label_name_to_color'][label_name]
