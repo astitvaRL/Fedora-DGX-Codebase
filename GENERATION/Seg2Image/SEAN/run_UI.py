@@ -138,9 +138,10 @@ class Ex(QWidget, Ui_Form):
 
     @pyqtSlot()
     def open(self):
-
+        parent_dir = self.opt.label_dir[:-len('labels')]
         fileName, _ = QFileDialog.getOpenFileName(self, "Open File",
-                                                  QDir.currentPath() + '/imgs/colormaps')
+                                                #   QDir.currentPath() + '/imgs/colormaps')
+                                                f'{parent_dir}/vis')
         if fileName:
             image = QPixmap(fileName)
             self.mat_img_path = os.path.join(self.opt.label_dir, os.path.basename(fileName))
@@ -298,7 +299,7 @@ class Ex(QWidget, Ui_Form):
 
         ############### hard coding for categories
 
-        for i in range(19):
+        for i in range(11):
             input_style_dic[str(i)] = {}
 
             average_category_folder_list = glob(os.path.join(average_style_code_folder, str(i), '*.npy'))
@@ -382,7 +383,8 @@ class Ex(QWidget, Ui_Form):
         ui_result_folder = 'style_interpolation'
 
 
-        img_list = glob('imgs/style_imgs_test/*.png')
+        # img_list = glob('imgs/style_imgs_test/*.png')
+        img_list = glob('styles_test/style_images/*.png')
         img_list.sort()
 
         for style_count,_ in enumerate(img_list):

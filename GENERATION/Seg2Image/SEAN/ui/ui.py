@@ -350,7 +350,8 @@ class Ui_Form(object):
         verticalLayout.setSpacing(6)
 
 
-        img_path_list = glob.glob('imgs/style_imgs_test/*.png')
+        # img_path_list = glob.glob('imgs/style_imgs_test/*.png')
+        img_path_list = glob.glob('styles_test/style_images/*.png')
         img_path_list.sort()
 
         # style_button = QtWidgets.QPushButton(self.scrollAreaWidgetContents)
