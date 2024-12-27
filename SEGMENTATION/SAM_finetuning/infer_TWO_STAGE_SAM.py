@@ -46,10 +46,9 @@ if __name__ == '__main__':
     # save_predcitions_dir_path = './PREDICTIONS/3BiCar_360_Renders/' + suffix + '/'
 
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/dog_val_images'
-    # inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/IN_THE_WILD/'
-    inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/IN_THE_WILD_IMAGES/random/'
-    # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/ToonLight/data_generation/3DBiCar_drawings/'
-    save_predcitions_dir_path = './INFERENCE/random/'
+    inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/IN_THE_WILD/faces_wild/'
+    # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/IN_THE_WILD_IMAGES/random/'
+    save_predcitions_dir_path = './INFERENCE/faces_wild/'
     # save_predcitions_dir_path = f'{inference_image_dir_path}/prediction/'
     # save_predcitions_dir_path = './PREDICTIONS/3DBiCar_drawings'
     # os.makedirs(save_predcitions_dir_path)
@@ -64,18 +63,19 @@ if __name__ == '__main__':
     save_task_name = f'infer{task_name_fine}_BEST'
     mode = 'test'
     BATCH_SIZE = 1
-    load_best_eval_ckpt = True
-    epoch = 400
-    epoch_coarse = 400
-    epoch_face = 512
+    load_best_eval_ckpt = False
+    epoch = 500
+    epoch_coarse = 500
+    epoch_face = 450
     encoder_original = False
     bbox_given = False
     visualize_coarse = True
     coarse_includes_neck = True
     bg_mask_given = False
-    visualize_heatmap = False
+    visualize_heatmap = True
     refine_labels = True
     model_type = 'vit_b'
+    save_edit_data = True
 
     # semantic definitions
     num_classes_coarse = 6 # coarse network also includes 'Neck' class which will be merged to torso before feeding to fine network if required
@@ -176,6 +176,15 @@ if __name__ == '__main__':
     if load_best_eval_ckpt:
         eval_epoch_dir = join(save_predcitions_dir_path, f"{save_task_name}/best_eval_epoch")
     os.makedirs(eval_epoch_dir, exist_ok=True)
+    if save_edit_data:
+        image_dir = f"{eval_epoch_dir}/for_editing/images/"
+        segmap_dir = f"{eval_epoch_dir}/for_editing/vis/"
+        label_dir = f"{eval_epoch_dir}/for_editing/labels/"
+        os.makedirs(image_dir, exist_ok=True)
+        os.makedirs(segmap_dir, exist_ok=True)
+        os.makedirs(label_dir, exist_ok=True)
+
+
     print(f"EVAL results will be SAVED here --> {eval_epoch_dir}")
 
     valid_face_detected = False # flag to check if face is detected in the image
@@ -356,22 +365,34 @@ if __name__ == '__main__':
                 
                 if visualize_heatmap:
                     # show heatmap
-                    fig, ax = plt.subplots(1,num_classes_all+1, figsize=((num_classes_all+1)*10,10))
+                    fig, ax = plt.subplots(1,num_classes_face+1, figsize=((num_classes_face+1)*10,10))
                     ax[0].imshow(labels_out_vis)
                     ax[0].set_title("Prediction", fontsize=TITLE_SIZE)
                     ax[0].axis('off')
                     #normalize mask predictions across channels
-                    heatmaps = mask_predictions_fine[batch_idx]
+                    heatmaps = mask_predictions_face[batch_idx]
                     heatmaps = heatmaps/heatmaps.sum(dim=0, keepdim=True)
-                    for i in range(1,num_classes_all+1):
+                    for i in range(1,num_classes_face+1):
                         heatmap = heatmaps[i-1].cpu().numpy().astype('float32')
-                        remapped_id = semantics_fine.reverse_remap[i-1]
+                        remapped_id = semantics_face.reverse_remap[i-1]
                         class_name = id_to_label[remapped_id]
                         # if coarse:
                         #     class_name = semantics_fine.class_names[i-1]
                         ax[i].imshow(heatmap, cmap='jet_r')
                         ax[i].set_title(f"{class_name}", fontsize=TITLE_SIZE)
                         ax[i].axis('off')
-                    plt.savefig(f"{eval_epoch_dir}/{save_name_string}_heatmap.png")
+                    plt.savefig(f"{eval_epoch_dir}/{save_name_string}_face_heatmap.png")
                     plt.close()
+                
+                if valid_face_detected and save_edit_data:
+                    image_face = image_data_vis[Xs.min():Xs.max(),Ys.min():Ys.max()]
+                    image_face = cv2.resize(image_face,(1024,1024))
+                    image_face = cv2.cvtColor(image_face, cv2.COLOR_BGR2RGB)
+                    labels_out_face_vis = cv2.resize(labels_out_face_vis,(1024,1024), interpolation=cv2.INTER_NEAREST)
+                    segmap = cv2.cvtColor(labels_out_face_vis, cv2.COLOR_BGR2RGB)
+                    label = semantics_face.colors_to_labels(labels_out_face_vis)
+                    # breakpoint()
+                    cv2.imwrite(f"{image_dir}/{save_name_string}.png", image_face)
+                    cv2.imwrite(f"{segmap_dir}/{save_name_string}.png", segmap)
+                    cv2.imwrite(f"{label_dir}/{save_name_string}.png", label)
                     

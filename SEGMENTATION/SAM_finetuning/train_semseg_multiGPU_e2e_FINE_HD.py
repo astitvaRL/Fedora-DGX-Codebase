@@ -15,12 +15,12 @@ import json
 from monai.networks import one_hot
 import kornia
 
-from segment_anything_parallel_fine import SamPredictor, sam_model_registry
-from segment_anything_parallel_fine.utils.transforms import ResizeLongestSide
+from segment_anything_parallel_fine_HD import SamPredictor, sam_model_registry
+from segment_anything_parallel_fine_HD.utils.transforms import ResizeLongestSide
 
-from utils.dataset import DrawingsDatasetC2F
+from utils.dataset import DrawingsDatasetC2FHD
 from utils.SurfaceDice import compute_dice_coefficient
-from utils.SemanticSegmentation import SemanticSegmentationCoarse, SemanticSegmentationNoFace
+from utils.SemanticSegmentation import SemanticSegmentationCoarse, SemanticSegmentationAll
 from utils.augment import RandomAug
 
 join = os.path.join
@@ -40,11 +40,11 @@ if __name__ == '__main__':
     image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
     label_id_dir_name = 'AD_SegMaps/labels_16k' 
     train_input_visualization_dir = './TMP/TRAIN_INPUT_VIS'
-    cache_dir = join(data_root, 'dataset_caches/cache_FINE_REAL16k')
+    cache_dir = join(data_root, 'dataset_caches/cache_FINE_HD_ALL_REAL16k')
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = '16k_ANIMSEG_E2E_FINE' # finetuned checkpoint will be saved here
+    task_name = '16k_ANIMSEG_E2E_FINE_HD_ALL_CLASSES' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -53,13 +53,9 @@ if __name__ == '__main__':
     os.makedirs(join(data_root, label_id_dir_name), exist_ok=True)
     
     # training choice
-    cache_available = True # if False, save dataset cache after first epoch
+    cache_available = False # if False, save dataset cache after first epoch
     resume_training = False
     visualize_train_input = False
-    ignore_background = False
-    bbox_given = False
-    bg_mask_given = False
-    apply_noise_coarse = False
     
     if visualize_train_input:
         os.makedirs(train_input_visualization_dir, exist_ok=True)
@@ -68,8 +64,8 @@ if __name__ == '__main__':
     init_checkpoint = join(sam_original_ckpt_path)
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
-        epoch_start = 442
-        resume_ckpt = join(ckpt_dir, '16k_ANIMSEG_E2E_FINE/all_ckpts/model_441.pth')
+        epoch_start = 0
+        resume_ckpt = join(ckpt_dir, '16k_ANIMSEG_E2E_FINE_HD/all_ckpts/model_500.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
@@ -77,9 +73,9 @@ if __name__ == '__main__':
 
     # semantic segmentation definition
     num_classes_coarse = 5
-    num_classes = 18
+    num_classes = 27
     semantics_coarse = SemanticSegmentationCoarse(labels_definition_file_path, num_classes=num_classes_coarse, exclude_neck=True)
-    semantics = SemanticSegmentationNoFace(labels_definition_file_path, num_classes=num_classes)
+    semantics = SemanticSegmentationAll(labels_definition_file_path, num_classes=num_classes)
 
     # prepare SAM model
     model_type = 'vit_b'
@@ -93,8 +89,8 @@ if __name__ == '__main__':
     mask_decoder = torch.nn.DataParallel(sam_model.mask_decoder, device_ids=device_ids)
 
     # create dataset
-    train_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train', num_test_samples=2000)
-    test_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test', num_test_samples=2000)
+    train_dataset = DrawingsDatasetC2FHD(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train', num_test_samples=2000)
+    test_dataset = DrawingsDatasetC2FHD(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test', num_test_samples=2000)
 
     # set semantic definitions for training dataset
     train_dataset.num_classes_coarse = num_classes_coarse
@@ -124,7 +120,7 @@ if __name__ == '__main__':
     print(f"CACHES ARE READY! Took {cache_end-cache_start} seconds ---", train_dataset.cache.shape, test_dataset.cache.shape)
 
     # create dataloader
-    train_dataloader = DataLoader(train_dataset, batch_size=32, num_workers=0, shuffle=True, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=16, num_workers=0, shuffle=True, drop_last=True)
     test_dataloader = DataLoader(test_dataset, batch_size=8, num_workers=0, shuffle=False, drop_last=True)
 
     # training config
@@ -135,18 +131,16 @@ if __name__ == '__main__':
     eval_loss_log = []
     best_loss = 1e10
     best_eval_loss = 1e10
-
+    color_jitter = False
+    apply_noise_coarse = False
 
     # Set up the optimizer
     all_params = list(sam_model.image_encoder.parameters()) + list(sam_model.prompt_encoder.parameters()) + list(sam_model.mask_decoder.parameters())
-    optimizer = torch.optim.Adam(iter(all_params), lr=1e-5, weight_decay=0) # adding all parameters to optimizer as an iterable
+    optimizer = torch.optim.Adam(iter(all_params), lr=1e-4, weight_decay=0) # adding all parameters to optimizer as an iterable
 
     # Set up the losses
     dice_loss = monai.losses.DiceCELoss(sigmoid=True, squared_pred=True, reduction='mean')
     focal_loss = monai.losses.FocalLoss(reduction='mean', gamma=2.0)
-
-    # define differntiable non-learnable upsampling layer
-    upsample = torch.nn.Upsample(scale_factor=4, mode='nearest')
 
     # augmentations
     input_size = (1024, 1024)
@@ -158,27 +152,25 @@ if __name__ == '__main__':
     for epoch in range(epoch_start, num_epochs):
         epoch_loss = 0
         # TRAINING
-        for step, (image_data_cpu, coarse_mask, gt, bg_mask, bbox) in enumerate(tqdm(train_dataloader, "Training")):
+        for step, (image_data_cpu, coarse_mask, gt, _, _) in enumerate(tqdm(train_dataloader, "Training")):
             
             image_data = image_data_cpu.to(device)
             coarse_mask = coarse_mask.to(device)
             gt = gt.to(device)
-            bg_mask = bg_mask.to(device)
 
             # augmentations
-            input_augmented = randomaug.apply_augmentation_list([image_data, coarse_mask, gt, bg_mask])
+            input_augmented = randomaug.apply_augmentation_list([image_data, coarse_mask, gt])
             image_data = input_augmented[:,:3,:,:]
             coarse_mask = input_augmented[:,3:4,:,:]
             gt = input_augmented[:,4:5,:,:]
-            bg_mask = input_augmented[:,5:,:,:] 
-            image_data = randomaug.apply_color_jitter(image_data, gt)
+            if color_jitter:
+                image_data = randomaug.apply_color_jitter(image_data, gt)
             if apply_noise_coarse:
                 coarse_mask = randomaug.apply_noise(coarse_mask, num_classes_coarse)
 
-            # resize coarse_mask, gt and bg_mask
-            gt = F.resize(gt, 1024, torchvision.transforms.InterpolationMode.NEAREST) # prediction will be umsampled to 1024x1024
-            bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # decoder takes mask size 256x256
-            coarse_mask = F.resize(coarse_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # prediction will be umsampled to 1024x1024
+            # resize coarse_mask and gt
+            gt = F.resize(gt, 1024, torchvision.transforms.InterpolationMode.NEAREST) # prediction will be 1024x1024
+            coarse_mask = F.resize(coarse_mask, 256, torchvision.transforms.InterpolationMode.NEAREST) # prior is 256x256
 
             ################################################################################################
             ######### ------- plt visualizations after resizing  (last sample from batch) -------- #########
@@ -196,8 +188,7 @@ if __name__ == '__main__':
                     coarse_mask_vis = semantics_coarse.labels_to_colors(cv2.resize(coarse_mask_vis[0], (1024,1024), interpolation=cv2.INTER_NEAREST))
                     gt_vis = gt.cpu().numpy()[batch_idx] 
                     gt_vis = semantics.labels_to_colors(cv2.resize(gt_vis[0], (1024,1024), interpolation=cv2.INTER_NEAREST))
-                    bg_mask_vis = bg_mask.cpu().numpy()[batch_idx]
-                    bg_mask_vis = cv2.resize(bg_mask_vis[0], (1024,1024), interpolation=cv2.INTER_NEAREST)
+                    # gt_vis = cv2.cvtColor(gt_vis, cv2.COLOR_BGR2RGB)
                     fig, ax = plt.subplots(1,4,figsize=(40,10))
                     TITLE_SIZE = 30
                     ax[0].imshow(original_image_data_vis)
@@ -227,17 +218,10 @@ if __name__ == '__main__':
             gt = torch.permute(gt,(0,3,1,2))
             B,_, H, W = gt.shape
 
-            # overwrite bbox to a fixed one
-            bbox[:,0] = 0
-            bbox[:,1] = 0
-            bbox[:,2] = 256
-            bbox[:,3] = 256
-            bbox = bbox.to(device)
-            
             # computing gradients for prompt encoder
             sparse_embeddings, dense_embeddings, image_pe = prompt_encoder(
                 points=None,
-                boxes=bbox[:, None, :] if bbox_given else None,
+                boxes=None,
                 masks=coarse_mask.float(),
             )
 
@@ -253,18 +237,7 @@ if __name__ == '__main__':
                 sparse_prompt_embeddings=sparse_embeddings, # (B, 2, 256)
                 dense_prompt_embeddings=dense_embeddings, # (B, 256, 64, 64)
                 multimask_output=True,
-            )
-
-            #upsample mask predictions
-            mask_predictions = upsample(mask_predictions)
-
-            # Optional, doesn't help much if mask is already being passed as prompt
-            if ignore_background:
-                bg = coarse_mask[:,0,:,:].unsqueeze(1)
-                bg = 1-bg
-                bg = upsample(bg.float())
-                mask_predictions = mask_predictions*bg
-                gt = gt*bg
+            )  
 
             # compute train loss
             loss = 0.7*dice_loss(mask_predictions, gt) + 0.3*focal_loss(mask_predictions, gt)
@@ -300,14 +273,12 @@ if __name__ == '__main__':
         if epoch%eval_frequency==0:    
             # reset metrics for latest epoch
             eval_loss = 0
-            for step, (image_data_eval, coarse_mask, gt, bg_mask, bbox) in enumerate(tqdm(test_dataloader,"EVAL")):
+            for step, (image_data_eval, coarse_mask, gt, _, _) in enumerate(tqdm(test_dataloader,"EVAL")):
                 eval_epoch_dir = join(model_save_path, f"eval/{epoch}")
                 os.makedirs(eval_epoch_dir, exist_ok=True)
                 image_data_eval = image_data_eval.to(device)
                 coarse_mask = coarse_mask.to(device)
                 gt = gt.to(device)
-                bg_mask = bg_mask.to(device)
-                bbox = bbox.to(device)            
                 # not computing any gradients during evaluation
                 with torch.no_grad():
                     gt = F.resize(gt, 1024, torchvision.transforms.InterpolationMode.NEAREST)
@@ -317,14 +288,10 @@ if __name__ == '__main__':
                     coarse_mask = F.resize(coarse_mask, 256, torchvision.transforms.InterpolationMode.NEAREST)
                     coarse_mask = torch.nn.functional.one_hot(coarse_mask.squeeze(1),num_classes_coarse)
                     coarse_mask = torch.permute(coarse_mask,(0,3,1,2))
-                    bg_mask = F.resize(bg_mask, 256, torchvision.transforms.InterpolationMode.NEAREST)
-                    # resizing by a factor of 4 (1024-->256)
-                    bbox = bbox//4 
                     # prompt encoding
                     sparse_embeddings, dense_embeddings, image_pe = prompt_encoder(
                         points=None,
-                        boxes=bbox[:, None, :] if bbox_given else None,
-                        # masks=bg_mask if bg_mask_given else None,
+                        boxes=None,
                         masks=coarse_mask.float(),
                     )
                     # image embedding estimation
@@ -338,15 +305,6 @@ if __name__ == '__main__':
                         dense_prompt_embeddings=dense_embeddings, # (B, 256, 64, 64)
                         multimask_output=True,
                     )
-                    #upsample mask predictions
-                    mask_predictions = upsample(mask_predictions)
-                    if ignore_background: 
-                        # excluding background from loss computation
-                        bg = coarse_mask[:,0,:,:].unsqueeze(1)
-                        bg = 1-bg
-                        bg = upsample(bg.float())
-                        mask_predictions = mask_predictions*bg
-                        gt = gt*bg
                     # compute eval loss
                     eval_loss += 0.7*dice_loss(mask_predictions, gt).item()
                     # visualizing last sample from every batch
@@ -356,7 +314,6 @@ if __name__ == '__main__':
                     gt_vis = torch.argmax(torch.Tensor(gt[-1]), dim=0)  # last sample from batch
                     gt_vis = semantics.labels_to_colors(gt_vis.cpu().numpy().astype('uint8'))
                     gt_vis = cv2.resize(gt_vis, (1024,1024), interpolation=cv2.INTER_NEAREST)
-                    bg_mask_vis = cv2.resize(bg_mask[-1][0].cpu().numpy().astype('uint8'), (1024,1024), interpolation=cv2.INTER_NEAREST)  # last sample from batch
                     coarse_mask_labels = torch.argmax(coarse_mask, dim=1)
                     coarse_mask_vis = cv2.resize(coarse_mask_labels[-1].cpu().numpy().astype('uint8'), (1024,1024), interpolation=cv2.INTER_NEAREST)
                     coarse_mask_vis = semantics_coarse.labels_to_colors(coarse_mask_vis)

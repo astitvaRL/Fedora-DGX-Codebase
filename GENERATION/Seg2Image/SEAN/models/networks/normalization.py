@@ -83,7 +83,7 @@ class ACE(nn.Module):
         self.blending_gamma = nn.Parameter(torch.zeros(1), requires_grad=True)
         self.blending_beta = nn.Parameter(torch.zeros(1), requires_grad=True)
         self.noise_var = nn.Parameter(torch.zeros(norm_nc), requires_grad=True)
-
+        self.spade_params = spade_params
 
         assert config_text.startswith('spade')
         parsed = re.search('spade(\D+)(\d)x\d', config_text)
@@ -153,7 +153,7 @@ class ACE(nn.Module):
 
                         if component_mask_area > 0:
 
-
+                            
                             middle_mu = F.relu(self.__getattr__('fc_mu' + str(j))(style_codes[i][j]))
                             component_mu = middle_mu.reshape(self.style_length, 1).expand(self.style_length, component_mask_area)
 
@@ -203,9 +203,8 @@ class ACE(nn.Module):
 
 
         ###################  These codes should be replaced with torch.nn.ModuleList
-
+        num_classes = self.spade_params[-1]
         style_length = self.style_length
-
         self.fc_mu0 = nn.Linear(style_length, style_length)
         self.fc_mu1 = nn.Linear(style_length, style_length)
         self.fc_mu2 = nn.Linear(style_length, style_length)
@@ -225,6 +224,18 @@ class ACE(nn.Module):
         self.fc_mu16 = nn.Linear(style_length, style_length)
         self.fc_mu17 = nn.Linear(style_length, style_length)
         self.fc_mu18 = nn.Linear(style_length, style_length)
+        if num_classes==27:
+            self.fc_mu19 = nn.Linear(style_length, style_length)
+            self.fc_mu20 = nn.Linear(style_length, style_length)
+            self.fc_mu21 = nn.Linear(style_length, style_length)
+            self.fc_mu22 = nn.Linear(style_length, style_length)
+            self.fc_mu23 = nn.Linear(style_length, style_length)
+            self.fc_mu24 = nn.Linear(style_length, style_length)
+            self.fc_mu25 = nn.Linear(style_length, style_length)
+            self.fc_mu26 = nn.Linear(style_length, style_length)
+            self.fc_mu27 = nn.Linear(style_length, style_length)
+            self.fc_mu28 = nn.Linear(style_length, style_length)
+            self.fc_mu29 = nn.Linear(style_length, style_length)
 
 
 
