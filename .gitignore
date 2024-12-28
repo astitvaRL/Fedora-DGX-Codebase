@@ -5,6 +5,7 @@
 *.jpg
 *.jpeg
 *.npy
+*.npz
 **/__pycache__
 .watchman*
 .nfs*

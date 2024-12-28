@@ -243,7 +243,7 @@ def tps_warp_preset_mouth(
             [left_end, upper_contour_mid, lower_contour_mid, right_end]
         ).astype(np.float32)
         dst_pts = np.array(
-            [[0, 512], [512, 510], [512, 720], [1023, 512]]
+            [[0, 512], [512, 510], [512, 650], [1023, 512]]
         ).astype(np.float32)
 
         tps = ski.transform.ThinPlateSplineTransform()

@@ -8,6 +8,7 @@ import cv2
 import torch
 import numpy as np
 from collections import OrderedDict
+from tqdm import tqdm
 
 import data
 from options.test_options import TestOptions
@@ -48,8 +49,8 @@ for code_idx in range(num_classes):
     else:
         obj_dic_global[str(code_idx)]['ACE'] = torch.from_numpy(np.load(os.path.join(stye_codes_mean_dir, str(code_idx), 'ACE.npy'))).cuda()
 
-
-for i, data_i in enumerate(dataloader):
+outdir = os.environ['SEAN_OUTDIR']
+for i, data_i in tqdm(enumerate(dataloader)):
     if i * opt.batchSize >= opt.how_many:
         break
     
@@ -60,7 +61,7 @@ for i, data_i in enumerate(dataloader):
     generated_np = generated.squeeze(0).permute(1,2,0).cpu().numpy()
     generated_np = (generated_np + 1.0) / 2.0 * 255.0
     generated_np = generated_np.astype('uint8')
-    cv2.imwrite(f'z_{i}.png',generated_np)
+    cv2.imwrite(f'{outdir}/{i}.png',cv2.cvtColor(generated_np, cv2.COLOR_RGB2BGR))
 
     # img_path = data_i['path']
     # for b in range(generated.shape[0]):
