@@ -1,0 +1,74 @@
+"""
+Copyright (C) 2019 NVIDIA Corporation.  All rights reserved.
+Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
+"""
+
+import os
+import cv2
+import torch
+import numpy as np
+from collections import OrderedDict
+
+import data
+from options.test_options import TestOptions
+from models.pix2pix_model import Pix2PixModel
+from util.visualizer import Visualizer
+from util import html
+
+opt = TestOptions().parse()
+opt.status = 'UI_mode'
+
+dataloader = data.create_dataloader(opt)
+
+model = Pix2PixModel(opt)
+model.eval()
+
+visualizer = Visualizer(opt)
+
+# # create a webpage that summarizes the all results
+# web_dir = os.path.join(opt.results_dir, opt.name,
+#                        '%s_%s' % (opt.phase, opt.which_epoch))
+# webpage = html.HTML(web_dir,
+#                     'Experiment = %s, Phase = %s, Epoch = %s' %
+#                     (opt.name, opt.phase, opt.which_epoch))
+
+# custom test
+first=True
+obj_dic_global = dict()
+style_codes_dir = 'styles_test/style_codes/original.png/'
+stye_codes_mean_dir = 'styles_test/mean_style_code/mean/'
+style_code_names = sorted(os.listdir(style_codes_dir))
+
+# prepare style codes
+num_classes = 11
+for code_idx in range(num_classes):
+    obj_dic_global[str(code_idx)] = {}
+    if str(code_idx) in style_code_names:
+        obj_dic_global[str(code_idx)]['ACE'] = torch.from_numpy(np.load(os.path.join(style_codes_dir, str(code_idx), 'ACE.npy'))).cuda()
+    else:
+        obj_dic_global[str(code_idx)]['ACE'] = torch.from_numpy(np.load(os.path.join(stye_codes_mean_dir, str(code_idx), 'ACE.npy'))).cuda()
+
+
+for i, data_i in enumerate(dataloader):
+    if i * opt.batchSize >= opt.how_many:
+        break
+    
+    data_i['obj_dic'] = obj_dic_global
+
+    generated = model(data_i, mode='UI_mode')
+
+    generated_np = generated.squeeze(0).permute(1,2,0).cpu().numpy()
+    generated_np = (generated_np + 1.0) / 2.0 * 255.0
+    generated_np = generated_np.astype('uint8')
+    cv2.imwrite(f'z_{i}.png',generated_np)
+
+    # img_path = data_i['path']
+    # for b in range(generated.shape[0]):
+    #     print('process image... %s' % img_path[b])
+    #     visuals = OrderedDict([('input_label', data_i['label'][b]),
+    #                            ('synthesized_image', generated[b])])
+    #     visualizer.save_images(webpage, visuals, img_path[b:b + 1])
+
+# webpage.save()
+
+

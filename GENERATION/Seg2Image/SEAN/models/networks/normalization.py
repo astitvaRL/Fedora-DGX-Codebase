@@ -165,7 +165,6 @@ class ACE(nn.Module):
                                 dir_path = 'styles_test'
 
                                 ############### some problem with obj_dic[i]
-
                                 im_name = os.path.basename(obj_dic[i])
                                 folder_path = os.path.join(dir_path, 'style_codes', im_name, str(j))
                                 if not os.path.exists(folder_path):
