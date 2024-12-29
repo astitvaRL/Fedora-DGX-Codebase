@@ -46,7 +46,7 @@ preset_class = "arpabets"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CANN
 preset_config = PresetConfig(preset_class)
 # preset_prompts = preset_config.config["prompts"]
 shape_ids = preset_config.config["shape_ids"]
-output_root = f"/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/GENERATION/PresetGeneration/OUTPUT/DEFORMED_PRESETS/{preset_class}"
+output_root = f"/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/GENERATION/PresetGeneration/OUTPUT/GENERATED_ASSETS/{preset_class}"
 
 os.makedirs(output_root, exist_ok=True)
 
