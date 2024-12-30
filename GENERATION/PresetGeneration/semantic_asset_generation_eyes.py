@@ -38,10 +38,10 @@ def bgr_conversion(img):
 # set paths
 data_root = "/mnt/users_scratch/astitva/DATA/"
 labels_definition_file_path = "./label_definition.json"
-image_dir_name = "MANIFOLD/animated_drawings_images_prior_april22/cropped_image"
-label_id_dir_name = "AD_SegMaps/labels_16k"
+# image_dir_name = "MANIFOLD/animated_drawings_images_prior_april22/cropped_image"
+image_dir_name = "IN_THE_WILD_faces"
 preset_dir = "./presets"
-preset_class = "mouth"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CANNY THRESHOLDS ACCORDINGLY IN THE SHAPE & STYLIZATION SCRIPTS
+preset_class = "eyes"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CANNY THRESHOLDS ACCORDINGLY IN THE SHAPE & STYLIZATION SCRIPTS
 
 # prest configuration
 preset_config = PresetConfig(preset_class)
@@ -70,7 +70,7 @@ semantics = SemanticSegmentationAll(labels_definition_file_path)
 semantics_face = SemanticSegmentationFace(labels_definition_file_path)
 
 #load SAM model
-sam_face_model = SAM_face()
+sam_inference_pipeline = SAM_face()
 
 # load refiner
 refiner = segref.Refiner(device="cuda:0")  # device can also be 'cpu'
@@ -78,7 +78,7 @@ refiner = segref.Refiner(device="cuda:0")  # device can also be 'cpu'
 # load labels
 start = 0
 end = -1
-labels = sorted(os.listdir(join(data_root, label_id_dir_name)))[start:end]
+images = sorted(os.listdir(join(data_root, image_dir_name)))[start:end]
 
 # additional controls
 outline_only = False
@@ -88,19 +88,19 @@ correction = ColorTransfer()
 
 # PRESET DEFORMATION
 
-for label_name in tqdm(labels):
+for input_image_name in tqdm(images):
 
     start = time.time()
 
-    # condition = label_name.startswith('07a0fc851f2c48058d53325894e49496') or label_name.startswith('0a0a4add3fb9438babce15098f9efad8') or label_name.startswith('07cdc5cab5af41e2a102e5453678ca72') or label_name.startswith('07a23dcc43ea436ebf6b75b04c7611d4') or label_name.startswith('0a5b805185614f839b5f015b650970dc') or label_name.startswith('07aba8228cb54faf9f6e4e6cab561331') or label_name.startswith('0a6bf1b9d15842b6822a92a6b536faf1') or label_name.startswith('07aedcb335a04981a016c0c7efed77ba') or label_name.startswith('07af86863ff04f3abc0e0442cdb882b7') or label_name.startswith('07b1a55d68b9425caccb1aadcc58379a') or label_name.startswith('07b9b86ec22e48e1807785b2cd64cb76') or label_name.startswith('07b6c37d7a6944ee98f544d633defeeb') or label_name.startswith('07b8bf4a421744c9b7f985cf6e8fe544') or label_name.startswith('0a3b9f4c787743458c7ca1cc77b902ea') or label_name.startswith('07babac076024ce7a89b72e93d16cc99') or label_name.startswith('0934abc208ff441bb98a9b849997aac4') or label_name.startswith('07cdc5cab5af41e2a102e5453678ca72')
-    condition = label_name.startswith('0a3b9f4c787743458c7ca1cc77b902ea')
+    # condition = input_image_name.startswith('07a0fc851f2c48058d53325894e49496') or input_image_name.startswith('0a0a4add3fb9438babce15098f9efad8') or input_image_name.startswith('07cdc5cab5af41e2a102e5453678ca72') or input_image_name.startswith('07a23dcc43ea436ebf6b75b04c7611d4') or input_image_name.startswith('0a5b805185614f839b5f015b650970dc') or input_image_name.startswith('07aba8228cb54faf9f6e4e6cab561331') or input_image_name.startswith('0a6bf1b9d15842b6822a92a6b536faf1') or input_image_name.startswith('07aedcb335a04981a016c0c7efed77ba') or input_image_name.startswith('07af86863ff04f3abc0e0442cdb882b7') or input_image_name.startswith('07b1a55d68b9425caccb1aadcc58379a') or input_image_name.startswith('07b9b86ec22e48e1807785b2cd64cb76') or input_image_name.startswith('07b6c37d7a6944ee98f544d633defeeb') or input_image_name.startswith('07b8bf4a421744c9b7f985cf6e8fe544') or input_image_name.startswith('0a3b9f4c787743458c7ca1cc77b902ea') or input_image_name.startswith('07babac076024ce7a89b72e93d16cc99') or input_image_name.startswith('0934abc208ff441bb98a9b849997aac4') or input_image_name.startswith('07cdc5cab5af41e2a102e5453678ca72')
+    condition = input_image_name.startswith('16')
     if not condition:
         continue
 
     # create output directory
-    output_dir_metadata = join(output_root, label_name.split(".")[0], 'metadata')
-    output_dir_images = join(output_root, label_name.split(".")[0], 'tmp_images')
-    output_dir_labels = join(output_root, label_name.split(".")[0], 'tmp_labels')
+    output_dir_metadata = join(output_root, input_image_name.split(".")[0], 'metadata')
+    output_dir_images = join(output_root, input_image_name.split(".")[0], 'tmp_images')
+    output_dir_labels = join(output_root, input_image_name.split(".")[0], 'tmp_labels')
     os.makedirs(output_dir_metadata, exist_ok=True)
     os.makedirs(f'{output_dir_metadata}/original_image/', exist_ok=True)
     os.makedirs(f'{output_dir_metadata}/original_label/', exist_ok=True)
@@ -108,24 +108,29 @@ for label_name in tqdm(labels):
     os.makedirs(output_dir_labels, exist_ok=True)
 
     # load images
-    img_name = f"{label_name.split('_')[0]}.png"
-    img_full = cv2.imread(join(data_root, image_dir_name, img_name))
+    img_full = cv2.imread(join(data_root, image_dir_name, input_image_name))
     w_orig, h_orig = img_full.shape[:2]
     img_full = cv2.resize(img_full, (1024, 1024))
     img_full = bgr_conversion(img_full)
-    label_full = cv2.imread(join(data_root, label_id_dir_name, label_name))
-    label_full = bgr_conversion(label_full)
-    label_full = cv2.resize(label_full, (1024, 1024), interpolation=cv2.INTER_NEAREST)
+
+    # semantic segmentation 
+    sam_output = sam_inference_pipeline.predict(img_full)
+    if not sam_output[0]:
+        print("Segmentation Failed! Skipping...")
+        continue
+    label_full = sam_output[1]
+
+    # segmap to labels
     label_id = semantics.colors_to_labels(label_full)
     label_face_id = semantics_face.colors_to_labels(label_full)
-   
+
     # inpainting
     kernel = np.ones((5, 5), np.uint8)
     inpainting_mask = label_face_id == 0  # default background
     if preset_class == "mouth":
         inpainting_mask = (label_face_id == 2) | (label_face_id == 7) | (label_face_id == 10)
     elif preset_class == "eyes":
-        inpainting_mask = (label_face_id == 4) | (label_face_id == 22)
+        inpainting_mask = (label_face_id == 3) | (label_face_id == 9)
     inpainting_mask = cv2.dilate(
         255 * inpainting_mask.astype("uint8"), kernel, iterations=3
     )
@@ -196,11 +201,11 @@ for label_name in tqdm(labels):
 
         # mask from tps  deformation
         deformed_mask = tps_output[1]
-        deformed_preset = tps_output[3]
+        deformed_preset = tps_output[0]
         # if shape_id=='18' or shape_id=='19': #remove the green area around the preset (which was used to enable salient point detection on preset)
         deformed_mask[deformed_preset[:,:,1]==255]=0
-        teeth = (deformed_preset[:,:,0]>0) & (deformed_preset[:,:,0]<250)
-        tongue = deformed_preset[:,:,0]>250
+        pupil = deformed_preset[:,:,0]>200
+        # eye_region = deformed_preset[:,:,0]>250
 
         # place preset shape over inpainted image
         base_image_np = np.array(base_image_cropped)
@@ -217,9 +222,9 @@ for label_name in tqdm(labels):
         deformed_mask = deformed_mask>0
 
         # prepare conditioning image
-        label_face_id_tmp[deformed_mask] = 2
-        label_face_id_tmp[teeth] = 7
-        label_face_id_tmp[tongue] = 10
+        label_face_id_tmp[deformed_mask] = 9
+        label_face_id_tmp[pupil] = 3
+        # label_face_id_tmp[empty] = 5
         cond_image = semantics_face.labels_to_colors(label_face_id_tmp)
 
         # cond_face_labels = semantics_face.colors_to_labels(cond_image)
@@ -230,14 +235,12 @@ for label_name in tqdm(labels):
             cond_face_edges = cv2.Canny(cond_image, 0, 150)
             kernel_outline = np.ones((5, 5), np.uint8) 
             cond_face_edges = cv2.dilate(cond_face_edges, kernel, iterations=1)
-            mask = (cond_face_labels==2) | teeth | tongue 
+            mask = (cond_face_labels==2) | pupil
             cond_face_outline[mask] = 5
             mask_edges = (cond_face_labels==2) & (cond_face_edges>0)
-            cond_face_outline[mask_edges] = 2
-            mask_edges = teeth & (cond_face_edges>0)
-            cond_face_outline[mask_edges] = 7
-            mask_edges = tongue & (cond_face_edges>0)
-            cond_face_outline[mask_edges] = 10
+            cond_face_outline[mask_edges] = 9
+            mask_edges = pupil & (cond_face_edges>0)
+            cond_face_outline[mask_edges] = 3
 
 
         cv2.imwrite(f'{output_dir_images}/{shape_id}.png', bgr_conversion(img_cropped))
@@ -247,11 +250,11 @@ for label_name in tqdm(labels):
             cv2.imwrite(f'{output_dir_labels}/{shape_id}.png', cond_face_labels)
 
         # include every part in final binary mask
-        deformed_mask = (deformed_mask>0) | (teeth>0) | (tongue>0)
+        deformed_mask = (deformed_mask>0) | (pupil>0) 
         deformed_masks_all[shape_id] = deformed_mask
 
     # GENERATION VIA SEAN
-    sean_outdir = join(output_root, label_name.split(".")[0], 'sean_output')
+    sean_outdir = join(output_root, input_image_name.split(".")[0], 'sean_output')
     os.makedirs(sean_outdir, exist_ok=True)
     os.environ['SEAN_OUTDIR'] = f'{sean_outdir}'
     os.environ['META_DIR'] = f'{output_dir_metadata}'
@@ -264,7 +267,7 @@ for label_name in tqdm(labels):
 
     # COLOR CORRECTION
     if color_correction:
-        sean_outdir_corrected = join(output_root, label_name.split(".")[0], 'sean_output_corrected')
+        sean_outdir_corrected = join(output_root, input_image_name.split(".")[0], 'sean_output_corrected')
         os.makedirs(sean_outdir_corrected, exist_ok=True)
         image_ref = img_cropped.copy()
         image_gan = cv2.imread(f'{output_dir_metadata}/image_gan.png')
@@ -279,8 +282,8 @@ for label_name in tqdm(labels):
 
     # COMPOSITING
 
-    asset_outdir = join(output_root, label_name.split(".")[0], 'assets')
-    composite_outdir = join(output_root, label_name.split(".")[0], 'assets_composited')
+    asset_outdir = join(output_root, input_image_name.split(".")[0], 'assets')
+    composite_outdir = join(output_root, input_image_name.split(".")[0], 'assets_composited')
     os.makedirs(asset_outdir, exist_ok=True)
     os.makedirs(composite_outdir, exist_ok=True)
 
@@ -299,7 +302,7 @@ for label_name in tqdm(labels):
         deformed_mask_im = cv2.dilate(deformed_mask.astype('uint8')*255, (23,23))
         deformed_mask_im = refiner.refine(generated, deformed_mask_im, fast=False, L=900)
         deformed_mask_im = np.repeat(deformed_mask_im[..., np.newaxis], 3, axis=2)
-        deformed_mask_im = cv2.blur(deformed_mask_im, (23, 23))
+        deformed_mask_im = cv2.blur(deformed_mask_im, (17, 17))
         deformed_mask_im = deformed_mask_im.astype("float32")/255
         final_image = base_image_np * (1 - deformed_mask_im) + generated * deformed_mask_im
         final_image = final_image.astype("uint8")

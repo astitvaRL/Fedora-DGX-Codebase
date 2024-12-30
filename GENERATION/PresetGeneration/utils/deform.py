@@ -413,14 +413,22 @@ def tps_warp_preset_eyes(label_id, preset_shape, label_type="eyes"):
         print("No eyes")
         return -1
 
-    # extract left/right eyes
-    num_comps, comps_im = cv2.connectedComponents(label_binary)
-    if num_comps != 3:
-        print("Complex eye shape!")
-        return -1
+    # # extract left/right eyes
+    # num_comps, comps_im = cv2.connectedComponents(label_binary)
+    # if num_comps != 3:
+    #     print("Complex eye shape!")
+    #     return -1
 
-    left_mask = (comps_im == 1).astype("uint8")
-    right_mask = (comps_im == 2).astype("uint8")
+    # Find top two connected components
+    num_labels, comps_im, stats, centroids = cv2.connectedComponentsWithStats(label_binary, 8, cv2.CV_32S)
+    components = [(label, stats[label, cv2.CC_STAT_AREA]) for label in range(1, num_labels)]
+    components.sort(key=lambda x: x[1], reverse=True)
+    top_components = components[:2]
+    comp_label_left = top_components[0][0]
+    comp_label_right = top_components[1][0]
+
+    left_mask = (comps_im == comp_label_left).astype("uint8")
+    right_mask = (comps_im == comp_label_right).astype("uint8")
 
     left_out = tps_warp_single_eye(left_mask, preset_shape)
     right_out = tps_warp_single_eye(right_mask, preset_shape)
