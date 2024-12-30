@@ -226,7 +226,7 @@ def tps_warp_preset_mouth(
     assert preset_shape.shape[2] == 4
 
     # label to binary mask
-    label_binary = (label_id == 3) | (label_id == 23) | (label_id == 17)
+    label_binary = (label_id == 2) | (label_id == 7) | (label_id == 10)
     label_binary = label_binary.astype("uint8")
     if label_binary.sum() == 0:
         print("No mouth region")
@@ -243,7 +243,7 @@ def tps_warp_preset_mouth(
             [left_end, upper_contour_mid, lower_contour_mid, right_end]
         ).astype(np.float32)
         dst_pts = np.array(
-            [[0, 512], [512, 510], [512, 700], [1023, 512]]
+            [[0, 512], [512, 510], [512, 720], [1023, 512]]
         ).astype(np.float32)
 
         tps = ski.transform.ThinPlateSplineTransform()
@@ -407,7 +407,7 @@ def tps_warp_preset_eyes(label_id, preset_shape, label_type="eyes"):
     assert preset_shape.shape[2] == 4
 
     # label to binary mask
-    label_binary = (label_id == 4) | (label_id == 22)
+    label_binary = (label_id == 3) | (label_id == 9)
     label_binary = label_binary.astype("uint8")
     if label_binary.sum() == 0:
         print("No eyes")

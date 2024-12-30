@@ -43,6 +43,13 @@ for i, data_i in enumerate(dataloader):
         visuals = OrderedDict([('input_label', data_i['label'][b]),
                                ('synthesized_image', generated[b])])
         visualizer.save_images(webpage, visuals, img_path[b:b + 1])
+    
+    if 'META_DIR'  in os.environ.keys():
+        meta_save_dir = os.environ['META_DIR']
+        generated_np = generated.squeeze(0).permute(1,2,0).cpu().numpy()
+        generated_np = (generated_np + 1.0) / 2.0 * 255.0
+        generated_np = generated_np.astype('uint8')
+        cv2.imwrite(f'{meta_save_dir}/image_gan.png',cv2.cvtColor(generated_np, cv2.COLOR_RGB2BGR))
 
 webpage.save()
 

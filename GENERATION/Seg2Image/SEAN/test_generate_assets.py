@@ -51,6 +51,9 @@ for code_idx in range(num_classes):
 
 outdir = os.environ['SEAN_OUTDIR']
 for i, data_i in tqdm(enumerate(dataloader)):
+
+    save_name = data_i['path'][0].split('/')[-1]
+
     if i * opt.batchSize >= opt.how_many:
         break
     
@@ -61,15 +64,6 @@ for i, data_i in tqdm(enumerate(dataloader)):
     generated_np = generated.squeeze(0).permute(1,2,0).cpu().numpy()
     generated_np = (generated_np + 1.0) / 2.0 * 255.0
     generated_np = generated_np.astype('uint8')
-    cv2.imwrite(f'{outdir}/{i}.png',cv2.cvtColor(generated_np, cv2.COLOR_RGB2BGR))
-
-    # img_path = data_i['path']
-    # for b in range(generated.shape[0]):
-    #     print('process image... %s' % img_path[b])
-    #     visuals = OrderedDict([('input_label', data_i['label'][b]),
-    #                            ('synthesized_image', generated[b])])
-    #     visualizer.save_images(webpage, visuals, img_path[b:b + 1])
-
-# webpage.save()
+    cv2.imwrite(f'{outdir}/{save_name}',cv2.cvtColor(generated_np, cv2.COLOR_RGB2BGR))
 
 

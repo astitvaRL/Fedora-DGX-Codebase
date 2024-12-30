@@ -41,7 +41,7 @@ labels_definition_file_path = "./label_definition.json"
 image_dir_name = "MANIFOLD/animated_drawings_images_prior_april22/cropped_image"
 label_id_dir_name = "AD_SegMaps/labels_16k"
 preset_dir = "./presets"
-preset_class = "mouth"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CANNY THRESHOLDS ACCORDINGLY IN THE SHAPE & STYLIZATION SCRIPTS
+preset_class = "eyes"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CANNY THRESHOLDS ACCORDINGLY IN THE SHAPE & STYLIZATION SCRIPTS
 
 # prest configuration
 preset_config = PresetConfig(preset_class)
@@ -125,7 +125,7 @@ for label_name in tqdm(labels):
     if preset_class == "mouth":
         inpainting_mask = (label_face_id == 2) | (label_face_id == 7) | (label_face_id == 10)
     elif preset_class == "eyes":
-        inpainting_mask = (label_face_id == 4) | (label_face_id == 22)
+        inpainting_mask = (label_face_id == 3) | (label_face_id == 9)
     inpainting_mask = cv2.dilate(
         255 * inpainting_mask.astype("uint8"), kernel, iterations=3
     )
@@ -196,11 +196,11 @@ for label_name in tqdm(labels):
 
         # mask from tps  deformation
         deformed_mask = tps_output[1]
-        deformed_preset = tps_output[3]
+        deformed_preset = tps_output[0]
         # if shape_id=='18' or shape_id=='19': #remove the green area around the preset (which was used to enable salient point detection on preset)
         deformed_mask[deformed_preset[:,:,1]==255]=0
-        teeth = (deformed_preset[:,:,0]>0) & (deformed_preset[:,:,0]<250)
-        tongue = deformed_preset[:,:,0]>250
+        pupil = deformed_preset[:,:,0]>200
+        # eye_region = deformed_preset[:,:,0]>250
 
         # place preset shape over inpainted image
         base_image_np = np.array(base_image_cropped)
@@ -217,9 +217,9 @@ for label_name in tqdm(labels):
         deformed_mask = deformed_mask>0
 
         # prepare conditioning image
-        label_face_id_tmp[deformed_mask] = 2
-        label_face_id_tmp[teeth] = 7
-        label_face_id_tmp[tongue] = 10
+        label_face_id_tmp[deformed_mask] = 9
+        label_face_id_tmp[pupil] = 3
+        # label_face_id_tmp[empty] = 5
         cond_image = semantics_face.labels_to_colors(label_face_id_tmp)
 
         # cond_face_labels = semantics_face.colors_to_labels(cond_image)
@@ -230,14 +230,12 @@ for label_name in tqdm(labels):
             cond_face_edges = cv2.Canny(cond_image, 0, 150)
             kernel_outline = np.ones((5, 5), np.uint8) 
             cond_face_edges = cv2.dilate(cond_face_edges, kernel, iterations=1)
-            mask = (cond_face_labels==2) | teeth | tongue 
+            mask = (cond_face_labels==2) | pupil
             cond_face_outline[mask] = 5
             mask_edges = (cond_face_labels==2) & (cond_face_edges>0)
-            cond_face_outline[mask_edges] = 2
-            mask_edges = teeth & (cond_face_edges>0)
-            cond_face_outline[mask_edges] = 7
-            mask_edges = tongue & (cond_face_edges>0)
-            cond_face_outline[mask_edges] = 10
+            cond_face_outline[mask_edges] = 9
+            mask_edges = pupil & (cond_face_edges>0)
+            cond_face_outline[mask_edges] = 3
 
 
         cv2.imwrite(f'{output_dir_images}/{shape_id}.png', bgr_conversion(img_cropped))
@@ -247,7 +245,7 @@ for label_name in tqdm(labels):
             cv2.imwrite(f'{output_dir_labels}/{shape_id}.png', cond_face_labels)
 
         # include every part in final binary mask
-        deformed_mask = (deformed_mask>0) | (teeth>0) | (tongue>0)
+        deformed_mask = (deformed_mask>0) | (pupil>0) 
         deformed_masks_all[shape_id] = deformed_mask
 
     # GENERATION VIA SEAN
