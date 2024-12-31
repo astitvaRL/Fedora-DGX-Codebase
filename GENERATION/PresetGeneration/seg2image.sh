@@ -1,6 +1,6 @@
 PRESET_SCRIPTS_ROOT='/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/GENERATION/PresetGeneration/'
 SEAN_ROOT='/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/GENERATION/Seg2Image/SEAN/'
-SEAN_EPOCH='70'
+SEAN_EPOCH='50'
 
 cd $SEAN_ROOT
 

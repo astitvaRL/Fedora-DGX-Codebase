@@ -61,7 +61,7 @@ class SampleDatasetInference():
 class SAM_face:
 
 
-    def __init__(self, ckpt_dir='/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/checkpoints', labels_definition_file_path='label_definition.json', device=torch.device('cuda:0'), predict_fine=False ):
+    def __init__(self, ckpt_dir, labels_definition_file_path='label_definition.json', device=torch.device('cuda:0') ):
 
         # set paths
         self.labels_definition_file_path = labels_definition_file_path
@@ -73,9 +73,9 @@ class SAM_face:
         self.mode = 'test'
         self.BATCH_SIZE = 1
         self.load_best_eval_ckpt = True
-        self.epoch = 400
         self.epoch_coarse = 400
         self.epoch_face = 400
+        self.epoch_fine = 400
         self.coarse_includes_neck = True
         self.model_type = 'vit_b'
         self.device = device

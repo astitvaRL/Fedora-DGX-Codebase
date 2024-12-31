@@ -237,13 +237,15 @@ def tps_warp_preset_mouth(
         left_end, right_end, upper_contour_mid, lower_contour_mid = salient_points
         # TPS-based warping
         # ratio = (np.abs(upper_contour_mid - lower_contour_mid)[1]) / np.abs(left_end[0]-right_end[0])
-        # offset = 50*ratio
+        base = 720
+        # offset = 100*(1.5-ratio)
+        # adjusted_height = base + offset
         # offset = min(np.square(upper_contour_mid - lower_contour_mid)[1], 100)
         src_pts = np.array(
             [left_end, upper_contour_mid, lower_contour_mid, right_end]
         ).astype(np.float32)
         dst_pts = np.array(
-            [[0, 512], [512, 510], [512, 720], [1023, 512]]
+            [[0, 512], [512, 510], [512, base], [1023, 512]]
         ).astype(np.float32)
 
         tps = ski.transform.ThinPlateSplineTransform()
