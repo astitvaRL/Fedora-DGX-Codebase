@@ -1,0 +1,12 @@
+- command: /home/astitva/.conda/envs/aligner/bin/mfa model download acoustic english_us_arpa
+  date: 2024-11-23 13:35:24.403725
+  exception: ''
+  execution_time: 4.599914312362671
+  exit_code: 0
+  version: 3.2.0
+- command: /home/astitva/.conda/envs/aligner/bin/mfa model download dictionary english_us_arpa
+  date: 2024-11-23 13:35:41.269557
+  exception: ''
+  execution_time: 2.003225088119507
+  exit_code: 0
+  version: 3.2.0

@@ -6,6 +6,12 @@
 *.jpeg
 *.npy
 *.npz
+*.wav
+*.mp3
+*.mp4
+*.mkv
+*.avi
+*.zip
 **/__pycache__
 .watchman*
 .nfs*
