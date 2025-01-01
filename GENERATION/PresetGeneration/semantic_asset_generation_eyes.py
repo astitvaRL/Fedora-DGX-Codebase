@@ -143,6 +143,14 @@ for input_image_name in tqdm(images):
         255 * inpainting_mask.astype("uint8"), kernel, iterations=3
     )
     base_image = inpainting_model(Image.fromarray(img_full.copy()), inpainting_mask)
+
+    # inpainting both eyes and mouth
+    kernel = np.ones((5, 5), np.uint8)
+    inpainting_mask_em = (label_face_id == 2) | (label_face_id == 7) | (label_face_id == 10) | (label_face_id == 3) | (label_face_id == 9)
+    inpainting_mask_em = cv2.dilate(
+        255 * inpainting_mask_em.astype("uint8"), kernel, iterations=3
+    )
+    base_image_em = inpainting_model(Image.fromarray(img_full.copy()), inpainting_mask_em)
    
     # extract face region
     roi = label_face_id>0
@@ -167,11 +175,13 @@ for input_image_name in tqdm(images):
     roi_cropped = roi[x_min:x_max, y_min:y_max]
     # mouth_region_cropped = mouth_region[x_min:x_max, y_min:y_max]
     base_image_cropped = np.array(base_image)[x_min:x_max, y_min:y_max]
+    base_image_em_cropped = np.array(base_image_em)[x_min:x_max, y_min:y_max]
     h_crop, w_crop, _ = img_cropped.shape
 
     roi_cropped = cv2.resize(roi_cropped.astype('uint8'), (1024, 1024), interpolation=cv2.INTER_NEAREST)
     img_cropped = cv2.resize(img_cropped, (1024, 1024))
     base_image_cropped = cv2.resize(base_image_cropped, (1024, 1024))
+    base_image_em_cropped = cv2.resize(base_image_em_cropped, (1024, 1024))
     label_id = cv2.resize(label_id, (1024, 1024), interpolation=cv2.INTER_NEAREST)
     label_face_id = cv2.resize(label_face_id_cropped, (1024, 1024), interpolation=cv2.INTER_NEAREST)
 
@@ -180,8 +190,10 @@ for input_image_name in tqdm(images):
     cv2.imwrite(f'{output_dir_metadata}/image_input.png', bgr_conversion(img_full))
     cv2.imwrite(f'{output_dir_metadata}/image_face.png', bgr_conversion(img_cropped))
     cv2.imwrite(f'{output_dir_metadata}/original_image/original.png', bgr_conversion(img_cropped))
-    cv2.imwrite(f'{output_dir_metadata}/inpainted.png', bgr_conversion(np.array(base_image)))
-    cv2.imwrite(f'{output_dir_metadata}/inpainted_face.png', bgr_conversion(base_image_cropped))
+    cv2.imwrite(f'{output_dir_metadata}/inpainted_eyes_only.png', bgr_conversion(np.array(base_image)))
+    cv2.imwrite(f'{output_dir_metadata}/inpainted_eyes_mouth.png', bgr_conversion(np.array(base_image_em)))
+    cv2.imwrite(f'{output_dir_metadata}/inpainted_face_eyes_only.png', bgr_conversion(base_image_cropped))
+    cv2.imwrite(f'{output_dir_metadata}/inpainted_face_eyes_mouth.png', bgr_conversion(base_image_em_cropped))
     cv2.imwrite(f'{output_dir_metadata}/segmap.png', bgr_conversion(label_full))
     cv2.imwrite(f'{output_dir_metadata}/label.png', label_id)
     cv2.imwrite(f'{output_dir_metadata}/original_label/original.png', label_face_id)
