@@ -1,0 +1,1 @@
+We present a novel generative approach to facial animation of hand-drawn characters, that takes audio as input, and produces accurate, diverse, and stylized mouth visemes, and eye shapes, which are then mapped to given audio to create animation.  Our approach is a promising step towards automating traditional hand-drawn character animation pipeline. Thank you for watching.
