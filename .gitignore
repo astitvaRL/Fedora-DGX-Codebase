@@ -19,6 +19,7 @@
 *events.out*
 .fuse*
 .bin*
+GENERATION/Seg2Image/SEAN/results/seg2drawings/test_*
 .safetensors*
 SEGMENTATION/MaskFormer/Mask2Former/output
 GENERATION/Seg2Image/SEAN/checkpoints
