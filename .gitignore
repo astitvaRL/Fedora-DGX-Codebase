@@ -12,6 +12,7 @@
 *.mkv
 *.avi
 *.zip
+*.TextGrid
 **/__pycache__
 .watchman*
 .nfs*
