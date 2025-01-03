@@ -33,6 +33,7 @@ if __name__ == '__main__':
     torch.backends.cudnn.deterministic = True
 
     # set paths
+    train_split_size_k = 4 # (4k,8k,10k,12k,14k)
     data_root = '/mnt/users_scratch/astitva/DATA/'
     labels_definition_file_path = 'label_definition.json'
     ckpt_dir = './checkpoints'
@@ -40,11 +41,11 @@ if __name__ == '__main__':
     image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
     label_id_dir_name = 'AD_SegMaps/labels_16k' 
     train_input_visualization_dir = './TMP/TRAIN_INPUT_VIS'
-    cache_dir = join(data_root, 'dataset_caches/cache_FINE_REAL16k')
+    cache_dir = join(data_root, f'dataset_caches/cache_FINE_REAL{train_split_size_k}k')
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = '16k_ANIMSEG_E2E_FINE' # finetuned checkpoint will be saved here
+    task_name = f'{train_split_size_k}k_ANIMSEG_E2E_FINE' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -53,7 +54,7 @@ if __name__ == '__main__':
     os.makedirs(join(data_root, label_id_dir_name), exist_ok=True)
     
     # training choice
-    cache_available = True # if False, save dataset cache after first epoch
+    cache_available = False # if False, save dataset cache after first epoch
     resume_training = False
     visualize_train_input = False
     ignore_background = False
@@ -93,8 +94,8 @@ if __name__ == '__main__':
     mask_decoder = torch.nn.DataParallel(sam_model.mask_decoder, device_ids=device_ids)
 
     # create dataset
-    train_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train', num_test_samples=2000)
-    test_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test', num_test_samples=2000)
+    train_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train', sample_size=(16-train_split_size_k)*1000)
+    test_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test', sample_size=2000)
 
     # set semantic definitions for training dataset
     train_dataset.num_classes_coarse = num_classes_coarse

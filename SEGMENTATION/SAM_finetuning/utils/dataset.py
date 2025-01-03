@@ -28,7 +28,7 @@ from .SemanticSegmentation import SemanticSegmentationNoFace, SemanticSegmentati
 
 # dataset definition for only body (no facial details)
 class DrawingsDataset(Dataset): 
-    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', num_test_samples=100):
+    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', sample_size=100):
         self.sam_model = sam_model
         self.num_classes = 18
         self.semantics = SemanticSegmentationNoFace(labels_definition_path=labels_definition_file_path, num_classes=self.num_classes)
@@ -40,10 +40,10 @@ class DrawingsDataset(Dataset):
         self.data_root = data_root
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
-        self.num_test_samples = num_test_samples
-        self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.num_test_samples]
+        self.sample_size = sample_size
+        self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.sample_size]
         if self.mode == 'test':
-            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.num_test_samples:]
+            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.sample_size:]
 
     def __len__(self):
         return len(self.files)
@@ -118,7 +118,7 @@ class DrawingsDataset(Dataset):
 
 # dataset definition for only body (no facial details)
 class DrawingsDatasetCoarsePoints(Dataset): 
-    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', num_test_samples=100):
+    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', sample_size=100):
         self.sam_model = sam_model
         self.num_classes = 6
         self.num_random_points = 100
@@ -131,10 +131,10 @@ class DrawingsDatasetCoarsePoints(Dataset):
         self.data_root = data_root
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
-        self.num_test_samples = num_test_samples
-        self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.num_test_samples]
+        self.sample_size = sample_size
+        self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.sample_size]
         if self.mode == 'test':
-            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.num_test_samples:]
+            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.sample_size:]
 
     def __len__(self):
         return len(self.files)
@@ -207,7 +207,7 @@ class DrawingsDatasetCoarsePoints(Dataset):
 
 # dataset definition for only face
 class DrawingsDatasetFace(Dataset): 
-    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', num_test_samples=100):
+    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', sample_size=100):
         self.sam_model = sam_model
         self.num_classes = 11
         self.semantics = SemanticSegmentationFace(labels_definition_path=labels_definition_file_path, num_classes=self.num_classes)
@@ -219,10 +219,10 @@ class DrawingsDatasetFace(Dataset):
         self.data_root = data_root
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
-        self.num_test_samples = num_test_samples
-        self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.num_test_samples]
+        self.sample_size = sample_size
+        self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.sample_size]
         if self.mode == 'test':
-            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.num_test_samples:]
+            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.sample_size:]
 
     def __len__(self):
         return len(self.files)
@@ -370,7 +370,7 @@ class DrawingsDatasetInference(Dataset):
 
 # dataset definition for only body (no facial details) coarse-to-fine
 class DrawingsDatasetStrokes(Dataset): 
-    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', num_test_samples=100):
+    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', sample_size=100):
         self.sam_model = sam_model
         self.num_classes_coarse = 6
         self.num_classes = 18
@@ -384,10 +384,10 @@ class DrawingsDatasetStrokes(Dataset):
         self.data_root = data_root
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
-        self.num_test_samples = num_test_samples
-        self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.num_test_samples]
+        self.sample_size = sample_size
+        self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.sample_size]
         if self.mode == 'test':
-            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.num_test_samples:]
+            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.sample_size:]
 
     def __len__(self):
         return len(self.files)
@@ -507,7 +507,7 @@ class DrawingsDatasetStrokes(Dataset):
 
 # dataset definition for only body (no facial details) coarse-to-fine
 class DrawingsDatasetC2F(Dataset): 
-    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', num_test_samples=100):
+    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', sample_size=100):
         self.sam_model = sam_model
         self.num_classes_coarse = 6
         self.num_classes = 18
@@ -521,10 +521,10 @@ class DrawingsDatasetC2F(Dataset):
         self.data_root = data_root
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
-        self.num_test_samples = num_test_samples
-        self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.num_test_samples]
+        self.sample_size = sample_size
+        self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.sample_size]
         if self.mode == 'test':
-            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.num_test_samples:]
+            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.sample_size:]
 
     def __len__(self):
         return len(self.files)
@@ -603,7 +603,7 @@ class DrawingsDatasetC2F(Dataset):
 
 # dataset definition HD coarse-to-fine
 class DrawingsDatasetC2FHD(Dataset): 
-    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', num_test_samples=100):
+    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', sample_size=100):
         self.sam_model = sam_model
         self.num_classes_coarse = 6
         self.num_classes = 27
@@ -617,10 +617,10 @@ class DrawingsDatasetC2FHD(Dataset):
         self.data_root = data_root
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
-        self.num_test_samples = num_test_samples
-        self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.num_test_samples]
+        self.sample_size = sample_size
+        self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.sample_size]
         if self.mode == 'test':
-            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.num_test_samples:]
+            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.sample_size:]
 
     def __len__(self):
         return len(self.files)
@@ -698,7 +698,7 @@ class DrawingsDatasetC2FHD(Dataset):
 
 # dataset definition for all classes, coarse-to-fine
 class DrawingsDatasetC2FAll(Dataset): 
-    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', num_test_samples=100):
+    def __init__(self, sam_model, data_root, labels_definition_file_path, img_dir_name, label_id_dir_name, mode='train', device='cuda', sample_size=100):
         self.sam_model = sam_model
         self.num_classes_coarse = 5
         self.num_classes_fine = 18
@@ -716,10 +716,10 @@ class DrawingsDatasetC2FAll(Dataset):
         self.data_root = data_root
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
-        self.num_test_samples = num_test_samples
-        self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.num_test_samples]
+        self.sample_size = sample_size
+        self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[:-self.sample_size]
         if self.mode == 'test':
-            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.num_test_samples:]
+            self.files = sorted(os.listdir(join(self.data_root, self.label_id_dir_name)))[-self.sample_size:]
 
     def __len__(self):
         return len(self.files)
@@ -799,7 +799,7 @@ class DrawingsDatasetC2FAll(Dataset):
 
 # inference with coarse prior dataset definition for all classes, coarse-to-fine + face
 class DrawingsDatasetInferFullWithCoarsePrior(Dataset): 
-    def __init__(self, sam_model, img_dir_name, label_id_dir_name, semantics, bg_color=[255,255,255], mode='test', device='cuda', num_test_samples=-1):
+    def __init__(self, sam_model, img_dir_name, label_id_dir_name, semantics, bg_color=[255,255,255], mode='test', device='cuda', sample_size=-1):
         self.sam_model = sam_model
         self.num_classes_coarse = 5
         self.num_classes_fine = 18
@@ -811,8 +811,8 @@ class DrawingsDatasetInferFullWithCoarsePrior(Dataset):
         self.semantics = semantics
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
-        self.num_test_samples = num_test_samples
-        self.files = sorted(os.listdir(self.image_dir_name))[:self.num_test_samples]
+        self.sample_size = sample_size
+        self.files = sorted(os.listdir(self.image_dir_name))[:self.sample_size]
 
     def __len__(self):
         return len(self.files)
@@ -866,7 +866,7 @@ class DrawingsDatasetInferFullWithCoarsePrior(Dataset):
 
 # inference with coarse prior dataset definition for all classes, coarse-to-fine + face
 class DrawingsDatasetInferFullWithStrokes(Dataset): 
-    def __init__(self, sam_model, img_dir_name, label_id_dir_name, semantics, bg_color=[255,255,255], mode='test', device='cuda', num_test_samples=-1):
+    def __init__(self, sam_model, img_dir_name, label_id_dir_name, semantics, bg_color=[255,255,255], mode='test', device='cuda', sample_size=-1):
         self.sam_model = sam_model
         self.num_classes_coarse = 5
         self.num_classes_fine = 18
@@ -878,8 +878,8 @@ class DrawingsDatasetInferFullWithStrokes(Dataset):
         self.semantics = semantics
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
-        self.num_test_samples = num_test_samples
-        self.files = sorted(os.listdir(self.image_dir_name))[:self.num_test_samples]
+        self.sample_size = sample_size
+        self.files = sorted(os.listdir(self.image_dir_name))[:self.sample_size]
 
     def __len__(self):
         return len(self.files)
@@ -950,7 +950,7 @@ class DrawingsDatasetInferFullWithStrokes(Dataset):
 
 # inference dataset definition for all classes, coarse-to-fine + face
 class DrawingsDatasetInferFull(Dataset): 
-    def __init__(self, sam_model, img_dir_name, label_id_dir_name=None, bg_color=[255,255,255], mode='test', device='cuda', num_test_samples=-1):
+    def __init__(self, sam_model, img_dir_name, label_id_dir_name=None, bg_color=[255,255,255], mode='test', device='cuda', sample_size=-1):
         self.sam_model = sam_model
         self.num_classes_coarse = 5
         self.num_classes_fine = 18
@@ -961,7 +961,7 @@ class DrawingsDatasetInferFull(Dataset):
         self.device = device
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
-        self.num_test_samples = num_test_samples
+        self.sample_size = sample_size
         self.files = sorted(os.listdir(self.image_dir_name))
 
     def __len__(self):
