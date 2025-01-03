@@ -226,9 +226,9 @@ class Ex(QWidget, Ui_Form):
         if not os.path.exists(ui_result_folder):
             os.mkdir(ui_result_folder)
 
-        skimage.io.imsave(os.path.join(ui_result_folder, str(current_time) +'_G_img.png'), self.generated_img)
-        skimage.io.imsave(os.path.join(ui_result_folder, str(current_time) +'_I.png'), self.mat_img[:, :, 0])
-        skimage.io.imsave(os.path.join(ui_result_folder, str(current_time) +'_ColorI.png'), color_pred(self.mat_img[:, :, 0]))
+        skimage.io.imsave(os.path.join(ui_result_folder, str(current_time).replace(' ','_').replace(':','-').replace('.','_')  +'_G_img.png'), self.generated_img)
+        skimage.io.imsave(os.path.join(ui_result_folder, str(current_time).replace(' ','_').replace(':','-').replace('.','_') +'_I.png'), self.mat_img[:, :, 0])
+        skimage.io.imsave(os.path.join(ui_result_folder, str(current_time).replace(' ','_').replace(':','-').replace('.','_') +'_ColorI.png'), color_pred(self.mat_img[:, :, 0]))
 
 
     @pyqtSlot()
