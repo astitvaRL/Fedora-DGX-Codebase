@@ -577,7 +577,7 @@ class Ui_Form(object):
         self.labelButton_19.clicked.connect(partial(Form.switch_labels, 19))
 
         self.labelButton_23 = QtWidgets.QPushButton(Form)
-        self.labelButton_23.setGeometry(QtCore.QRect(Lb_x + 10 * Lb_row_shift + 10 * Lb_width,
+        self.labelButton_23.setGeometry(QtCore.QRect(Lb_x + 9 * Lb_row_shift + 9 * Lb_width,
                                                      Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
         self.labelButton_23.setObjectName("labelButton_23")
         self.labelButton_23.setText(_translate("Form", "Tongue"))
@@ -585,7 +585,7 @@ class Ui_Form(object):
         self.labelButton_23.clicked.connect(partial(Form.switch_labels, 23))
 
         self.labelButton_24 = QtWidgets.QPushButton(Form)
-        self.labelButton_24.setGeometry(QtCore.QRect(Lb_x + 11 * Lb_row_shift + 11 * Lb_width,
+        self.labelButton_24.setGeometry(QtCore.QRect(Lb_x + 10 * Lb_row_shift + 10 * Lb_width,
                                                      Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
         self.labelButton_24.setObjectName("labelButton_24")
         self.labelButton_24.setText(_translate("Form", "Feet"))
@@ -593,7 +593,7 @@ class Ui_Form(object):
         self.labelButton_24.clicked.connect(partial(Form.switch_labels, 24))
 
         self.labelButton_25 = QtWidgets.QPushButton(Form)
-        self.labelButton_25.setGeometry(QtCore.QRect(Lb_x + 12 * Lb_row_shift + 12 * Lb_width,
+        self.labelButton_25.setGeometry(QtCore.QRect(Lb_x + 11 * Lb_row_shift + 11 * Lb_width,
                                                      Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
         self.labelButton_25.setObjectName("labelButton_25")
         self.labelButton_25.setText(_translate("Form", "Neck"))
@@ -601,7 +601,7 @@ class Ui_Form(object):
         self.labelButton_25.clicked.connect(partial(Form.switch_labels, 25))
 
         self.labelButton_26 = QtWidgets.QPushButton(Form)
-        self.labelButton_26.setGeometry(QtCore.QRect(Lb_x + 13 * Lb_row_shift + 13 * Lb_width,
+        self.labelButton_26.setGeometry(QtCore.QRect(Lb_x + 12 * Lb_row_shift + 12 * Lb_width,
                                                      Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
         self.labelButton_26.setObjectName("labelButton_26")
         self.labelButton_26.setText(_translate("Form", "BG"))
