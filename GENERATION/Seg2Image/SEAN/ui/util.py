@@ -134,20 +134,69 @@ import numpy as np
 # }
 
 #################### FACES DRAWINGS #################################
-number_object = {
-                0: 'BG',
-                1: 'Eyebrows',
-                2: 'Mouth',
-                3: 'Pupil',
-                4: 'Accessory',
-                5: 'Skin',
-                6: 'Nose',
-                7: 'Teeth',
-                8: 'Ear',
-                9: 'Eye',
-                10: 'Tongue',
-}
+# number_object = {
+#                 0: 'BG',
+#                 1: 'Eyebrows',
+#                 2: 'Mouth',
+#                 3: 'Pupil',
+#                 4: 'Accessory',
+#                 5: 'Skin',
+#                 6: 'Nose',
+#                 7: 'Teeth',
+#                 8: 'Ear',
+#                 9: 'Eye',
+#                 10: 'Tongue',
+# }
 
+
+# number_color = {
+#                 0: '#000000',
+#                 1: '#4479e4',
+#                 2: '#151c38',
+#                 3: '#3f80f3',
+#                 4: '#ab45ce',
+#                 5: '#0c5730',
+#                 6: '#a0eab3',
+#                 7: '#791c4b',
+#                 8: '#56a20b',
+#                 9: '#f516a1',
+#                 10: '#9a83c1',
+# }
+
+
+
+#################### CHARACTER DRAWINGS #################################
+
+
+number_object = {
+0:'MISC',
+1:'Lower Leg', 
+2:'Eyebrows', 
+3:'Mouth', 
+4:'Pupils', 
+5:'Facial Acc.', 
+6:'Head', 
+7:'Hand', 
+8:'Lower Torso', 
+9:'Lower Arms', 
+10:'Fingers', 
+11:'Skirt', 
+12:'Head Acc.', 
+13:'Nose', 
+14:'Upper Leg', 
+15:'Upper Torso', 
+16:'Upper Arm', 
+17:'Teeth', 
+18:'Ears', 
+19:'Hand Acc.', 
+20:'Hair', 
+21:'Body Acc.', 
+22:'Eyes', 
+23:'Tongue', 
+24:'Feet', 
+25:'Neck', 
+26:'BG', 
+}
 
 number_color = {
                 0: '#000000',
@@ -160,7 +209,23 @@ number_color = {
                 7: '#791c4b',
                 8: '#56a20b',
                 9: '#f516a1',
-                10: '#9a83c1',
+                10: '#f516a1',
+                11: '#9a83c1',
+                12: '#9a83c1',
+                13: '#9a83c1',
+                14: '#9a83c1',
+                15: '#9a83c1',
+                16: '#9a83c1',
+                17: '#9a83c1',
+                18: '#9a83c1',
+                19: '#9a83c1',
+                20: '#9a83c1',
+                21: '#9a83c1',
+                22: '#9a83c1',
+                23: '#9a83c1',
+                24: '#9a83c1',
+                25: '#9a83c1',
+                26: '#9a83c1',
 }
 
 #
@@ -226,7 +291,7 @@ number_color = {
 
 def color_pred(pred):
 
-    num_labels=11
+    num_labels=27
     color = np.array([[0, 0, 0], [68, 121, 228], [21, 28, 56], [63, 128, 243], [171, 69, 206], [12, 87, 48], [160,234,179], [121,28,75], [86,162,11], [245,22,161], [154,131,193]])
     h, w = np.shape(pred)
     rgb = np.zeros((h, w, 3), dtype=np.uint8)

@@ -476,84 +476,84 @@ class Ui_Form(object):
         # # Second Row
 
 
-        # self.labelButton_10 = QtWidgets.QPushButton(Form)
-        # self.labelButton_10.setGeometry(QtCore.QRect(Lb_x,
-        #                                              Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
-        # self.labelButton_10.setObjectName("labelButton_10")
-        # self.labelButton_10.setText(_translate("Form", "tongue"))
-        # self.labelButton_10.setStyleSheet("background-color: %s;" % number_color[10] + " color: black")
-        # self.labelButton_10.clicked.connect(partial(Form.switch_labels, 10))
+        self.labelButton_11 = QtWidgets.QPushButton(Form)
+        self.labelButton_11.setGeometry(QtCore.QRect(Lb_x,
+                                                     Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
+        self.labelButton_11.setObjectName("labelButton_11")
+        self.labelButton_11.setText(_translate("Form", "tongue"))
+        self.labelButton_11.setStyleSheet("background-color: %s;" % number_color[11] + " color: white")
+        self.labelButton_11.clicked.connect(partial(Form.switch_labels, 11))
 
 
-        # self.labelButton_11 = QtWidgets.QPushButton(Form)
-        # self.labelButton_11.setGeometry(QtCore.QRect(Lb_x + 1*Lb_row_shift + 1*Lb_width,
-        #                                              Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
-        # self.labelButton_11.setObjectName("labelButton_11")
-        # self.labelButton_11.setText(_translate("Form", "u_lip"))
-        # self.labelButton_11.setStyleSheet("background-color: %s;" % number_color[11] + " color: black")
-        # self.labelButton_11.clicked.connect(partial(Form.switch_labels, 11))
+        self.labelButton_12 = QtWidgets.QPushButton(Form)
+        self.labelButton_12.setGeometry(QtCore.QRect(Lb_x + 1*Lb_row_shift + 1*Lb_width,
+                                                     Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
+        self.labelButton_12.setObjectName("labelButton_12")
+        self.labelButton_12.setText(_translate("Form", "u_lip"))
+        self.labelButton_12.setStyleSheet("background-color: %s;" % number_color[12] + " color: white")
+        self.labelButton_12.clicked.connect(partial(Form.switch_labels, 12))
 
 
-        # self.labelButton_12 = QtWidgets.QPushButton(Form)
-        # self.labelButton_12.setGeometry(QtCore.QRect(Lb_x + 2*Lb_row_shift + 2*Lb_width,
-        #                                              Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
-        # self.labelButton_12.setObjectName("labelButton_12")
-        # self.labelButton_12.setText(_translate("Form", "l_lip"))
-        # self.labelButton_12.setStyleSheet("background-color: %s;" % number_color[12] + " color: black")
-        # self.labelButton_12.clicked.connect(partial(Form.switch_labels, 12))
+        self.labelButton_13 = QtWidgets.QPushButton(Form)
+        self.labelButton_13.setGeometry(QtCore.QRect(Lb_x + 2*Lb_row_shift + 2*Lb_width,
+                                                     Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
+        self.labelButton_13.setObjectName("labelButton_13")
+        self.labelButton_13.setText(_translate("Form", "l_lip"))
+        self.labelButton_13.setStyleSheet("background-color: %s;" % number_color[13] + " color: white")
+        self.labelButton_13.clicked.connect(partial(Form.switch_labels, 13))
 
 
-        # self.labelButton_13 = QtWidgets.QPushButton(Form)
-        # self.labelButton_13.setGeometry(QtCore.QRect(Lb_x + 3*Lb_row_shift + 3*Lb_width,
-        #                                              Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
-        # self.labelButton_13.setObjectName("labelButton_13")
-        # self.labelButton_13.setText(_translate("Form", "hair"))
-        # self.labelButton_13.setStyleSheet("background-color: %s;" % number_color[13] + " color: black")
-        # self.labelButton_13.clicked.connect(partial(Form.switch_labels, 13))
+        self.labelButton_14 = QtWidgets.QPushButton(Form)
+        self.labelButton_14.setGeometry(QtCore.QRect(Lb_x + 3*Lb_row_shift + 3*Lb_width,
+                                                     Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
+        self.labelButton_14.setObjectName("labelButton_14")
+        self.labelButton_14.setText(_translate("Form", "hair"))
+        self.labelButton_14.setStyleSheet("background-color: %s;" % number_color[14] + " color: white")
+        self.labelButton_14.clicked.connect(partial(Form.switch_labels, 14))
 
 
-        # self.labelButton_14 = QtWidgets.QPushButton(Form)
-        # self.labelButton_14.setGeometry(QtCore.QRect(Lb_x + 4*Lb_row_shift + 4*Lb_width,
-        #                                              Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
-        # self.labelButton_14.setObjectName("labelButton_14")
-        # self.labelButton_14.setText(_translate("Form", "hat"))
-        # self.labelButton_14.setStyleSheet("background-color: %s;" % number_color[14] + " color: black")
-        # self.labelButton_14.clicked.connect(partial(Form.switch_labels, 14))
+        self.labelButton_15 = QtWidgets.QPushButton(Form)
+        self.labelButton_15.setGeometry(QtCore.QRect(Lb_x + 4*Lb_row_shift + 4*Lb_width,
+                                                     Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
+        self.labelButton_15.setObjectName("labelButton_14")
+        self.labelButton_15.setText(_translate("Form", "hat"))
+        self.labelButton_15.setStyleSheet("background-color: %s;" % number_color[15] + " color: white")
+        self.labelButton_15.clicked.connect(partial(Form.switch_labels, 15))
 
 
-        # self.labelButton_15 = QtWidgets.QPushButton(Form)
-        # self.labelButton_15.setGeometry(QtCore.QRect(Lb_x + 5*Lb_row_shift + 5*Lb_width,
-        #                                              Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
-        # self.labelButton_15.setObjectName("labelButton_15")
-        # self.labelButton_15.setText(_translate("Form", "ear_r"))
-        # self.labelButton_15.setStyleSheet("background-color: %s;" % number_color[15] + " color: black")
-        # self.labelButton_15.clicked.connect(partial(Form.switch_labels, 15))
+        self.labelButton_16 = QtWidgets.QPushButton(Form)
+        self.labelButton_16.setGeometry(QtCore.QRect(Lb_x + 5*Lb_row_shift + 5*Lb_width,
+                                                     Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
+        self.labelButton_16.setObjectName("labelButton_16")
+        self.labelButton_16.setText(_translate("Form", "ear_r"))
+        self.labelButton_16.setStyleSheet("background-color: %s;" % number_color[16] + " color: white")
+        self.labelButton_16.clicked.connect(partial(Form.switch_labels, 16))
 
 
-        # self.labelButton_16 = QtWidgets.QPushButton(Form)
-        # self.labelButton_16.setGeometry(QtCore.QRect(Lb_x + 6*Lb_row_shift + 6*Lb_width,
-        #                                              Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
-        # self.labelButton_16.setObjectName("labelButton_16")
-        # self.labelButton_16.setText(_translate("Form", "neck_l"))
-        # self.labelButton_16.setStyleSheet("background-color: %s;" % number_color[16] + " color: black")
-        # self.labelButton_16.clicked.connect(partial(Form.switch_labels, 16))
+        self.labelButton_17 = QtWidgets.QPushButton(Form)
+        self.labelButton_17.setGeometry(QtCore.QRect(Lb_x + 6*Lb_row_shift + 6*Lb_width,
+                                                     Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
+        self.labelButton_17.setObjectName("labelButton_17")
+        self.labelButton_17.setText(_translate("Form", "neck_l"))
+        self.labelButton_17.setStyleSheet("background-color: %s;" % number_color[17] + " color: white")
+        self.labelButton_17.clicked.connect(partial(Form.switch_labels, 17))
 
 
-        # self.labelButton_17 = QtWidgets.QPushButton(Form)
-        # self.labelButton_17.setGeometry(QtCore.QRect(Lb_x + 7*Lb_row_shift + 7*Lb_width,
-        #                                              Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
-        # self.labelButton_17.setObjectName("labelButton_17")
-        # self.labelButton_17.setText(_translate("Form", "neck"))
-        # self.labelButton_17.setStyleSheet("background-color: %s;" % number_color[17] + " color: black")
-        # self.labelButton_17.clicked.connect(partial(Form.switch_labels, 17))
+        self.labelButton_18 = QtWidgets.QPushButton(Form)
+        self.labelButton_18.setGeometry(QtCore.QRect(Lb_x + 7*Lb_row_shift + 7*Lb_width,
+                                                     Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
+        self.labelButton_18.setObjectName("labelButton_18")
+        self.labelButton_18.setText(_translate("Form", "neck"))
+        self.labelButton_18.setStyleSheet("background-color: %s;" % number_color[18] + " color: white")
+        self.labelButton_18.clicked.connect(partial(Form.switch_labels, 18))
 
-        # self.labelButton_18 = QtWidgets.QPushButton(Form)
-        # self.labelButton_18.setGeometry(QtCore.QRect(Lb_x + 8 * Lb_row_shift + 8 * Lb_width,
-        #                                              Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
-        # self.labelButton_18.setObjectName("labelButton_18")
-        # self.labelButton_18.setText(_translate("Form", "cloth"))
-        # self.labelButton_18.setStyleSheet("background-color: %s;" % number_color[18] + " color: black")
-        # self.labelButton_18.clicked.connect(partial(Form.switch_labels, 18))
+        self.labelButton_19 = QtWidgets.QPushButton(Form)
+        self.labelButton_19.setGeometry(QtCore.QRect(Lb_x + 8 * Lb_row_shift + 8 * Lb_width,
+                                                     Lb_y + Lb_height + Lb_col_shift, Lb_width, Lb_height))
+        self.labelButton_19.setObjectName("labelButton_19")
+        self.labelButton_19.setText(_translate("Form", "cloth"))
+        self.labelButton_19.setStyleSheet("background-color: %s;" % number_color[19] + " color: white")
+        self.labelButton_19.clicked.connect(partial(Form.switch_labels, 19))
 
 
 
