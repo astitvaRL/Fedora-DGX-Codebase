@@ -299,7 +299,7 @@ class Ex(QWidget, Ui_Form):
 
         ############### hard coding for categories
 
-        for i in range(27):
+        for i in range(11):
             input_style_dic[str(i)] = {}
 
             average_category_folder_list = glob(os.path.join(average_style_code_folder, str(i), '*.npy'))
@@ -349,7 +349,7 @@ class Ex(QWidget, Ui_Form):
 
         self.style_img_mask_dic = {}
 
-        for i in range(27):
+        for i in range(11):
             input_style_dic[str(i)] = {}
 
             input_category_folder_list = glob(os.path.join(input_style_code_folder, str(i), '*.npy'))
