@@ -11,8 +11,8 @@ import copy
 
 Lb_width = 120
 Lb_height = 40
-Lb_row_shift = 25
-Lb_col_shift = 2
+Lb_row_shift = 20
+Lb_col_shift = 5
 Lb_x = 100
 Lb_y = 800
 
