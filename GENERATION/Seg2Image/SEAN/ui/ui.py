@@ -182,31 +182,31 @@ class Ui_Form(object):
 
 
     def add_checkbox_widgets(self, Form):
-        print("Hidden")
-        # self.checkBoxGroupBox = QtWidgets.QGroupBox("", Form)
-        # self.checkBoxGroupBox.setGeometry(QtCore.QRect(920, 10, 1500, 220))
+        # print("Hidden")
+        self.checkBoxGroupBox = QtWidgets.QGroupBox("", Form)
+        self.checkBoxGroupBox.setGeometry(QtCore.QRect(920, 10, 1500, 220))
 
-        # layout = QtWidgets.QGridLayout()
-        # self.checkBoxGroup = QtWidgets.QButtonGroup(Form)
-        # self.checkBoxGroup.setExclusive(False)
-        # for i, j in enumerate(number_object):
-        #     cb = QtWidgets.QCheckBox(number_object[j])
-        #     self.checkBoxGroup.addButton(cb, i)
-        #     layout.addWidget(cb, i//6, i%6)
+        layout = QtWidgets.QGridLayout()
+        self.checkBoxGroup = QtWidgets.QButtonGroup(Form)
+        self.checkBoxGroup.setExclusive(False)
+        for i, j in enumerate(number_object):
+            cb = QtWidgets.QCheckBox(number_object[j])
+            self.checkBoxGroup.addButton(cb, i)
+            layout.addWidget(cb, i//6, i%6)
 
-        # cb = QtWidgets.QCheckBox('ALL')
-        # self.checkBoxGroup.addButton(cb, )
-        # layout.addWidget(cb, (i+1)//6, (i+1)%6)
+        cb = QtWidgets.QCheckBox('ALL')
+        self.checkBoxGroup.addButton(cb, )
+        layout.addWidget(cb, (i+1)//6, (i+1)%6)
 
-        # self.checkBoxGroupBox.setLayout(layout)
+        self.checkBoxGroupBox.setLayout(layout)
 
-        # for i in range(11):
-        #     self.checkBoxGroup.button(i).setChecked(True)
+        for i in range(11):
+            self.checkBoxGroup.button(i).setChecked(True)
 
-        # checkbox_status = [cb.isChecked() for cb in self.checkBoxGroup.buttons()]
-        # checkbox_status = checkbox_status[:11]
-        # self.checkbox_status = checkbox_status
-        # self.checkBoxGroup.buttonToggled.connect(self.cb_event)
+        checkbox_status = [cb.isChecked() for cb in self.checkBoxGroup.buttons()]
+        checkbox_status = checkbox_status[:11]
+        self.checkbox_status = checkbox_status
+        self.checkBoxGroup.buttonToggled.connect(self.cb_event)
 
 
 
