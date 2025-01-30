@@ -33,7 +33,7 @@ if __name__ == '__main__':
     torch.backends.cudnn.deterministic = True
 
     # set paths
-    train_split_size_k = 4 # (4k,8k,10k,12k,14k)
+    train_split_size_k = 0.5 # (4k,8k,10k,12k,14k)
     data_root = '/mnt/users_scratch/astitva/DATA/'
     labels_definition_file_path = 'label_definition.json'
     ckpt_dir = './checkpoints'
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     mask_decoder = torch.nn.DataParallel(sam_model.mask_decoder, device_ids=device_ids)
 
     # create dataset
-    train_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train', sample_size=(16-train_split_size_k)*1000)
+    train_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train', sample_size=int((16-train_split_size_k)*1000))
     test_dataset = DrawingsDatasetC2F(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test', sample_size=2000)
 
     # set semantic definitions for training dataset

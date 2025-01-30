@@ -1,0 +1,7 @@
+
+    NumValSamples=100
+    MeanIoU=0.8459903001785278
+    MeanGenDiceScore=0.8909893035888672
+    MeanAcc=0.8941490650177002
+    PixelAcc=93.90743255615234
+    
