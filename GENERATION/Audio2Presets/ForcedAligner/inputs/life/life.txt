@@ -1,0 +1,1 @@
+We propose a novel, fully automatic, segmentation guided, eyes and mouth generation method, to perform facial animation of various hand drawn characters. Our solution produces plausible mouth and eye animation, for a wide range of drawings.

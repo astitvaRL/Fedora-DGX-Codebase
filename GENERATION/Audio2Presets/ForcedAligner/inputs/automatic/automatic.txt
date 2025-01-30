@@ -1,0 +1,1 @@
+We propose a fully automatic, segmentation guided facial expression generation and lip syncing tool, to perform facial animation of various hand drawn characters.

@@ -163,6 +163,8 @@ class ACE(nn.Module):
                             if self.status == 'test' and self.save_npy and self.ACE_Name=='up_2_ACE_0':
                                 tmp = style_codes[i][j].cpu().numpy()
                                 dir_path = 'styles_test'
+                                if os.path.exists(os.environ['STYLE_CODE_DIR']):
+                                    dir_path = os.environ['STYLE_CODE_DIR']
 
                                 ############### some problem with obj_dic[i]
                                 im_name = os.path.basename(obj_dic[i])

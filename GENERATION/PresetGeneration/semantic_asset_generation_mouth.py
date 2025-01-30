@@ -37,12 +37,18 @@ def bgr_conversion(img):
 # set paths
 data_root = "/mnt/users_scratch/astitva/DATA/"
 labels_definition_file_path = "./label_definition.json"
-# image_dir_name = "LIP_drawings_16k/images/val_images/"
-image_dir_name = "MANIFOLD/animated_drawings_images_prior_april22/cropped_image"
-# image_dir_name = "IN_THE_WILD_faces"
+# image_dir_name = "MANIFOLD/animated_drawings_images_prior_april22/cropped_image"
+image_dir_name = '/mnt/users_scratch/astitva/DATA/for_PPT/base_frame/'
 preset_dir = "./presets"
 preset_class = "mouth"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CANNY THRESHOLDS ACCORDINGLY IN THE SHAPE & STYLIZATION SCRIPTS
-out_parent_dir = "/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/GENERATION/PresetGeneration/OUTPUT/DRAWINGS"
+out_parent_dir = "/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/GENERATION/PresetGeneration/OUTPUT/for_PPT/"
+# out_parent_dir = "/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/GENERATION/PresetGeneration/OUTPUT/banana"
+os.makedirs(out_parent_dir, exist_ok=True)
+
+# inference settings
+use_GT_semantics = False
+if use_GT_semantics:
+    labels_dir_name = "AD_SegMaps/labels_16k"
 
 # prest configuration
 preset_config = PresetConfig(preset_class)
@@ -83,7 +89,7 @@ semantics_face = SemanticSegmentationFace(labels_definition_file_path)
 #load SAM model
 sam_ckpt_dir = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/checkpoints/'
 semsegpipe = SAM_face(ckpt_dir=sam_ckpt_dir)
-semsegpipe.load_best_eval_ckpt = False
+semsegpipe.load_best_eval_ckpt = True
 semsegpipe.epoch_coarse = 500
 semsegpipe.epoch_face = 500
 semsegpipe.epoch_fine = 500
@@ -92,9 +98,13 @@ semsegpipe.epoch_fine = 500
 refiner = segref.Refiner(device="cuda:0")  # device can also be 'cpu'
 
 # load labels
-start = 0
-end = -1
-images = sorted(os.listdir(join(data_root, image_dir_name)))[start:end]
+start_idx = 0
+end_idx = -1
+images = sorted(os.listdir(join(data_root, image_dir_name)))[start_idx:]
+
+# if use_GT_semantics:
+    # images = sorted(os.listdir(join(data_root, labels_dir_name)))[start:end]
+
 
 # additional controls
 outline_only = False
@@ -102,15 +112,18 @@ save_deformed_segmaps = True
 
 # PRESET DEFORMATION
 
-for input_image_name in tqdm(images):
-
+for file_name in tqdm(images):
     start = time.time()
+    input_image_name = file_name
+    if use_GT_semantics:
+        # input_image_name = file_name.split('_')[0]
+        input_image_name = file_name
 
     # condition = input_image_name.startswith('15d6331ff4074746bee89a2a0f2f8c8c__1231592047922992') or input_image_name.startswith('15d26589e54243eea272faf531231fbc__570610782222689') or input_image_name.startswith('15f65d5bc02e4ba786de5cb3dcd69fa3__457527160700991') or input_image_name.startswith('16bd9985ef4d48699139cdc987be6359__1608344923096517') or input_image_name.startswith('16c04ae6225f4df7abfb454dd65bea82__1342049696780957') or input_image_name.startswith('16c04ae6225f4df7abfb454dd65bea82__1342049696780957') or input_image_name.startswith('16d33cd7e02f425685b91ba83a30993c__1408725136771163') or input_image_name.startswith('16d9663267d145a197e79dede2f45636__1625393001441540') or input_image_name.startswith('07af86863ff04f3abc0e0442cdb882b7') or input_image_name.startswith('07b1a55d68b9425caccb1aadcc58379a') or input_image_name.startswith('07b9b86ec22e48e1807785b2cd64cb76') or input_image_name.startswith('07b6c37d7a6944ee98f544d633defeeb') or input_image_name.startswith('07b8bf4a421744c9b7f985cf6e8fe544') or input_image_name.startswith('0a3b9f4c787743458c7ca1cc77b902ea') or input_image_name.startswith('07babac076024ce7a89b72e93d16cc99') or input_image_name.startswith('0934abc208ff441bb98a9b849997aac4') or input_image_name.startswith('07cdc5cab5af41e2a102e5453678ca72')
-    condition = input_image_name.startswith('0a3b9f4c787743458c7ca1cc77b902ea') or input_image_name.startswith('0a0a4add3fb9438babce15098f9efad8') or input_image_name.startswith('07cdc5cab5af41e2a102e5453678ca72') or input_image_name.startswith('07a23dcc43ea436ebf6b75b04c7611d4') or input_image_name.startswith('0a5b805185614f839b5f015b650970dc') or input_image_name.startswith('07aba8228cb54faf9f6e4e6cab561331') or input_image_name.startswith('0a6bf1b9d15842b6822a92a6b536faf1') or input_image_name.startswith('07aedcb335a04981a016c0c7efed77ba') or input_image_name.startswith('07af86863ff04f3abc0e0442cdb882b7') or input_image_name.startswith('07b1a55d68b9425caccb1aadcc58379a') or input_image_name.startswith('07b9b86ec22e48e1807785b2cd64cb76') or input_image_name.startswith('07b6c37d7a6944ee98f544d633defeeb') or input_image_name.startswith('07b8bf4a421744c9b7f985cf6e8fe544') or input_image_name.startswith('0a3b9f4c787743458c7ca1cc77b902ea') or input_image_name.startswith('07babac076024ce7a89b72e93d16cc99') or input_image_name.startswith('0934abc208ff441bb98a9b849997aac4') or input_image_name.startswith('07cdc5cab5af41e2a102e5453678ca72')
-    # condition = input_image_name.startswith('15')
-    if not condition:
-        continue
+    # condition = input_image_name.startswith('0a3b9f4c787743458c7ca1cc77b902ea') #or input_image_name.startswith('0a0a4add3fb9438babce15098f9efad8') or input_image_name.startswith('07cdc5cab5af41e2a102e5453678ca72') or input_image_name.startswith('07a23dcc43ea436ebf6b75b04c7611d4') or input_image_name.startswith('0a5b805185614f839b5f015b650970dc') or input_image_name.startswith('07aba8228cb54faf9f6e4e6cab561331') or input_image_name.startswith('0a6bf1b9d15842b6822a92a6b536faf1') or input_image_name.startswith('07aedcb335a04981a016c0c7efed77ba') or input_image_name.startswith('07af86863ff04f3abc0e0442cdb882b7') or input_image_name.startswith('07b1a55d68b9425caccb1aadcc58379a') or input_image_name.startswith('07b9b86ec22e48e1807785b2cd64cb76') or input_image_name.startswith('07b6c37d7a6944ee98f544d633defeeb') or input_image_name.startswith('07b8bf4a421744c9b7f985cf6e8fe544') or input_image_name.startswith('0a3b9f4c787743458c7ca1cc77b902ea') or input_image_name.startswith('07babac076024ce7a89b72e93d16cc99') or input_image_name.startswith('0934abc208ff441bb98a9b849997aac4') or input_image_name.startswith('07cdc5cab5af41e2a102e5453678ca72')
+    # condition = input_image_name.startswith('image')
+    # if not condition:
+    #     continue
 
     # create output directory
     output_dir_metadata = join(output_root, input_image_name.split(".")[0], 'metadata')
@@ -120,23 +133,32 @@ for input_image_name in tqdm(images):
     os.makedirs(output_dir_metadata, exist_ok=True)
     os.makedirs(f'{output_dir_metadata}/original_image/', exist_ok=True)
     os.makedirs(f'{output_dir_metadata}/original_label/', exist_ok=True)
+    os.makedirs(f'{output_dir_metadata}/style_code/', exist_ok=True)
     os.makedirs(output_dir_images, exist_ok=True)
     os.makedirs(output_dir_labels, exist_ok=True)
     if save_deformed_segmaps:
         os.makedirs(output_dir_segmaps, exist_ok=True)
 
     # load images
-    img_full = cv2.imread(join(data_root, image_dir_name, input_image_name))
+    # img_full = cv2.imread(join(data_root, image_dir_name, f'{input_image_name.split(".")[0]}.png'))
+    img_full = cv2.imread(join(data_root, image_dir_name, f'{input_image_name}'))
     w_orig, h_orig = img_full.shape[:2]
     img_full = cv2.resize(img_full, (1024, 1024))
     img_full = bgr_conversion(img_full)
 
     # semantic segmentation 
-    sam_output = semsegpipe.predict(img_full)
-    if not sam_output[0]:
-        print("Segmentation Failed! Skipping...")
-        continue
-    label_full = sam_output[1]
+    label_full = None
+    if use_GT_semantics:
+        label_full = cv2.imread(join(data_root, labels_dir_name, file_name))
+        label_full = cv2.resize(label_full, (1024, 1024), interpolation=cv2.INTER_NEAREST)
+        label_full = bgr_conversion(label_full)
+    
+    else:
+        sam_output = semsegpipe.predict(img_full)
+        if not sam_output[0]:
+            print("Segmentation Failed! Skipping...")
+            continue
+        label_full = sam_output[1]
 
     # segmap to labels
     label_id = semantics.colors_to_labels(label_full)
@@ -291,9 +313,13 @@ for input_image_name in tqdm(images):
     os.environ['LABEL_DIR'] = f'{output_dir_metadata}/original_label'
     os.environ['PRESETS_IMAGE_DIR'] = f'{output_dir_images}'
     os.environ['PRESETS_LABEL_DIR'] = f'{output_dir_labels}'
+    os.environ['STYLE_CODE_DIR'] = f'{output_dir_metadata}/style_code/'
     # run the script
-    os.system('bash seg2image.sh')
-
+    try:
+        os.system('bash seg2image.sh')
+    except:
+        print("Missing data in -->", input_image_name)
+        continue
 
 
     # COMPOSITING
@@ -314,7 +340,8 @@ for input_image_name in tqdm(images):
         deformed_mask_im = cv2.dilate(deformed_mask.astype('uint8')*255, (23,23))
         deformed_mask_im = refiner.refine(generated, deformed_mask_im, fast=False, L=900)
         deformed_mask_im = np.repeat(deformed_mask_im[..., np.newaxis], 3, axis=2)
-        blur_kernel = (23, 23)
+        # blur_kernel = (23, 23)
+        blur_kernel = (9, 9)
         if outline_only:
             blur_kernel = (19,19)
         deformed_mask_im = cv2.blur(deformed_mask_im, blur_kernel)

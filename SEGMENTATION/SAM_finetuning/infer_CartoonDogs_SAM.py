@@ -17,10 +17,10 @@ from monai.networks import one_hot
 import torchmetrics
 import segmentation_refinement as segref
 
-from segment_anything_parallel import sam_model_registry
-from segment_anything_parallel_fine_infer import sam_model_registry as sam_model_registry_fine
+# from segment_anything_parallel import sam_model_registry
+from segment_anything_parallel_fine_infer import sam_model_registry #as sam_model_registry_fine
 
-from segment_anything_parallel_fine_infer.utils.transforms import ResizeLongestSide
+# from segment_anything_parallel_fine_infer.utils.transforms import ResizeLongestSide
 
 from utils.dataset import DrawingsDatasetInferFull
 from utils.SurfaceDice import compute_dice_coefficient
@@ -41,27 +41,28 @@ if __name__ == '__main__':
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
 
-    # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/dog_val_images'
-    # inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/IN_THE_WILD/'
-    inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/IN_THE_WILD_IMAGES/dogs_internet/'
+    inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/DOG_DATASET/val_images/'
+    # inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/dogs_OOD/val_images/'
+    # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/IN_THE_WILD_IMAGES/dogs_internet/'
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/IN_THE_WILD_IMAGES/images/'
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/ToonLight/data_generation/3DBiCar_drawings/'
-    save_predcitions_dir_path = './INFERENCE/IN_THE_WILD_IMAGES/'
+    save_predcitions_dir_path = './INFERENCE/CartoonDogsPretrained_VAL/'
     # save_predcitions_dir_path = './PREDICTIONS/3DBiCar_drawings'
 
     # EXPERIMENT CONFIG
-    task_name = 'CartoonDogs_pretrainedSAM14k'
+    # task_name = 'ANIMSEG_E2E_SAMEncoder_DOGS'
+    task_name = 'CartoonDogs_pretrainedSAMFine14k'
     all_ckpts_dir = 'all_ckpts'
-    save_task_name = f'infer_DOGS_{task_name}'
-    mode = 'test'
+    save_task_name = f'infer_DOGS_{task_name}_to_plot'
+    mode = 'val'
     BATCH_SIZE = 1
     load_best_eval_ckpt = True
-    epoch = 400
+    epoch = 160
     encoder_original = False
     bbox_given = False
     bg_mask_given = False
     visualize_heatmap = False
-    refine_masks = False
+    refine_masks = True
     model_type = 'vit_b'
 
     # semantic definitions
@@ -125,11 +126,11 @@ if __name__ == '__main__':
     # output directory for EVAL
     eval_epoch_dir = join(save_predcitions_dir_path, f"{save_task_name}/{epoch}")
     if load_best_eval_ckpt:
-        eval_epoch_dir = join(save_predcitions_dir_path, f"{save_task_name}/best_eval_epoch")
+        eval_epoch_dir = join(save_predcitions_dir_path, f"{save_task_name}/best_train_epoch")
     os.makedirs(eval_epoch_dir, exist_ok=True)
     print(f"EVAL results will be SAVED here --> {eval_epoch_dir}")
 
-    for step, (image_name_string, image_data_eval) in enumerate(tqdm(test_dataloader,"EVAL")):
+    for step, (image_name_string, image_data_eval, image_batch_dims) in enumerate(tqdm(test_dataloader,"EVAL")):
         valid_face_detected = False # reset flag for each image
         image_data_eval = image_data_eval.to(device)
         # not computing gradients for image encoder, prompt encoder and mask decoder during evaluation
@@ -181,6 +182,8 @@ if __name__ == '__main__':
                     overlayed_refined = cv2.addWeighted(image_data_vis, 0.5, labels_out_refined_vis, 0.5, 0)
 
                 cv2.imwrite(f'{eval_epoch_dir}/{save_name_string}_seg.png', cv2.cvtColor(labels_out_vis, cv2.COLOR_BGR2RGB))
+                cv2.imwrite(f'{eval_epoch_dir}/{save_name_string}_id.png', semantics.colors_to_labels(labels_out_vis))
+                cv2.imwrite(f'{eval_epoch_dir}/{save_name_string}_seg_refined.png', cv2.cvtColor(labels_out_refined_vis, cv2.COLOR_BGR2RGB))
                 # plot eval results
                 TITLE_SIZE = 35
                 fig, ax = plt.subplots(1,3, figsize=(30,10))
@@ -196,8 +199,8 @@ if __name__ == '__main__':
                 ax[2].set_title("Overlayed Prediction", fontsize=TITLE_SIZE)
                 ax[2].axis('off')
                 if refine_masks:
-                    ax[4].imshow(overlayed_refined)
-                    ax[4].set_title("Overlayed (Refined)", fontsize=TITLE_SIZE)
-                    ax[4].axis('off')
+                    ax[3].imshow(overlayed_refined)
+                    ax[3].set_title("Overlayed (Refined)", fontsize=TITLE_SIZE)
+                    ax[3].axis('off')
                 plt.savefig(f"{eval_epoch_dir}/{save_name_string}_vis.png")
                 plt.close()

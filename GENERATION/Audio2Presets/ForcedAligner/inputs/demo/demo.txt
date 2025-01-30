@@ -1,0 +1,1 @@
+to demonstrate the impact of khaer seg net in form of novel applications, we build a fully automatic, preset based facial experssion generation and lip syncing tool, using the Khaer Face GAN which is trained on the images, and annotations of the proposed Childlike SHAPES dataset!

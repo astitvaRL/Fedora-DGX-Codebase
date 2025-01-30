@@ -9,6 +9,7 @@ import torch
 import numpy as np
 from collections import OrderedDict
 from tqdm import tqdm
+import time
 
 import data
 from options.test_options import TestOptions
@@ -36,8 +37,10 @@ visualizer = Visualizer(opt)
 # custom test
 first=True
 obj_dic_global = dict()
-style_codes_dir = 'styles_test/style_codes/original.png/'
-stye_codes_mean_dir = 'styles_test/mean_style_code/mean/'
+style_code_parent_dir = os.environ['STYLE_CODE_DIR']
+# style_codes_dir = f'styles_test/style_codes/original.png/'
+style_codes_dir = f'{style_code_parent_dir}/style_codes/original.png/'
+stye_codes_mean_dir = f'styles_train/mean_style_code/mean/'
 style_code_names = sorted(os.listdir(style_codes_dir))
 
 # prepare style codes
@@ -52,6 +55,7 @@ for code_idx in range(num_classes):
 outdir = os.environ['SEAN_OUTDIR']
 for i, data_i in tqdm(enumerate(dataloader)):
 
+    start = time.time()
     save_name = data_i['path'][0].split('/')[-1]
 
     if i * opt.batchSize >= opt.how_many:
@@ -64,6 +68,7 @@ for i, data_i in tqdm(enumerate(dataloader)):
     generated_np = generated.squeeze(0).permute(1,2,0).cpu().numpy()
     generated_np = (generated_np + 1.0) / 2.0 * 255.0
     generated_np = generated_np.astype('uint8')
+    print(f"GAN synthesis took {time.time()-start} seconds")
     cv2.imwrite(f'{outdir}/{save_name}',cv2.cvtColor(generated_np, cv2.COLOR_RGB2BGR))
 
 

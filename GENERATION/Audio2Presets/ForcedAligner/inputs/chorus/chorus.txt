@@ -1,0 +1,1 @@
+To demonstrate the impact of khairSegNet in form of novel applications, we build a fully automatic preset-based facial expression manipulation, and lip syncing tool, leveraging the style representation learned by khair GAN on images and annotations from our proposed Childlike SHAPES dataset.

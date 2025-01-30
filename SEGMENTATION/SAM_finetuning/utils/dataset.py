@@ -799,9 +799,10 @@ class DrawingsDatasetC2FAll(Dataset):
 
 # inference with coarse prior dataset definition for all classes, coarse-to-fine + face
 class DrawingsDatasetInferFullWithCoarsePrior(Dataset): 
-    def __init__(self, sam_model, img_dir_name, label_id_dir_name, semantics, bg_color=[255,255,255], mode='test', device='cuda', sample_size=-1):
+    def __init__(self, sam_model, img_dir_name, label_id_dir_name, semantics, coarse_mask_format='CartoonDogs', bg_color=[255,255,255], mode='test', device='cuda', sample_size=-1):
         self.sam_model = sam_model
         self.num_classes_coarse = 5
+        self.coarse_mask_format = coarse_mask_format
         self.num_classes_fine = 18
         self.num_classes_face = 11
         self.num_classes_all = 27
@@ -812,7 +813,9 @@ class DrawingsDatasetInferFullWithCoarsePrior(Dataset):
         self.image_dir_name = img_dir_name
         self.label_id_dir_name = label_id_dir_name
         self.sample_size = sample_size
-        self.files = sorted(os.listdir(self.image_dir_name))[:self.sample_size]
+        self.files = sorted(os.listdir(self.image_dir_name))
+        if self.sample_size>-1:
+            self.files = files[:self.sample_size]
 
     def __len__(self):
         return len(self.files)
@@ -834,22 +837,41 @@ class DrawingsDatasetInferFullWithCoarsePrior(Dataset):
         input_image_tensor = input_image_tensor.squeeze(0)
 
         prior_name = image_name.split('.')[0] + '.png'
+        if self.coarse_mask_format == "Manual":
+            prior_name = image_name.split('.')[0] + '_coarse.png'
+
+
         gt2D = cv2.imread(join(self.label_id_dir_name, prior_name))
         gt2D = cv2.resize(gt2D, (1024,1024), interpolation=cv2.INTER_NEAREST)
-        gt2D = gt2D[:,:,0]
 
-        #remapping coarse prior to DrawingsDataset annotation format (only valid for Dog dataset)
-        bg = gt2D==0
-        head = gt2D==1
-        hands = (gt2D==3) | (gt2D==4)
-        legs = (gt2D==5) | (gt2D==6)
-        torso = (gt2D==2) | (gt2D==7)
-        gt2D[bg]=0
-        gt2D[head] = 2
-        gt2D[hands] = 3
-        gt2D[legs] = 1
-        gt2D[torso] = 4
-        gt2D[gt2D>4] = 0
+        if self.coarse_mask_format == 'CartoonDogs': 
+            #remapping coarse prior to DrawingsDataset annotation format (only valid for Dog dataset)
+            gt2D = gt2D[:,:,0]
+            bg = gt2D==0
+            head = gt2D==1
+            arms = (gt2D==3) | (gt2D==4)
+            legs = (gt2D==5) | (gt2D==6)
+            torso = (gt2D==2) | (gt2D==7)
+            gt2D[bg]=0
+            gt2D[head] = 2
+            gt2D[arms] = 3
+            gt2D[legs] = 1
+            gt2D[torso] = 4
+            gt2D[gt2D>4] = 0
+        elif self.coarse_mask_format=="Manual":
+            assert gt2D.shape[-1]==3
+            b,g,r = cv2.split(gt2D)
+            bg = (r==0) & (g==0) & (b==0)
+            head = (r>200) & (g>200) & (b<50)
+            torso = (r<50) & (g>200) & (b<50)
+            arms = (r>200) & (g<50) & (b<50)
+            legs = (r<50) & (g<50) & (b>200)
+            gt2D = np.zeros((1024,1024))
+            gt2D[bg]=0
+            gt2D[legs] = 1
+            gt2D[head] = 2
+            gt2D[arms] = 3
+            gt2D[torso] = 4
 
         gt2D_label_id_coarse = torch.tensor(gt2D[None, :,:]).long()
 
@@ -910,7 +932,7 @@ class DrawingsDatasetInferFullWithStrokes(Dataset):
         # gt2D = gt2D[:,:,0]
         # bg = gt2D==0
         # head = gt2D==1
-        # hands = (gt2D==3) | (gt2D==4)
+        # arms = (gt2D==3) | (gt2D==4)
         # legs = (gt2D==5) | (gt2D==6)
         # torso = (gt2D==2) | (gt2D==7)
 
@@ -920,14 +942,14 @@ class DrawingsDatasetInferFullWithStrokes(Dataset):
         gt2D = np.zeros_like(gt2D[:,:,0])
         bg = (r==0) & (g==0) & (b==0)
         head = (r==255) & (g==255) & (b==0)
-        hands = (r==255) & (g==0) & (b==0)
+        arms = (r==255) & (g==0) & (b==0)
         legs = (r==0) & (g==0) & (b==255)
         torso = (r==0) & (g==255) & (b==0)
         
         # convert to DrawingsDataset format
         gt2D[bg]=0
         gt2D[head] = 2
-        gt2D[hands] = 3
+        gt2D[arms] = 3
         gt2D[legs] = 1
         gt2D[torso] = 4
         gt2D[gt2D>4] = 0
