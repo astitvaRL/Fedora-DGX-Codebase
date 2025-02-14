@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     NUM_CLASSES = 27
     plot = True
-    compute_metrics = True
+    compute_metrics = False
 
     # define metrics
     MeanIoU = segmentation.MeanIoU(num_classes=NUM_CLASSES, include_background=True, per_class=True, input_format='index')

@@ -37,7 +37,12 @@ def bgr_conversion(img):
 # set paths
 data_root = "/mnt/users_scratch/hjessmith/DATA/"
 labels_definition_file_path = "./label_definition.json"
-image_dir_name = "MANIFOLD/animated_drawings_images_prior_april22/cropped_image"
+# image_dir_name = "LIP_drawings_16k/images/train_images/"
+# image_dir_name = '/mnt/users_scratch/astitva/DATA/lipsync_drawings_paper/'
+# image_dir_name = '/mnt/users_scratch/astitva/DATA/banana/'
+image_dir_name = '/mnt/users_scratch/astitva/DATA/for_PPT/base_frame/'
+# image_dir_name = "MANIFOLD/animated_drawings_images_prior_april22/cropped_image"
+# image_dir_name = '/mnt/users_scratch/astitva/DATA/drawings_to_lipsync_v2/'
 # image_dir_name = "IN_THE_WILD_faces"
 preset_dir = "./presets"
 preset_class = "eyes"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CANNY THRESHOLDS ACCORDINGLY IN THE SHAPE & STYLIZATION SCRIPTS
@@ -50,6 +55,10 @@ shape_ids = preset_config.config["shape_ids"]
 output_root = f"{out_parent_dir}/{preset_class}"
 os.makedirs(output_root, exist_ok=True)
 
+# inference settings
+use_GT_semantics = False
+if use_GT_semantics:
+    labels_dir_name = "AD_SegMaps/labels_16k"
 
 # load presets
 preset_cache_dict = {}
@@ -72,7 +81,7 @@ semantics_face = SemanticSegmentationFace(labels_definition_file_path)
 #load SAM model
 sam_ckpt_dir = '/mnt/users_scratch/hjessmith/CHECKPOINTS/checkpoints/'
 semsegpipe = SAM_face(ckpt_dir=sam_ckpt_dir)
-semsegpipe.load_best_eval_ckpt = False
+semsegpipe.load_best_eval_ckpt = True
 semsegpipe.epoch_coarse = 500
 semsegpipe.epoch_face = 500
 semsegpipe.epoch_fine = 500
@@ -82,9 +91,9 @@ semsegpipe.epoch_fine = 500
 refiner = segref.Refiner(device="cuda:0")  # device can also be 'cpu'
 
 # load labels
-start = 0
-end = -1
-images = sorted(os.listdir(join(data_root, image_dir_name)))[start:end]
+starting_idx = 0
+ending_idx = -1
+images = sorted(os.listdir(join(data_root, image_dir_name)))[starting_idx:]
 
 # additional controls
 outline_only = False
@@ -93,9 +102,12 @@ save_deformed_segmaps = True
 
 # PRESET DEFORMATION
 
-for input_image_name in tqdm(images):
+for file_name in tqdm(images):
 
-    start = time.time()
+    input_image_name = file_name
+    if use_GT_semantics:
+        # input_image_name = file_name.split('_')[0]
+        input_image_name = file_name
 
     condition = input_image_name.startswith('07aedcb335a04981a016c0c7efed77ba')
     # condition = input_image_name.startswith('07a0fc851f2c48058d53325894e49496') or input_image_name.startswith('0a0a4add3fb9438babce15098f9efad8') or input_image_name.startswith('07cdc5cab5af41e2a102e5453678ca72') or input_image_name.startswith('07a23dcc43ea436ebf6b75b04c7611d4') or input_image_name.startswith('0a5b805185614f839b5f015b650970dc') or input_image_name.startswith('07aba8228cb54faf9f6e4e6cab561331') or input_image_name.startswith('0a6bf1b9d15842b6822a92a6b536faf1') or input_image_name.startswith('07aedcb335a04981a016c0c7efed77ba') or input_image_name.startswith('07af86863ff04f3abc0e0442cdb882b7') or input_image_name.startswith('07b1a55d68b9425caccb1aadcc58379a') or input_image_name.startswith('07b9b86ec22e48e1807785b2cd64cb76') or input_image_name.startswith('07b6c37d7a6944ee98f544d633defeeb') or input_image_name.startswith('07b8bf4a421744c9b7f985cf6e8fe544') or input_image_name.startswith('0a3b9f4c787743458c7ca1cc77b902ea') or input_image_name.startswith('07babac076024ce7a89b72e93d16cc99') or input_image_name.startswith('0934abc208ff441bb98a9b849997aac4') or input_image_name.startswith('07cdc5cab5af41e2a102e5453678ca72')
@@ -111,6 +123,7 @@ for input_image_name in tqdm(images):
     os.makedirs(output_dir_metadata, exist_ok=True)
     os.makedirs(f'{output_dir_metadata}/original_image/', exist_ok=True)
     os.makedirs(f'{output_dir_metadata}/original_label/', exist_ok=True)
+    os.makedirs(f'{output_dir_metadata}/style_code/', exist_ok=True)
     os.makedirs(output_dir_images, exist_ok=True)
     os.makedirs(output_dir_labels, exist_ok=True)
     if save_deformed_segmaps:
@@ -122,12 +135,30 @@ for input_image_name in tqdm(images):
     img_full = cv2.resize(img_full, (1024, 1024))
     img_full = bgr_conversion(img_full)
 
-    # semantic segmentation 
-    sam_output = semsegpipe.predict(img_full)
-    if not sam_output[0]:
-        print("Segmentation Failed! Skipping...")
-        continue
-    label_full = sam_output[1]
+    start_time = time.time()
+    start_total = time.time()
+
+    # # semantic segmentation 
+    # sam_output = semsegpipe.predict(img_full)
+    # if not sam_output[0]:
+    #     print("Segmentation Failed! Skipping...")
+    #     continue
+    # label_full = sam_output[1]
+        # semantic segmentation 
+    
+    # semantic segmentation
+    label_full = None
+    if use_GT_semantics:
+        label_full = cv2.imread(join(data_root, labels_dir_name, file_name))
+        label_full = cv2.resize(label_full, (1024, 1024), interpolation=cv2.INTER_NEAREST)
+        label_full = bgr_conversion(label_full)
+    
+    else:
+        sam_output = semsegpipe.predict(img_full)
+        if not sam_output[0]:
+            print("Segmentation Failed! Skipping...")
+            continue
+        label_full = sam_output[1]
 
     # segmap to labels
     label_id = semantics.colors_to_labels(label_full)
@@ -185,6 +216,8 @@ for input_image_name in tqdm(images):
     base_image_em_cropped = cv2.resize(base_image_em_cropped, (1024, 1024))
     label_id = cv2.resize(label_id, (1024, 1024), interpolation=cv2.INTER_NEAREST)
     label_face_id = cv2.resize(label_face_id_cropped, (1024, 1024), interpolation=cv2.INTER_NEAREST)
+    
+    print(f"Base Image took {time.time()-start_time} seconds.")
 
     dims = {'w_crop':w_crop,'h_crop':h_crop, 'w_orig':w_orig, 'h_orig':h_orig}
     np.savez(f'{output_dir_metadata}/dims.npz',**dims)
@@ -203,6 +236,7 @@ for input_image_name in tqdm(images):
 
     # iterate over presets for deformation
     for shape_idx in tqdm(range(len(shape_ids))):
+        start_time = time.time()
 
         shape_id = shape_ids[shape_idx]
         preset_image = preset_cache_dict[shape_id]
@@ -251,6 +285,8 @@ for input_image_name in tqdm(images):
         # cond_face_labels = semantics_face.colors_to_labels(cond_image)
         cond_face_labels = label_face_id_tmp.copy()
 
+        print(f"Preset deformation took {time.time()-start_time} seconds.")
+
         if outline_only:
             cond_face_outline = cond_face_labels.copy()
             cond_face_edges = cv2.Canny(cond_image, 0, 150)
@@ -290,9 +326,14 @@ for input_image_name in tqdm(images):
     os.environ['LABEL_DIR'] = f'{output_dir_metadata}/original_label'
     os.environ['PRESETS_IMAGE_DIR'] = f'{output_dir_images}'
     os.environ['PRESETS_LABEL_DIR'] = f'{output_dir_labels}'
-    # run the script
-    os.system('bash seg2image.sh')
+    os.environ['STYLE_CODE_DIR'] = f'{output_dir_metadata}/style_code/'
 
+    try:
+        # run the script
+        os.system('bash seg2image.sh')
+    except:
+        print("Missing data for synthesis!")
+        continue
 
 
     # COMPOSITING
@@ -303,7 +344,7 @@ for input_image_name in tqdm(images):
     os.makedirs(composite_outdir, exist_ok=True)
 
     for key in deformed_masks_all.keys():
-       
+        start_time = time.time()
         shape_id = shape_ids[int(key)]
         deformed_mask = deformed_masks_all[shape_id]
         
@@ -335,6 +376,8 @@ for input_image_name in tqdm(images):
         asset_image_final = cv2.resize(asset_image_full, (h_orig, w_orig))
         img_composited_final = cv2.resize(img_composited, (h_orig, w_orig))
 
+        print(f"Compsiting took {time.time()-start_time} seconds.")
+
         # save assets
         cv2.imwrite(f'{asset_outdir}/{preset_class}_{shape_id}.png', bgr_conversion(asset_image_final))
         cv2.imwrite(f'{asset_outdir}/{preset_class}_{shape_id}_face.png', bgr_conversion(asset_image_cropped))
@@ -342,6 +385,6 @@ for input_image_name in tqdm(images):
         cv2.imwrite(f'{composite_outdir}/{preset_class}_{shape_id}.png', bgr_conversion(img_composited_final))
         cv2.imwrite(f'{composite_outdir}/{preset_class}_{shape_id}_face.png', bgr_conversion(img_composited_cropped))
 
-    end = time.time()
+    end_total = time.time()
     print()
-    print(f'DONE! Took {end-start} seconds!')
+    print(f'DONE! Took {end_total-start_total} seconds in total!')

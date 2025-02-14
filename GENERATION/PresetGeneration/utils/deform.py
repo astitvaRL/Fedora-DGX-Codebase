@@ -237,7 +237,7 @@ def tps_warp_preset_mouth(
         left_end, right_end, upper_contour_mid, lower_contour_mid = salient_points
         # TPS-based warping
         # ratio = (np.abs(upper_contour_mid - lower_contour_mid)[1]) / np.abs(left_end[0]-right_end[0])
-        base = 720
+        base = 640 #720
         # offset = 100*(1.5-ratio)
         # adjusted_height = base + offset
         # offset = min(np.square(upper_contour_mid - lower_contour_mid)[1], 100)
@@ -425,6 +425,8 @@ def tps_warp_preset_eyes(label_id, preset_shape, label_type="eyes"):
     num_labels, comps_im, stats, centroids = cv2.connectedComponentsWithStats(label_binary, 8, cv2.CV_32S)
     components = [(label, stats[label, cv2.CC_STAT_AREA]) for label in range(1, num_labels)]
     components.sort(key=lambda x: x[1], reverse=True)
+    if len(components)<2:
+        return -1
     top_components = components[:2]
     comp_label_left = top_components[0][0]
     comp_label_right = top_components[1][0]

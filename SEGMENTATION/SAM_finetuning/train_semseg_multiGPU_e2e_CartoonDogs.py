@@ -15,8 +15,8 @@ import json
 from monai.networks import one_hot
 import kornia
 
-from segment_anything_parallel import SamPredictor, sam_model_registry
-from segment_anything_parallel.utils.transforms import ResizeLongestSide
+from segment_anything_parallel_fine import SamPredictor, sam_model_registry
+from segment_anything_parallel_fine.utils.transforms import ResizeLongestSide
 
 from utils.dataset_dogs import DogsDataset
 from utils.SurfaceDice import compute_dice_coefficient
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
     train_cache_path = join(cache_dir, 'train_cache.pt')
     test_cache_path = join(cache_dir, 'test_cache.pt')
-    task_name = 'CartoonDogs_pretrainedSAM14k' # finetuned checkpoint will be saved here
+    task_name = 'CartoonDogs_pretrainedSAMFine14k' # finetuned checkpoint will be saved here
     model_save_path = join(ckpt_dir, task_name)
     os.makedirs(model_save_path, exist_ok=True)
     os.makedirs(join(model_save_path, 'train_seg_vis'), exist_ok=True)
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     epoch_start = 0 # dont change this, change the one below
     if resume_training:
         epoch_start = 0 # change this
-        resume_ckpt = join(ckpt_dir, '16k_ANIMSEG_E2E_COARSE/model_eval_best.pth')
+        resume_ckpt = join(ckpt_dir, '16k_ANIMSEG_E2E_FINE/model_eval_best.pth')
         init_checkpoint = resume_ckpt
 
     device = 'cuda:0'
@@ -92,7 +92,7 @@ if __name__ == '__main__':
 
     # create dataset
     train_dataset = DogsDataset(labels_definition_file_path=labels_definition_file_path, data_root = data_root,mode='train')
-    test_dataset = DogsDataset(labels_definition_file_path=labels_definition_file_path, data_root = data_root,mode='test')
+    test_dataset = DogsDataset(labels_definition_file_path=labels_definition_file_path, data_root = data_root,mode='val')
 
     # set semantic definition
     train_dataset.num_classes = num_classes
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     # augmentations
     input_size = (1024, 1024)
     crop_size = (800, 800)
-    randomaug = RandomAug(target_size=input_size, crop_size=crop_size)
+    randomaug = RandomAug(target_size=input_size, crop_size=crop_size, fliph_probability=0.0)
 
     # start training
     sam_model.train()
@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
             # augmentations
             image_data, gt, bg_mask, _ = randomaug.apply_augmentation(image_data, gt, bg_mask)
-            image_data = randomaug.apply_color_jitter(image_data, gt)
+            # image_data = randomaug.apply_color_jitter(image_data, gt)
 
             # resize gt and bg_mask
             gt = F.resize(gt, 1024, torchvision.transforms.InterpolationMode.NEAREST) # prediction will be umsampled to 1024x1024

@@ -41,26 +41,29 @@ if __name__ == '__main__':
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
 
-    # suffix =  '119'
-    # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/ToonLight/data_generation/3DBiCar_360_Renders/' + suffix
-    # save_predcitions_dir_path = './PREDICTIONS/3BiCar_360_Renders/' + suffix + '/'
+    ### Manual
+    # inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/images_with_coarse_prior/images'
+    # coarse_labels_dir_path = '/mnt/users_scratch/astitva/DATA/images_with_coarse_prior/coarse_masks'
+    
+    ### CartoonDogs
+    inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/DOG_DATASET/val_images'
+    coarse_labels_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/DOG_DATASET/val_segmentations'
 
-    inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/DOG_DATASET/train_images'
-    coarse_labels_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/DOG_DATASET/train_segmentations'
-    save_predcitions_dir_path = './PREDICTIONS/Dog/trainV2_with_Prior/'
+    save_predcitions_dir_path = './INFERENCE/CartoonDogs_with_prior/'
 
     # EXPERIMENT CONFIG
-    task_name_coarse = 'ANIMSEG_E2E_NoBinmask_Coarse_REAL7k'
-    task_name_fine = 'ANIMSEG_E2E_C2F_REAL7k'
-    task_name_face = 'ANIMSEG_E2E_FaceOnly_REAL7k_with_face_prior'
+    task_name_coarse = '16k_ANIMSEG_E2E_COARSE'
+    task_name_fine = '16k_ANIMSEG_E2E_FINE'
+    task_name_face = '16k_ANIMSEG_E2E_FACE_wBinMask'
     all_ckpts_dir = 'all_ckpts'
-    save_task_name = 'eval_real_400_ALL'
+    save_task_name = f'infer_{task_name_fine}'
+    coarse_mask_format = 'CartoonDogs' # Manual, CartoonDogs
     mode = 'test'
     BATCH_SIZE = 1
-    load_best_eval_ckpt = True
+    load_best_eval_ckpt = False
     epoch = 500
     epoch_coarse = 500
-    epoch_face = 500
+    epoch_face = 450
     encoder_original = False
     bbox_given = False
     visualize_coarse = True
@@ -141,7 +144,8 @@ if __name__ == '__main__':
 
 
     # create dataset
-    test_dataset = DrawingsDatasetInferFullWithCoarsePrior(sam_model, img_dir_name=inference_image_dir_path, label_id_dir_name=coarse_labels_dir_path, semantics=semantics_coarse)
+    inference_dataset = DrawingsDatasetInferFullWithCoarsePrior(sam_model, img_dir_name=inference_image_dir_path, label_id_dir_name=coarse_labels_dir_path, semantics=semantics_coarse)
+    inference_dataset.coarse_mask_format=coarse_mask_format
 
     # label id definitions
     label_to_id = semantics_fine.data['label_name_to_id']
@@ -149,7 +153,7 @@ if __name__ == '__main__':
 
     # create dataloader
     assert BATCH_SIZE==1
-    test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=False, drop_last=False)
+    test_dataloader = DataLoader(inference_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=False, drop_last=False)
 
 
     # define differntiable non-learnable upsampling layer
@@ -325,6 +329,7 @@ if __name__ == '__main__':
                     metric_string = '999' # str(batch_accuracy).replace('.','_')[:7]
                     plt.savefig(f"{eval_epoch_dir}/{save_name_string}_vis.png")
                     plt.close()
+                    cv2.imwrite(f"{eval_epoch_dir}/{save_name_string}_fine.png", labels_out_vis)
                 else:
                     fig, ax = plt.subplots(1,3, figsize=(30,10))
                     if refine_masks:
@@ -344,6 +349,7 @@ if __name__ == '__main__':
                         ax[4].axis('off')
                     plt.savefig(f"{eval_epoch_dir}/{save_name_string}_vis.png")
                     plt.close()
+                    cv2.imwrite(f"{eval_epoch_dir}/{save_name_string}_fine.png", labels_out_refined_vis)
                 
                 if visualize_heatmap:
                     # show heatmap

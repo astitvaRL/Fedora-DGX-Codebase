@@ -23,7 +23,7 @@ if __name__ == '__main__':
     # set paths
     data_root = '/mnt/users_scratch/astitva/DATA/'
     image_dir_name = 'MANIFOLD/animated_drawings_images_prior_april22/cropped_image'
-    label_id_dir_name = 'AD_SegMaps/labels_2k_1024'
+    label_id_dir_name = 'AD_SegMaps/labels_16k'
     labels_definition_file_path = 'label_definition.json'
     num_classes = 27
     semantics = SemanticSegmentationAll(labels_definition_file_path, num_classes=num_classes)
@@ -31,16 +31,20 @@ if __name__ == '__main__':
     ID_COUNT = [0]*num_classes
     ID_PIXEL_COUNT = [0]*num_classes
     names = sorted(os.listdir(join(data_root, label_id_dir_name)))
-    # for name in tqdm(names):
-    #     label_image = io.imread(join(data_root, label_id_dir_name, name))
-    #     label_id = semantics.colors_to_labels(label_image)
-    #     ids = np.unique(label_id)
-    #     for x in ids:
-    #         ID_COUNT[x] += 1
-    #         ID_PIXEL_COUNT[x] += np.sum(label_id==x)
+    for name in tqdm(names):
+        label_image = io.imread(join(data_root, label_id_dir_name, name))
+        label_id = semantics.colors_to_labels(label_image)
+        ids = np.unique(label_id)
+        for x in ids:
+            ID_COUNT[x] += 1
+            ID_PIXEL_COUNT[x] += np.sum(label_id==x)
 
-# np.save('ID_stats.npy', ID_COUNT)
-# np.save('ID_PIXEL_stats.npy', ID_PIXEL_COUNT)
+breakpoint()
+
+np.save('ID_stats.npy', ID_COUNT)
+np.save('ID_PIXEL_stats.npy', ID_PIXEL_COUNT)
+
+breakpoint()
 
 idcount = np.load('ID_stats.npy')
 pixelcount = np.load('ID_PIXEL_stats.npy')

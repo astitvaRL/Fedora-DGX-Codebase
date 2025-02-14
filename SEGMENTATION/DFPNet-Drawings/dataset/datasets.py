@@ -54,10 +54,11 @@ class cartoonDataSet(data.Dataset):
         # Load training image
         im_name = self.im_list[index]
 
-        im_path = os.path.join(self.root, self.dataset + '_images', im_name + '.png')
+        im_path = os.path.join(self.root, self.dataset + '_images', im_name + '.jpg')
         parsing_anno_path = os.path.join(self.root, self.dataset + '_segmentations', im_name + '.png')
 
         im = cv2.imread(im_path, cv2.IMREAD_COLOR)
+        im = cv2.resize(im, (1024,1024))
         h, w, _ = im.shape
         parsing_anno = np.zeros((h, w), dtype=np.long)
 
@@ -67,6 +68,7 @@ class cartoonDataSet(data.Dataset):
 
         if self.dataset != 'test': 
             parsing_anno = cv2.imread(parsing_anno_path, cv2.IMREAD_GRAYSCALE)
+            # parsing_anno = cv2.resize(parsing_anno, (1024,1024), interpolation=cv2.INTER_NEAREST)
 
             if self.dataset == 'train' or self.dataset == 'trainval':
 

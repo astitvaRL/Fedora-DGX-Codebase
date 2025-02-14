@@ -14,7 +14,7 @@ layers_list = ['ACE.npy']
 style_list = []
 
 
-for cat_i in range(19):
+for cat_i in range(27):
     for layer_j in layers_list:
         tmp_list = glob('styles_test/style_codes/*/' + str(cat_i) + '/' + layer_j)
         style_list = []

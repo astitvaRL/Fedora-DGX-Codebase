@@ -70,7 +70,6 @@ def compute_mean_ioU(preds, scales, centers, num_classes, datadir, input_size=[4
         s = scales[i]
         c = centers[i]
         pred = transform_parsing(pred_out, c, s, w, h, input_size)
-
         # output_im = PIL.Image.fromarray(np.asarray(pred, dtype=np.uint8))
         # output_im.putpalette(palette)
         # output_im.save('/home/jeromewan/SJTU Thesis/CE2P/CE2P-master/dataset/LIP/Predictions/'+im_name+'.png')

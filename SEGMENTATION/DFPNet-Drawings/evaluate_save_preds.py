@@ -72,7 +72,7 @@ def valid(model, valloader, input_size, num_samples, gpus):
 
     scales = np.zeros((num_samples, 2), dtype=np.float32)
     centers = np.zeros((num_samples, 2), dtype=np.int32)
-
+    im_names = []
     idx = 0
     interp = torch.nn.Upsample(size=(input_size[0], input_size[1]), mode='bilinear', align_corners=True)
     with torch.no_grad():
@@ -84,6 +84,7 @@ def valid(model, valloader, input_size, num_samples, gpus):
 
             c = meta['center'].numpy()
             s = meta['scale'].numpy()
+            im_name = meta['name']
             scales[idx:idx + num_images, :] = s[:, :]
             centers[idx:idx + num_images, :] = c[:, :]
 
@@ -105,10 +106,11 @@ def valid(model, valloader, input_size, num_samples, gpus):
 
                 idx += num_images
 
+            im_names.append(im_name)
     parsing_preds = parsing_preds[:num_samples, :, :]
 
 
-    return parsing_preds, scales, centers
+    return parsing_preds, scales, centers, im_names
 
 def color_parsing(pred):
     
@@ -194,17 +196,17 @@ def main():
     model.eval()
     model.cuda()
 
-    parsing_preds, scales, centers = valid(model, valloader, input_size, num_samples, len(gpus))
+    parsing_preds, scales, centers, im_names = valid(model, valloader, input_size, num_samples, len(gpus))
+    im_names = np.array(im_names).flatten()
     for i, mask in enumerate(parsing_preds):
         mask = color_parsing(mask)
-        print(type(mask), mask.shape)
-        save_img(mask,i)
+        save_img(mask,im_names[i])
 
-    # print(type(parsing_preds), parsing_preds.shape)
+    print(type(parsing_preds), parsing_preds.shape)
 
 
-    # mIoU = compute_mean_ioU(parsing_preds, scales, centers, args.num_classes, args.data_dir, input_size, dataset=args.dataset)
-    # print(mIoU)
+    mIoU = compute_mean_ioU(parsing_preds, scales, centers, args.num_classes, args.data_dir, input_size, dataset=args.dataset)
+    print(mIoU)
 
 if __name__ == '__main__':
     main()

@@ -36,7 +36,8 @@ if __name__ == '__main__':
     torch.multiprocessing.set_start_method('spawn')
 
     # set paths
-    data_root = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/DOG_DATASET/'
+    # data_root = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/DOG_DATASET/'
+    data_root = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/DFPNet-Drawings/Cartoon_sketches/Dog/'
     labels_definition_file_path = 'label_definition.json'
     ckpt_dir = './checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
@@ -44,13 +45,12 @@ if __name__ == '__main__':
     os.makedirs(cache_dir, exist_ok=True)
 
     # EXPERIMENT CONFIG
-    task_name = 'CartoonDogs_pretrainedSAM14k'
+    task_name = 'CartoonDogs_pretrainedSAM14k_FastLR_wAug'
     all_ckpts_dir = 'all_ckpts'
-    out_dir = 'EVALUATION/CartoonDogs_pretrainedSAM14k/latest/'
-    mode = 'test'
+    mode = 'val'
     BATCH_SIZE = 1
-    load_best_eval_ckpt = True
-    epoch = 400
+    load_best_eval_ckpt = False
+    epoch = 500
     encoder_original = False
     cache_available = False 
     bbox_given = False
@@ -60,6 +60,8 @@ if __name__ == '__main__':
     visualize_heatmap = False
     refine_masks = False
     model_type = 'vit_b'
+    out_dir = f'EVALUATION/{task_name}/'
+
 
     # semantic definitions
     num_classes = 8
@@ -102,7 +104,7 @@ if __name__ == '__main__':
 
 
     # create dataset
-    test_dataset = DogsDatasetEval(labels_definition_file_path=labels_definition_file_path, data_root = data_root,mode='test')
+    test_dataset = DogsDatasetEval(labels_definition_file_path=labels_definition_file_path, data_root = data_root,mode=mode)
 
     # assign semantics and number of classes
     test_dataset.num_classes = num_classes

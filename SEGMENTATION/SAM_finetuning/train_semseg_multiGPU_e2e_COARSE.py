@@ -32,7 +32,7 @@ if __name__ == '__main__':
     torch.multiprocessing.set_start_method('spawn')
 
     # set paths
-    train_split_size_k = 12 # (4k,8k,10k,12k,14k)
+    train_split_size_k = 0.5 # (4k,8k,10k,12k,14k)
     data_root = '/mnt/users_scratch/astitva/DATA/'
     labels_definition_file_path = 'label_definition.json'
     ckpt_dir = './checkpoints'
@@ -91,8 +91,8 @@ if __name__ == '__main__':
     mask_decoder = torch.nn.DataParallel(sam_model.mask_decoder, device_ids=device_ids)
 
     # create dataset
-    train_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train', num_test_samples=(16-train_split_size_k)*1000)
-    test_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test', num_test_samples=2000) # this remains fixed as 2000
+    train_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='train', sample_size=int((16-train_split_size_k)*1000))
+    test_dataset = DrawingsDataset(sam_model, labels_definition_file_path=labels_definition_file_path, data_root = data_root, img_dir_name=image_dir_name, label_id_dir_name = label_id_dir_name, mode='test', sample_size=2000) # this remains fixed as 2000
 
     # set semantic definition
     train_dataset.num_classes = num_classes

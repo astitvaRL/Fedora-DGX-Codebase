@@ -42,14 +42,15 @@ if __name__ == '__main__':
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
 
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/dog_val_images'
-    inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/IN_THE_WILD/'
+    # inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/IN_THE_WILD/'
+    inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/OOD_paper/'
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/IN_THE_WILD_IMAGES/images/'
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/ToonLight/data_generation/3DBiCar_drawings/'
-    save_predcitions_dir_path = './INFERENCE/IN_THE_WILD_IMAGES/'
+    save_predcitions_dir_path = './INFERENCE/OOD_paper/SINGLE_STAGE/'
     # save_predcitions_dir_path = './PREDICTIONS/3DBiCar_drawings'
 
     # EXPERIMENT CONFIG
-    task_name = '16k_ANIMSEG_E2E_SCRATCH_ALL_CLASSES'
+    task_name = '16k_ANIMSEG_E2E_ALL_CLASSES_SlowLR'
     all_ckpts_dir = 'all_ckpts'
     save_task_name = f'infer_{task_name}'
     mode = 'test'
@@ -128,7 +129,7 @@ if __name__ == '__main__':
     os.makedirs(eval_epoch_dir, exist_ok=True)
     print(f"EVAL results will be SAVED here --> {eval_epoch_dir}")
 
-    for step, (image_name_string, image_data_eval) in enumerate(tqdm(test_dataloader,"EVAL")):
+    for step, (image_name_string, image_data_eval, image_batch_dims) in enumerate(tqdm(test_dataloader,"EVAL")):
         valid_face_detected = False # reset flag for each image
         image_data_eval = image_data_eval.to(device)
         # not computing gradients for image encoder, prompt encoder and mask decoder during evaluation
