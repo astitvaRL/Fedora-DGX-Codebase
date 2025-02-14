@@ -1,7 +1,7 @@
 import os
 
 # setup cache path for huggingface
-os.environ["CACHE_DIR"] = "/mnt/users_scratch/astitva/CACHE/"
+os.environ["CACHE_DIR"] = "/mnt/users_scratch/hjessmith/CACHE/"
 os.environ["HF_HUB_OFFLINE"] = "0"
 os.environ["HF_HOME"] = os.environ["CACHE_DIR"]
 os.environ["HF_DATASETS_CACHE"] = os.environ["CACHE_DIR"]
@@ -35,14 +35,14 @@ def bgr_conversion(img):
 
 
 # set paths
-data_root = "/mnt/users_scratch/astitva/DATA/"
+data_root = "/mnt/users_scratch/hjessmith/DATA/"
 labels_definition_file_path = "./label_definition.json"
 # image_dir_name = "LIP_drawings_16k/images/val_images/"
 image_dir_name = "MANIFOLD/animated_drawings_images_prior_april22/cropped_image"
 # image_dir_name = "IN_THE_WILD_faces"
 preset_dir = "./presets"
 preset_class = "mouth"  # DON'T FORGET TO CHANGE CANONICAL COORDINATES & CANNY THRESHOLDS ACCORDINGLY IN THE SHAPE & STYLIZATION SCRIPTS
-out_parent_dir = "/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/GENERATION/PresetGeneration/OUTPUT/DRAWINGS"
+out_parent_dir = "/mnt/users_scratch/hjessmith/WORKSPACE/Fedora-DGX-Codebase/GENERATION/PresetGeneration/OUTPUT/DRAWINGS"
 
 # prest configuration
 preset_config = PresetConfig(preset_class)
@@ -81,7 +81,7 @@ semantics = SemanticSegmentationAll(labels_definition_file_path)
 semantics_face = SemanticSegmentationFace(labels_definition_file_path)
 
 #load SAM model
-sam_ckpt_dir = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/checkpoints/'
+sam_ckpt_dir = '/mnt/users_scratch/hjessmith/CHECKPOINTS/checkpoints/'
 semsegpipe = SAM_face(ckpt_dir=sam_ckpt_dir)
 semsegpipe.load_best_eval_ckpt = False
 semsegpipe.epoch_coarse = 500
