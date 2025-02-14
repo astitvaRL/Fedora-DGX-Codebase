@@ -38,15 +38,25 @@ if __name__ == '__main__':
     torch.multiprocessing.set_start_method('spawn')
 
     # set paths
-    data_root = '/mnt/users_scratch/astitva/DATA/'
+    data_root = '/mnt/users_scratch/hjessmith/DATA/'
     labels_definition_file_path = 'label_definition.json'
-    ckpt_dir = './checkpoints'
+    # ckpt_dir = './checkpoints'
+    ckpt_dir = '/mnt/users_scratch/hjessmith/CHECKPOINTS/checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
 
     inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/for_PPT/base_frame/'
     save_predcitions_dir_path = './INFERENCE/for_PPT/'
     os.makedirs(save_predcitions_dir_path)
 
+    # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/dog_val_images'
+    # inference_image_dir_path = '/mnt/users_scratch/hjessmith/DATA/IN_THE_WILD/faces_wild/'
+    inference_image_dir_path = '/mnt/users_scratch/hjessmith/DATA/IN_THE_WILD/test_visuals/'
+    # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/IN_THE_WILD_IMAGES/random/'
+    # save_predcitions_dir_path = './INFERENCE/faces_wild/'
+    save_predcitions_dir_path = './INFERENCE/test_visuals/'
+    # save_predcitions_dir_path = f'{inference_image_dir_path}/prediction/'
+    # save_predcitions_dir_path = './PREDICTIONS/3DBiCar_drawings'
+    # os.makedirs(save_predcitions_dir_path)
     # EXPERIMENT CONFIG
     train_split_k = 16
     task_name_coarse = f'{train_split_k}k_ANIMSEG_E2E_COARSE'
@@ -392,7 +402,8 @@ if __name__ == '__main__':
                     plt.savefig(f"{sample_save_dir}/{save_name_string}_vis.png")
                     plt.close()
                 
-                if visualize_coarse_heatmap:
+                if visualize_heatmap:
+                    """ FACE """
                     # show heatmap
                     fig, ax = plt.subplots(1,num_classes_coarse, figsize=((num_classes_coarse)*10,10))
                     fig.tight_layout()
@@ -412,36 +423,50 @@ if __name__ == '__main__':
                         ax[i].imshow(heatmap, cmap='jet_r')
                         # ax[i].set_title(f"{class_name}", fontsize=TITLE_SIZE)
                         ax[i].axis('off')
-                    plt.savefig(f"{sample_save_dir}/{save_name_string}_coarse_heatmap.png")
-                    plt.close()
-                
-                if valid_face_detected and visualize_face_heatmap:
-                    # show heatmap
-                    face_image_data_vis = image_data_vis[Xs.min():Xs.max(),Ys.min():Ys.max()]
-                    face_seg_temp = labels_out_vis[Xs.min():Xs.max(),Ys.min():Ys.max()]
-                    face_image_data_vis = cv2.resize(face_image_data_vis,(1024,1024),interpolation=cv2.INTER_LINEAR)
-                    face_seg_temp = cv2.resize(face_seg_temp,(1024,1024),interpolation=cv2.INTER_NEAREST)
-                    face_seg_temp[face_seg_temp.sum(2)==0] = [255,255,255]
-                    fig, ax = plt.subplots(1,num_classes_face+2, figsize=((num_classes_face+2)*10,10))
-                    fig.tight_layout()
-                    # ax[0].set_title("Face Mask", fontsize=TITLE_SIZE)
-                    ax[0].imshow(face_image_data_vis)
+                    plt.savefig(f"{eval_epoch_dir}/{save_name_string}_face_heatmap.png")
+
+                    """ FINE """
+                    fig, ax = plt.subplots(1,num_classes_fine+1, figsize=((num_classes_fine+1)*10,10))
+                    ax[0].imshow(labels_out_vis)
+                    ax[0].set_title("Prediction", fontsize=TITLE_SIZE)
                     ax[0].axis('off')
-                    ax[1].imshow(face_seg_temp)
-                    ax[1].axis('off')
                     #normalize mask predictions across channels
-                    heatmaps = mask_predictions_face[batch_idx]
+                    heatmaps = mask_predictions_fine[batch_idx]
+                    np.save(f"{eval_epoch_dir}/{save_name_string}_fine_heatmap.npy", heatmaps.cpu().numpy())
                     heatmaps = heatmaps/heatmaps.sum(dim=0, keepdim=True)
-                    for i in range(2,num_classes_face+2):
-                        heatmap = heatmaps[i-2].cpu().numpy().astype('float32')
-                        remapped_id = semantics_face.reverse_remap[i-2]
+                    for i in range(1,num_classes_fine+1):
+                        heatmap = heatmaps[i-1].cpu().numpy().astype('float32')
+                        remapped_id = semantics_fine.reverse_remap[i-1]
                         class_name = id_to_label[remapped_id]
                         # if coarse:
                         #     class_name = semantics_fine.class_names[i-1]
                         ax[i].imshow(heatmap, cmap='jet_r')
-                        # ax[i].set_title(f"{class_name}", fontsize=TITLE_SIZE)
+                        ax[i].set_title(f"{class_name}", fontsize=TITLE_SIZE)
                         ax[i].axis('off')
-                    plt.savefig(f"{sample_save_dir}/{save_name_string}_face_heatmap.png")
+                    plt.savefig(f"{eval_epoch_dir}/{save_name_string}_fine_heatmap.png")
+
+                    """ COARSE """
+                    fig, ax = plt.subplots(1,num_classes_coarse+1, figsize=((num_classes_coarse+1)*10,10))
+                    ax[0].imshow(labels_out_vis)
+                    ax[0].set_title("Prediction", fontsize=TITLE_SIZE)
+                    ax[0].axis('off')
+                    #normalize mask predictions across channels
+                    heatmaps = mask_predictions_coarse[batch_idx]
+                    np.save(f"{eval_epoch_dir}/{save_name_string}_coarse_heatmap.npy", heatmaps.cpu().numpy())
+                    # heatmaps = heatmaps/heatmaps.sum(dim=0, keepdim=True)
+                    for i in range(1,num_classes_coarse+1):
+                        heatmap = heatmaps[i-1].cpu().numpy().astype('float32')
+                        remapped_id = semantics_fine.reverse_remap[i-1]
+                        class_name = id_to_label[remapped_id]
+                        # if coarse:
+                        #     class_name = semantics_fine.class_names[i-1]
+                        ax[i].imshow(heatmap, cmap='jet_r')
+                        ax[i].set_title(f"{class_name}", fontsize=TITLE_SIZE)
+                        ax[i].axis('off')
+                    plt.savefig(f"{eval_epoch_dir}/{save_name_string}_coarse_heatmap.png")
+
+
+
                     plt.close()
                 
                 if valid_face_detected and save_edit_data:
