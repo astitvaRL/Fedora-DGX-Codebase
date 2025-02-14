@@ -48,6 +48,7 @@ if __name__ == '__main__':
     save_predcitions_dir_path = './INFERENCE/for_PPT/'
     os.makedirs(save_predcitions_dir_path)
 
+ 
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/dog_val_images'
     # inference_image_dir_path = '/mnt/users_scratch/hjessmith/DATA/IN_THE_WILD/faces_wild/'
     inference_image_dir_path = '/mnt/users_scratch/hjessmith/DATA/IN_THE_WILD/test_visuals/'
