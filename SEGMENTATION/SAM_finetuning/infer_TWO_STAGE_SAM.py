@@ -44,9 +44,9 @@ if __name__ == '__main__':
     ckpt_dir = '/mnt/users_scratch/hjessmith/CHECKPOINTS/checkpoints'
     sam_original_ckpt_path = join(ckpt_dir,'sam_original/sam_vit_b_01ec64.pth')
 
-    inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/for_PPT/base_frame/'
-    save_predcitions_dir_path = './INFERENCE/for_PPT/'
-    os.makedirs(save_predcitions_dir_path)
+    #inference_image_dir_path = '/mnt/users_scratch/astitva/DATA/for_PPT/base_frame/'
+    #save_predcitions_dir_path = './INFERENCE/for_PPT/'
+    #os.makedirs(save_predcitions_dir_path)
 
  
     # inference_image_dir_path = '/mnt/users_scratch/astitva/WORKSPACE/Fedora-DGX-Codebase/SEGMENTATION/SAM_finetuning/dog_val_images'
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     semantics_face = SemanticSegmentationFace(labels_definition_path=labels_definition_file_path, num_classes=num_classes_face)
     semantics_all = SemanticSegmentationAll(labels_definition_path=labels_definition_file_path, num_classes=num_classes_all)
 
-
+    visualize_heatmap = True
 
     # model checkpoint directory
     model_load_path = join(ckpt_dir, task_name_fine)
@@ -406,18 +406,18 @@ if __name__ == '__main__':
                 if visualize_heatmap:
                     """ FACE """
                     # show heatmap
-                    fig, ax = plt.subplots(1,num_classes_coarse, figsize=((num_classes_coarse)*10,10))
+                    fig, ax = plt.subplots(1,num_classes_face, figsize=((num_classes_face)*10,10))
                     fig.tight_layout()
-                    coarse_mask_vis[coarse_mask_vis.sum(2)==0] = [255,255,255]
-                    ax[0].imshow(coarse_mask_vis)
+                    # face_mask_vis[face_mask_vis.sum(2)==0] = [255,255,255]
+                    # ax[0].imshow(face_mask_vis)
                     # ax[0].set_title("Coarse Mask", fontsize=TITLE_SIZE)
                     ax[0].axis('off')
                     #normalize mask predictions across channels
-                    heatmaps = mask_predictions_coarse[batch_idx]
+                    heatmaps = mask_predictions_face[batch_idx]
                     heatmaps = heatmaps/heatmaps.sum(dim=0, keepdim=True)
-                    for i in range(1,num_classes_coarse):
+                    for i in range(1,num_classes_face):
                         heatmap = heatmaps[i-1].cpu().numpy().astype('float32')
-                        remapped_id = semantics_coarse.reverse_remap[i-1]
+                        remapped_id = semantics_face.reverse_remap[i-1]
                         class_name = id_to_label[remapped_id]
                         # if coarse:
                         #     class_name = semantics_fine.class_names[i-1]
